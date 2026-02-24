@@ -16,6 +16,14 @@ class SubCategoryService
             ->orderBy('id', 'desc')
             ->get();
     }
+	
+	// For Mobile API
+	public function getActiveForApi()
+{
+    return SubCategory::with('category') // optional if app needs category
+        ->orderBy('id', 'desc')
+        ->get();
+}
 
     public function getCategoriesForDropdown()
     {

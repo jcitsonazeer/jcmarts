@@ -17,6 +17,15 @@ class ProductService
             ->orderBy('id', 'desc')
             ->get();
     }
+	
+	// For Mobile API
+public function getActiveProductsForApi()
+{
+    return Product::with(['subCategory'])
+        ->where('is_active', 1)
+        ->orderBy('id', 'desc')
+        ->get();
+}
 
     public function getSubCategoriesForDropdown()
     {
