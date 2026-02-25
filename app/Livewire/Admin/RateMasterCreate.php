@@ -78,6 +78,7 @@ class RateMasterCreate extends Component
                 'offer_price' => $existing['offer_price'] ?? '',
                 'final_price' => $existing['final_price'] ?? '',
                 'stock_qty' => $existing['stock_qty'] ?? '',
+                'is_active' => array_key_exists('is_active', $existing) ? (string) $existing['is_active'] : '1',
             ];
         }
     }

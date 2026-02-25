@@ -70,6 +70,7 @@
                                                 <th>Offer Price</th>
                                                 <th>Final Price</th>
                                                 <th>Stock Qty <span class="text-danger">*</span></th>
+                                                <th>Status <span class="text-danger">*</span></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -81,6 +82,12 @@
                                                 <td><input type="number" step="0.01" min="0" id="offer_price" name="offer_price" class="form-control" value="{{ old('offer_price', $rate->offer_price) }}"></td>
                                                 <td><input type="number" step="0.01" min="0" id="final_price" name="final_price" class="form-control" value="{{ old('final_price', $rate->final_price) }}" readonly></td>
                                                 <td><input type="number" min="0" id="stock_qty" name="stock_qty" class="form-control" value="{{ old('stock_qty', $rate->stock_qty) }}" required></td>
+                                                <td>
+                                                    <select name="is_active" class="form-control" required>
+                                                        <option value="1" {{ old('is_active', $rate->is_active) == 1 ? 'selected' : '' }}>Active</option>
+                                                        <option value="0" {{ old('is_active', $rate->is_active) == 0 ? 'selected' : '' }}>Inactive</option>
+                                                    </select>
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>

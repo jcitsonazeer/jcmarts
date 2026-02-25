@@ -35,6 +35,7 @@
                                         <th>Offer %</th>
                                         <th>Final Price</th>
                                         <th>Stock</th>
+                                        <th>Status</th>
                                         <th width="160">Actions</th>
                                     </tr>
                                 </thead>
@@ -56,6 +57,13 @@
                                             <td>{{ $rate->final_price }}</td>
                                             <td>{{ $rate->stock_qty }}</td>
                                             <td>
+                                                @if($rate->is_active)
+                                                    <span class="badge badge-success">Active</span>
+                                                @else
+                                                    <span class="badge badge-danger">Inactive</span>
+                                                @endif
+                                            </td>
+                                            <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="{{ route('admin.rate-masters.show', $rate->id) }}" class="btn btn-info btn-sm" title="View">
                                                         <i class="fa fa-eye"></i>
@@ -76,7 +84,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="9" class="text-center">No rates found</td>
+                                            <td colspan="10" class="text-center">No rates found</td>
                                         </tr>
                                     @endforelse
                                 </tbody>

@@ -20,8 +20,14 @@ class RateMasterService
     public function getProductsForSelectedDisplay()
     {
         return Product::select('id', 'product_name', 'product_image')
-            ->whereHas('rates')
-            ->withCount('rates')
+            ->whereHas('rates', function ($query) {
+                $query->where('is_active', 1);
+            })
+            ->withCount([
+                'rates' => function ($query) {
+                    $query->where('is_active', 1);
+                },
+            ])
             ->orderBy('product_name')
             ->get();
     }
@@ -30,6 +36,7 @@ class RateMasterService
     {
         return RateMaster::with(['product', 'uom'])
             ->where('product_id', $productId)
+            ->where('is_active', 1)
             ->orderBy('id')
             ->get();
     }
@@ -142,6 +149,7 @@ class RateMasterService
             'offer_price' => $prepared['offer_price'],
             'final_price' => $prepared['final_price'],
             'stock_qty' => $prepared['stock_qty'],
+            'is_active' => array_key_exists('is_active', $data) ? (int) $data['is_active'] : 1,
             'selected_display' => 0,
             'created_by_id' => $adminId,
             'created_date' => Carbon::now(),
@@ -165,6 +173,7 @@ class RateMasterService
                     'offer_price' => $prepared['offer_price'],
                     'final_price' => $prepared['final_price'],
                     'stock_qty' => $prepared['stock_qty'],
+                    'is_active' => array_key_exists('is_active', $row) ? (int) $row['is_active'] : 1,
                     'selected_display' => 0,
                     'created_by_id' => $adminId,
                     'created_date' => Carbon::now(),
@@ -189,6 +198,7 @@ class RateMasterService
             'offer_price' => $prepared['offer_price'],
             'final_price' => $prepared['final_price'],
             'stock_qty' => $prepared['stock_qty'],
+            'is_active' => array_key_exists('is_active', $data) ? (int) $data['is_active'] : 1,
             'updated_by_id' => $adminId,
             'updated_date' => Carbon::now(),
         ]);
