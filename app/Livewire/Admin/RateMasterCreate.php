@@ -67,7 +67,7 @@ class RateMasterCreate extends Component
 
             // Find old row data if exists
             $existing = collect($oldRows)
-                ->firstWhere('uom_id', $row['id']);
+                ->firstWhere('uom_id', $row['id']) ?? [];
 
             $this->rate_rows[] = [
                 'uom_id' => $row['id'],

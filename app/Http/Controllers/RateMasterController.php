@@ -231,8 +231,8 @@ class RateMasterController extends Controller
                     })
                     ->ignore($id, 'id'),
             ],
-            'cost_price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
+            'cost_price' => 'required|numeric|min:0|lte:selling_price',
+            'selling_price' => 'required|numeric|min:0|gte:cost_price',
             'offer_percentage' => 'nullable|numeric|min:0|max:100',
             'offer_price' => 'nullable|numeric|min:0',
             'final_price' => 'nullable|numeric|min:0',

@@ -40,14 +40,11 @@
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label>Product <span class="text-danger">*</span></label>
-                                    <select name="product_id" class="form-control" required>
-                                        <option value="">Select Product</option>
-                                        @foreach($products as $product)
-                                            <option value="{{ $product->id }}" {{ old('product_id', $rate->product_id) == $product->id ? 'selected' : '' }}>
-                                                {{ $product->product_name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <input type="text"
+                                           class="form-control"
+                                           value="{{ $rate->product ? $rate->product->product_name : '-' }}"
+                                           readonly>
+                                    <input type="hidden" name="product_id" value="{{ old('product_id', $rate->product_id) }}">
                                 </div>
                                 <div class="col-md-6">
                                     <label>Primary UOM</label>
