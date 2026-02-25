@@ -93,7 +93,7 @@ class SubCategoryService
 
     public function hasProducts($id)
     {
-        return Product::where('subproduct_id', $id)->exists();
+        return Product::where('sub_category_id', $id)->exists();
     }
 
     private function storeSubCategoryImage($image)

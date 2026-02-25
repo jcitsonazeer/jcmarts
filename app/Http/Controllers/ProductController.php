@@ -36,7 +36,7 @@ class ProductController extends Controller
         ]);
 
         $validatedData = $request->validate([
-            'subproduct_id' => 'required|integer|exists:sub_category,id',
+            'sub_category_id' => 'required|integer|exists:sub_category,id',
             'product_name' => 'required|string|max:150|unique:products,product_name',
             'product_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'description' => 'nullable|string|max:1000',
@@ -78,7 +78,7 @@ class ProductController extends Controller
         ]);
 
         $validatedData = $request->validate([
-            'subproduct_id' => 'required|integer|exists:sub_category,id',
+            'sub_category_id' => 'required|integer|exists:sub_category,id',
             'product_name' => 'required|string|max:150|unique:products,product_name,' . $id,
             'product_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'description' => 'nullable|string|max:1000',

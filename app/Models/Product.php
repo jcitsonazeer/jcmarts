@@ -13,7 +13,7 @@ class Product extends Model
     public $timestamps = false; // Because you are using created_date / updated_date
 
     protected $fillable = [
-        'subproduct_id',
+        'sub_category_id',
         'product_name',
         'product_image',
         'single_image_1',
@@ -40,7 +40,7 @@ class Product extends Model
      */
     public function subCategory()
     {
-        return $this->belongsTo(SubCategory::class, 'subproduct_id');
+        return $this->belongsTo(SubCategory::class, 'sub_category_id');
     }
 
     /**

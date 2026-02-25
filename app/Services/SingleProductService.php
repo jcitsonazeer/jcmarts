@@ -68,7 +68,7 @@ class SingleProductService
     {
         return Product::query()
             ->where('is_active', 1)
-            ->where('subproduct_id', $product->subproduct_id)
+            ->where('sub_category_id', $product->sub_category_id)
             ->where('id', '!=', $product->id)
             ->whereHas('rates')
             ->with([
