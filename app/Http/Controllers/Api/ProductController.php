@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\ProductService;
+use Illuminate\Http\Request; 
 
 class ProductController extends Controller
 {
@@ -14,12 +15,16 @@ class ProductController extends Controller
         $this->productService = $productService;
     }
 
-public function index()
+public function index(Request $request)
 {
-    $products = $this->productService->getActiveProductsForApi();
+    $subCategoryId = $request->sub_category_id;
 
-    $products->transform(function ($product) {
-        $product->product_image = asset('storage/products/' . $product->product_image);
+    $products = $this->productService
+        ->getActiveProductsForApi($subCategoryId);
+
+    $products->getCollection()->transform(function ($product) {
+        $product->product_image =
+            asset('storage/products/' . $product->product_image);
         return $product;
     });
 

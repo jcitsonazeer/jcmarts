@@ -40,10 +40,10 @@
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label>Sub Category <span class="text-danger">*</span></label>
-                                    <select name="subproduct_id" class="form-control" required>
+                                    <select name="sub_category_id" class="form-control" required>
                                         <option value="">Select Sub Category</option>
                                         @foreach($subCategories as $subCategory)
-                                            <option value="{{ $subCategory->id }}" {{ old('subproduct_id', $product->subproduct_id) == $subCategory->id ? 'selected' : '' }}>
+                                            <option value="{{ $subCategory->id }}" {{ old('sub_category_id', $product->sub_category_id) == $subCategory->id ? 'selected' : '' }}>
                                                 {{ $subCategory->sub_category_name }}
                                             </option>
                                         @endforeach
@@ -148,4 +148,3 @@ document.getElementById('product_image_input')?.addEventListener('change', funct
 </script>
 @endpush
 @endsection
-

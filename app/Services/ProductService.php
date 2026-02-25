@@ -18,13 +18,26 @@ class ProductService
             ->get();
     }
 	
-	// For Mobile API
-public function getActiveProductsForApi()
+// For Mobile API
+public function getActiveProductsForApi($subCategoryId = null)
 {
-    return Product::with(['subCategory'])
+    $query = Product::query()
         ->where('is_active', 1)
-        ->orderBy('id', 'desc')
-        ->get();
+        ->whereHas('rates') // only products that have rates
+        ->with([
+            'subCategory',
+            'rates' => function ($query) {
+                $query->with('uom')
+                      ->orderBy('id');
+            },
+        ]);
+
+    if ($subCategoryId) {
+        $query->where('sub_category_id', $subCategoryId);
+    }
+
+    return $query->orderByDesc('id')
+                 ->paginate(10);
 }
 
     public function getSubCategoriesForDropdown()
@@ -52,7 +65,7 @@ public function getActiveProductsForApi()
         }
 
         return Product::create([
-            'subproduct_id' => $data['subproduct_id'],
+            'sub_category_id' => $data['sub_category_id'],
             'product_name' => $productName,
             'product_image' => $imageName,
             'description' => $data['description'] ?? null,
@@ -78,7 +91,7 @@ public function getActiveProductsForApi()
         }
 
         $product->update([
-            'subproduct_id' => $data['subproduct_id'],
+            'sub_category_id' => $data['sub_category_id'],
             'product_name' => $productName,
             'product_image' => $imageName,
             'description' => $data['description'] ?? null,

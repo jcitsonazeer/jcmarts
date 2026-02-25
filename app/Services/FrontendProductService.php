@@ -30,7 +30,7 @@ class FrontendProductService
             ->where('is_active', 1)
             ->whereHas('rates')
             ->when(!empty($subCategoryId), function ($query) use ($subCategoryId) {
-                $query->where('subproduct_id', $subCategoryId);
+                $query->where('sub_category_id', $subCategoryId);
             })
             ->with([
                 'subCategory.category',
