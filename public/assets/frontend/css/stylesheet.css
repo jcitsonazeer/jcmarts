@@ -2939,18 +2939,7 @@ footer .section{margin: 0;}
     opacity:1;
     height:215px;
 }
-.product-thumb:hover .first_image{
-    opacity: 0;
-}
-.swap_image{
-    opacity:0;
-    position: absolute;
-    top: 0;
-    width: 100%;
-}
-.product-thumb:hover .swap_image{
-    opacity: 1;
-}
+
 .product-thumb .image > a {
     display: block;
 }
