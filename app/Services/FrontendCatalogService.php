@@ -35,6 +35,7 @@ class FrontendCatalogService
     public function getProductOffers()
     {
         $latestOfferRateIds = RateMaster::query()
+            ->where('is_active', 1)
             ->where('offer_percentage', '>', 0)
             ->selectRaw('MAX(id) as id')
             ->groupBy('product_id');
@@ -45,6 +46,7 @@ class FrontendCatalogService
             })
             ->join('products', 'products.id', '=', 'rate_master.product_id')
             ->where('products.is_active', 1)
+            ->where('rate_master.is_active', 1)
             ->select([
                 'rate_master.product_id',
                 'products.product_name',
@@ -63,10 +65,13 @@ class FrontendCatalogService
     {
         return Product::query()
             ->where('is_active', 1)
-            ->whereHas('rates')
+            ->whereHas('rates', function ($query) {
+                $query->where('is_active', 1);
+            })
             ->with([
                 'rates' => function ($query) {
-                    $query->with('uom')
+                    $query->where('is_active', 1)
+                        ->with('uom')
                         ->orderBy('id');
                 },
             ])

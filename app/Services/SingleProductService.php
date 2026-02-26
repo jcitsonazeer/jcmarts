@@ -19,11 +19,13 @@ class SingleProductService
     {
         $query = Product::query()
             ->where('is_active', 1)
-            ->whereHas('rates')
+            ->whereHas('rates', function ($query) {
+                $query->where('is_active', 1);
+            })
             ->with([
                 'subCategory.category',
                 'rates' => function ($query) {
-                    $query->with('uom')->orderBy('id');
+                    $query->where('is_active', 1)->with('uom')->orderBy('id');
                 },
             ]);
 
@@ -70,10 +72,12 @@ class SingleProductService
             ->where('is_active', 1)
             ->where('sub_category_id', $product->sub_category_id)
             ->where('id', '!=', $product->id)
-            ->whereHas('rates')
+            ->whereHas('rates', function ($query) {
+                $query->where('is_active', 1);
+            })
             ->with([
                 'rates' => function ($query) {
-                    $query->with('uom')->orderBy('id');
+                    $query->where('is_active', 1)->with('uom')->orderBy('id');
                 },
             ])
             ->orderByDesc('id')

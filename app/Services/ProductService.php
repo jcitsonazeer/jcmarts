@@ -23,11 +23,14 @@ public function getActiveProductsForApi($subCategoryId = null)
 {
     $query = Product::query()
         ->where('is_active', 1)
-        ->whereHas('rates') // only products that have rates
+        ->whereHas('rates', function ($query) {
+            $query->where('is_active', 1);
+        })
         ->with([
             'subCategory',
             'rates' => function ($query) {
-                $query->with('uom')
+                $query->where('is_active', 1)
+                      ->with('uom')
                       ->orderBy('id');
             },
         ]);

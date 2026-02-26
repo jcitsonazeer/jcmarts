@@ -40,14 +40,11 @@
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label>Product <span class="text-danger">*</span></label>
-                                    <select name="product_id" class="form-control" required>
-                                        <option value="">Select Product</option>
-                                        @foreach($products as $product)
-                                            <option value="{{ $product->id }}" {{ old('product_id', $rate->product_id) == $product->id ? 'selected' : '' }}>
-                                                {{ $product->product_name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <input type="text"
+                                           class="form-control"
+                                           value="{{ $rate->product ? $rate->product->product_name : '-' }}"
+                                           readonly>
+                                    <input type="hidden" name="product_id" value="{{ old('product_id', $rate->product_id) }}">
                                 </div>
                                 <div class="col-md-6">
                                     <label>Primary UOM</label>
@@ -70,6 +67,7 @@
                                                 <th>Offer Price</th>
                                                 <th>Final Price</th>
                                                 <th>Stock Qty <span class="text-danger">*</span></th>
+                                                <th>Status <span class="text-danger">*</span></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -81,6 +79,12 @@
                                                 <td><input type="number" step="0.01" min="0" id="offer_price" name="offer_price" class="form-control" value="{{ old('offer_price', $rate->offer_price) }}"></td>
                                                 <td><input type="number" step="0.01" min="0" id="final_price" name="final_price" class="form-control" value="{{ old('final_price', $rate->final_price) }}" readonly></td>
                                                 <td><input type="number" min="0" id="stock_qty" name="stock_qty" class="form-control" value="{{ old('stock_qty', $rate->stock_qty) }}" required></td>
+                                                <td>
+                                                    <select name="is_active" class="form-control" required>
+                                                        <option value="1" {{ old('is_active', $rate->is_active) == 1 ? 'selected' : '' }}>Active</option>
+                                                        <option value="0" {{ old('is_active', $rate->is_active) == 0 ? 'selected' : '' }}>Inactive</option>
+                                                    </select>
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>

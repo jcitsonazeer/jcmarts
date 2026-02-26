@@ -58,16 +58,17 @@
                                                 <th>Offer Price</th>
                                                 <th>Final Price</th>
                                                 <th>Stock Qty <span class="text-danger">*</span></th>
+                                                <th>Status <span class="text-danger">*</span></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @if (empty($primary_uom))
                                                 <tr>
-                                                    <td colspan="7" class="text-center text-muted">Select Primary UOM to load secondary rows.</td>
+                                                    <td colspan="8" class="text-center text-muted">Select Primary UOM to load secondary rows.</td>
                                                 </tr>
                                             @elseif (empty($rate_rows))
                                                 <tr>
-                                                    <td colspan="7" class="text-center text-muted">No secondary UOM found for selected primary UOM.</td>
+                                                    <td colspan="8" class="text-center text-muted">No secondary UOM found for selected primary UOM.</td>
                                                 </tr>
                                             @else
                                                 @foreach($rate_rows as $index => $row)
@@ -136,6 +137,17 @@
                                                                 wire:model.live="rate_rows.{{ $index }}.stock_qty"
                                                                 name="rate_rows[{{ $index }}][stock_qty]"
                                                             >
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                class="form-control"
+                                                                wire:model.live="rate_rows.{{ $index }}.is_active"
+                                                                name="rate_rows[{{ $index }}][is_active]"
+                                                                required
+                                                            >
+                                                                <option value="1">Active</option>
+                                                                <option value="0">Inactive</option>
+                                                            </select>
                                                         </td>
                                                     </tr>
                                                 @endforeach

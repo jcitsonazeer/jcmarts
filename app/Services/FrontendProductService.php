@@ -28,14 +28,17 @@ class FrontendProductService
     {
         $query = Product::query()
             ->where('is_active', 1)
-            ->whereHas('rates')
+            ->whereHas('rates', function ($query) {
+                $query->where('is_active', 1);
+            })
             ->when(!empty($subCategoryId), function ($query) use ($subCategoryId) {
                 $query->where('sub_category_id', $subCategoryId);
             })
             ->with([
                 'subCategory.category',
                 'rates' => function ($query) {
-                    $query->with('uom')
+                    $query->where('is_active', 1)
+                        ->with('uom')
                         ->orderBy('id');
                 },
             ])

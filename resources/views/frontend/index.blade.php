@@ -160,7 +160,7 @@
 <div class="subtitile">
 <div class="subtitle-part-image"></div>  
 <div class="subtitile1">On time delivery</div>
-<div class="subtitile2">15% back if not able</div>
+<div class="subtitile2">Fast & Reliable Service</div>
 </div>
 </div>
 </div>
@@ -169,7 +169,7 @@
 <div class="subtitile">
 <div class="subtitle-part-image"></div>  
 <div class="subtitile1">Free delivery</div>
-<div class="subtitile2">Order over $ 200</div>
+<div class="subtitile2">Order over Rs.500</div>
 </div>
 </div>
 </div>
@@ -178,7 +178,7 @@
 <div class="subtitile">
 <div class="subtitle-part-image"></div>  
 <div class="subtitile1">Quality assurance</div>
-<div class="subtitile2">You can trust us</div>
+<div class="subtitile2">Excellence in Every Detail</div>
 </div>
 </div>
 </div>

@@ -98,6 +98,7 @@ class RateMasterController extends Controller
             'rate_rows.*.offer_price' => 'nullable|numeric|min:0',
             'rate_rows.*.final_price' => 'nullable|numeric|min:0',
             'rate_rows.*.stock_qty' => 'nullable|integer|min:0',
+            'rate_rows.*.is_active' => 'nullable|boolean',
         ]);
 
         $adminId = session('admin_id');
@@ -158,6 +159,7 @@ class RateMasterController extends Controller
                 'offer_price' => $row['offer_price'] ?? null,
                 'final_price' => $row['final_price'] ?? null,
                 'stock_qty' => $row['stock_qty'],
+                'is_active' => array_key_exists('is_active', $row) ? $row['is_active'] : 1,
             ];
 
             $seenUomIds[] = $uomId;
@@ -229,12 +231,13 @@ class RateMasterController extends Controller
                     })
                     ->ignore($id, 'id'),
             ],
-            'cost_price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
+            'cost_price' => 'required|numeric|min:0|lte:selling_price',
+            'selling_price' => 'required|numeric|min:0|gte:cost_price',
             'offer_percentage' => 'nullable|numeric|min:0|max:100',
             'offer_price' => 'nullable|numeric|min:0',
             'final_price' => 'nullable|numeric|min:0',
             'stock_qty' => 'required|integer|min:0',
+            'is_active' => 'required|boolean',
         ]);
 
         $adminId = session('admin_id');
