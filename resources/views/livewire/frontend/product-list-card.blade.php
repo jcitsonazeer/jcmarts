@@ -49,9 +49,9 @@
 
           <div class="input-group col-xs-12 col-sm-12 button-group">
             <label class="control-label col-sm-2 col-xs-2">Qty</label>
-            <input type="number" name="quantity" min="1" value="1" size="1" step="1" class="qty form-control col-sm-2 col-xs-9">
+            <input type="number" wire:model.live="quantity" min="1" size="1" step="1" class="qty form-control col-sm-2 col-xs-9">
             <input type="hidden" name="product_id" value="{{ $product->id }}">
-            <button type="button" class="addtocart">Add</button>
+            <button type="button" wire:click="addToCart" class="addtocart">Add</button>
             <button type="button" class="compare pull-right"><i class="fa fa-exchange"></i></button>
             <button type="button" class="wishlist pull-right"><i class="fa fa-heart"></i></button>
             <a class="quickview pull-right" href="#"><i class="fa fa-eye"></i></a>

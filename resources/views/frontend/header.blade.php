@@ -78,20 +78,7 @@
   </div>
   <div class="header-bottom-right col-xs-6 col-sm-10 col-md-10 col-lg-10">
     <div class="header-cart">
-  <div id="cart" class="btn-group btn-block cart_block">
-    <button 
-      type="button"
-      class="btn btn-inverse btn-block btn-lg"
-      onclick="window.location.href='{{ route('frontend.cart') }}';">
-      <span class="cart-text">My basket</span>
-      <span class="cart-total">Item 0</span>
-      <span class="cart-total-res">0</span>
-    </button>
-    <a href="{{ route('frontend.cart') }}" class="addtocart btn">
-    <span class="cart-text">My basket</span>
-    <span class="cart-total-res">0</span>
-    </a>
-  </div>
+      <livewire:frontend.cart-summary />
 </div>
     <div class="header-link-search">
   <div class="header-search">
@@ -99,12 +86,12 @@
       <button type="button" title="Search" class="action search" id="head-search"></button>
     </div>
 
-    <div id="search" class="input-group">
-  <input type="text" id="search-input" name="search" value="" placeholder="Search" class="form-control input-lg">
-  <span class="input-group-btn">
-    <button type="button" class="btn btn-default btn-lg">Search</button>
-  </span>
-</div>
+    <form id="search" class="input-group" method="GET" action="{{ route('frontend.products') }}">
+      <input type="text" id="search-input" name="search" value="{{ request('search', '') }}" placeholder="Search" class="form-control input-lg">
+      <span class="input-group-btn">
+        <button type="submit" class="btn btn-default btn-lg">Search</button>
+      </span>
+    </form>
 
 
   </div>

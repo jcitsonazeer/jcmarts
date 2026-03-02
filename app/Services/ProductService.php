@@ -18,30 +18,32 @@ class ProductService
             ->get();
     }
 	
-// For Mobile API
-public function getActiveProductsForApi($subCategoryId = null)
-{
-    $query = Product::query()
-        ->where('is_active', 1)
-        ->whereHas('rates', function ($query) {
-            $query->where('is_active', 1);
-        })
-        ->with([
-            'subCategory',
-            'rates' => function ($query) {
-                $query->where('is_active', 1)
-                      ->with('uom')
-                      ->orderBy('id');
-            },
-        ]);
+    // For Mobile API
+    public function getActiveProductsForApi($subCategoryId = null, $search = null, $perPage = 10)
+    {
+        $query = Product::query()
+            ->where('is_active', 1)
+            ->whereHas('rates', function ($query) {
+                $query->where('is_active', 1);
+            })
+            ->when(!empty($subCategoryId), function ($query) use ($subCategoryId) {
+                $query->where('sub_category_id', $subCategoryId);
+            })
+            ->when(!empty($search), function ($query) use ($search) {
+                $query->where('product_name', 'like', '%' . $search . '%');
+            })
+            ->with([
+                'subCategory',
+                'rates' => function ($query) {
+                    $query->where('is_active', 1)
+                        ->with('uom')
+                        ->orderBy('id');
+                },
+            ]);
 
-    if ($subCategoryId) {
-        $query->where('sub_category_id', $subCategoryId);
+        return $query->orderByDesc('id')
+            ->paginate($perPage);
     }
-
-    return $query->orderByDesc('id')
-                 ->paginate(10);
-}
 
     public function getSubCategoriesForDropdown()
     {

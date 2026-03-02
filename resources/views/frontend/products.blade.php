@@ -4,11 +4,21 @@
 </div>
 
 <div id="product-category" class="container category">
+  @php
+    $isSearching = !empty($searchTerm);
+  @endphp
   <ul class="breadcrumb">
     <li><a href="{{ route('frontend.home') }}"><i class="fa fa-home"></i></a></li>
     <li><a href="{{ route('frontend.products') }}">Products</a></li>
     @if($selectedSubCategory)
       <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategory->id]) }}">{{ $selectedSubCategory->sub_category_name }}</a></li>
+    @endif
+    @if($isSearching)
+      @if($selectedSubCategory)
+        <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategory->id, 'search' => $searchTerm]) }}">Search: "{{ $searchTerm }}"</a></li>
+      @else
+        <li><a href="{{ route('frontend.products', ['search' => $searchTerm]) }}">Search: "{{ $searchTerm }}"</a></li>
+      @endif
     @endif
   </ul>
   <div class="row">
@@ -50,7 +60,15 @@
     </aside>
 
     <div id="content" class="col-sm-9">
-      <h1>{{ $selectedSubCategory ? $selectedSubCategory->sub_category_name : 'All Products' }}</h1>
+      <h1>
+        @if($isSearching)
+          Search results for "{{ $searchTerm }}"
+        @elseif($selectedSubCategory)
+          {{ $selectedSubCategory->sub_category_name }}
+        @else
+          All Products
+        @endif
+      </h1>
 
       <div class="subcateory">
         <h3>Refine Search</h3>
@@ -108,7 +126,7 @@
           @empty
             <div class="col-sm-12">
               <div class="alert alert-info">
-                No products found{{ $selectedSubCategory ? ' for selected sub category' : '' }}.
+                No products found{{ $isSearching ? ' for "' . $searchTerm . '"' : '' }}{{ $selectedSubCategory ? ' in selected sub category' : '' }}.
               </div>
             </div>
           @endforelse

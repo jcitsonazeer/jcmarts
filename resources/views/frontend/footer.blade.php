@@ -77,18 +77,6 @@
 </div>
 </footer>
 
-        
-            
-		
-
-
-
-
-
-
-     
-
-
 <script><!--
 $('#slideshow0').swiper({
 	mode: 'horizontal',
@@ -235,7 +223,6 @@ $(document).ready(function() {
 			}
 		}
 	});
-
   $('.image-additional').owlCarousel({
     items: 1,
     singleItem: true,
@@ -247,7 +234,6 @@ $(document).ready(function() {
     itemsTabletSmall: [479, 1],
     itemsMobile: [319, 1]
   });
-
 
 $('.product-carousel').owlCarousel({
 		    items: 5,
@@ -266,6 +252,41 @@ $('.product-carousel').owlCarousel({
 });
 
 //--></script>
+
+<script>
+$(document).ready(function () {
+  var zoomScale = 1.35;
+
+  $('body.common-home.lang_en.layout-1 .product-additional-block .image-additional .product-thumb').each(function () {
+    var $box = $(this);
+    var $img = $box.find('img').first();
+
+    if (!$img.length) return;
+
+    $box.on('mousemove', function (e) {
+      var rect = this.getBoundingClientRect();
+      var x = ((e.clientX - rect.left) / rect.width) * 100;
+      var y = ((e.clientY - rect.top) / rect.height) * 100;
+
+      $img.css('transform-origin', x + '% ' + y + '%');
+      $img.css('transform', 'scale(' + zoomScale + ')');
+    });
+
+    $box.on('mouseleave', function () {
+      $img.css('transform-origin', 'center center');
+      $img.css('transform', 'scale(1)');
+    });
+  });
+});
+</script>
+
+<script>
+document.addEventListener('livewire:init', function () {
+  Livewire.on('cart-item-added', function () {
+    alert('ITEM ADDED TO CART');
+  });
+});
+</script>
 
 
 

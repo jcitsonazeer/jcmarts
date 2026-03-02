@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\SubCategoryController;
 use App\Http\Controllers\FrontendController;
+use App\Http\Controllers\FrontendCartController;
 use App\Http\Controllers\FrontendProductController;
 use App\Http\Controllers\SingleProductController;
 use App\Http\Controllers\ProductController;
@@ -17,7 +18,9 @@ use App\Http\Controllers\IndexBannerController;
 Route::get('/', [FrontendController::class, 'index'])->name('frontend.home');
 Route::get('/products', [FrontendProductController::class, 'index'])->name('frontend.products');
 Route::get('/single-product', [SingleProductController::class, 'show'])->name('frontend.single_product');
-Route::get('/cart', [FrontendController::class, 'cart'])->name('frontend.cart');
+Route::get('/cart', [FrontendCartController::class, 'index'])->name('frontend.cart');
+Route::post('/cart/{cartId}/quantity', [FrontendCartController::class, 'updateQuantity'])->name('frontend.cart.update');
+Route::post('/cart/{cartId}/remove', [FrontendCartController::class, 'remove'])->name('frontend.cart.remove');
 Route::get('/checkout', [FrontendController::class, 'checkout'])->name('frontend.checkout');
 
 // Optional compatibility for old template URLs

@@ -24,7 +24,7 @@ class FrontendProductService
         return SubCategory::with('category')->find($subCategoryId);
     }
 
-    public function getProducts($subCategoryId = null)
+    public function getProducts($subCategoryId = null, $searchTerm = null)
     {
         $query = Product::query()
             ->where('is_active', 1)
@@ -33,6 +33,9 @@ class FrontendProductService
             })
             ->when(!empty($subCategoryId), function ($query) use ($subCategoryId) {
                 $query->where('sub_category_id', $subCategoryId);
+            })
+            ->when(!empty($searchTerm), function ($query) use ($searchTerm) {
+                $query->where('product_name', 'like', '%' . $searchTerm . '%');
             })
             ->with([
                 'subCategory.category',
@@ -44,7 +47,7 @@ class FrontendProductService
             ])
             ->orderByDesc('id');
 
-        if (empty($subCategoryId)) {
+        if (empty($subCategoryId) && empty($searchTerm)) {
             $query->limit(12);
         }
 

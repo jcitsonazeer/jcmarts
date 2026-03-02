@@ -5,10 +5,11 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SubCategoryController;
 
 Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/search', [ProductController::class, 'search']);
 Route::get('/sub-categories', [SubCategoryController::class, 'index']);
 
 Route::get('/test', function () {
-    return response()->json([
+return response()->json([
         'status' => true,
         'message' => 'API working successfully'
     ]);
