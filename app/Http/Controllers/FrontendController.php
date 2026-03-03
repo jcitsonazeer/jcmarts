@@ -51,4 +51,11 @@ class FrontendController extends Controller
 
         return view('frontend.checkout', compact('menuCategories'));
     }
+
+    public function register()
+    {
+        $menuCategories = $this->frontendCatalogService->getMenuCategories();
+
+        return view('frontend.register', compact('menuCategories'));
+    }
 }

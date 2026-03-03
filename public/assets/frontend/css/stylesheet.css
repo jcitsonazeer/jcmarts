@@ -3552,7 +3552,14 @@ box-shadow:inset -2px -2px 3px 2px #003025;
 .checkout .table.table-bordered.grand-total,
 .checkout .table.table-bordered.grand-total tr td{
     border: none;
-    background-color: #f2f2f2;
+       background-color: #123a31;
+}
+
+.btn-primary{
+    background:#065d4a !important;
+}
+.btn-default{
+    background:#065d4a !important;
 }
 
 .checkout .table.grand-total tr:last-child td{

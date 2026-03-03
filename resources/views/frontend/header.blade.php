@@ -67,7 +67,7 @@
   <div class="header-top-right pull-right">
     <div class="telephone"><a href="#"><i class="fa fa-phone"></i>9514486111</a></div>
         <div class="login"><a href="#"><i class="fa fa-user"></i>Login</a></div>
-    <div><a href="#">Signup</a></div>
+    <div><a href="{{ route('frontend.register') }}">Signup</a></div>
       </div>
 </div>
 <div class="header-bottom-block col-sm-12">

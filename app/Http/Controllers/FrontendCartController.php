@@ -20,15 +20,8 @@ class FrontendCartController extends Controller
     public function index()
     {
         $menuCategories = $this->frontendCatalogService->getMenuCategories();
-        $cartItems = $this->cartService->getActiveItems();
-        $itemCount = (int) $cartItems->sum('quantity');
-        $subTotal = (float) $cartItems->sum(function ($item) {
-            return ((float) $item->unit_price) * ((int) $item->quantity);
-        });
-        $gst = $subTotal * 0.10;
-        $total = $subTotal + $gst;
 
-        return view('frontend.cart', compact('menuCategories', 'cartItems', 'itemCount', 'subTotal', 'gst', 'total'));
+        return view('frontend.cart', compact('menuCategories'));
     }
 
     public function updateQuantity(Request $request, int $cartId)

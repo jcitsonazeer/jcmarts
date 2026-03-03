@@ -22,6 +22,7 @@ Route::get('/cart', [FrontendCartController::class, 'index'])->name('frontend.ca
 Route::post('/cart/{cartId}/quantity', [FrontendCartController::class, 'updateQuantity'])->name('frontend.cart.update');
 Route::post('/cart/{cartId}/remove', [FrontendCartController::class, 'remove'])->name('frontend.cart.remove');
 Route::get('/checkout', [FrontendController::class, 'checkout'])->name('frontend.checkout');
+Route::get('/register', [FrontendController::class, 'register'])->name('frontend.register');
 
 // Optional compatibility for old template URLs
 Route::redirect('/index.html', '/');
@@ -29,6 +30,7 @@ Route::redirect('/category.html', '/category');
 Route::redirect('/product.html', '/product');
 Route::redirect('/cart.html', '/cart');
 Route::redirect('/checkout.html', '/checkout');
+Route::redirect('/register.html', '/register');
 
 Route::prefix('admin')->name('admin.')->group(function () {
 
