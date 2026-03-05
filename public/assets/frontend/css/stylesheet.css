@@ -432,7 +432,7 @@ box-shadow: rgb(37, 43, 39) 3px 3px 6px 0px inset, rgba(3, 56, 29, 0.979) -3px -
     width: 40px;
     height: 40px;
     border-radius:0px 20px 20px 0px;
-    background: url(../images/sprite.png) no-repeat scroll 0 -103px #bb966a;
+    background: url(../images/sprite.png) no-repeat scroll 0 -103px #bb966a !important;
     position: relative;
     float: left;
     position: absolute;
@@ -442,7 +442,7 @@ box-shadow: rgb(37, 43, 39) 3px 3px 6px 0px inset, rgba(3, 56, 29, 0.979) -3px -
 }
 //#search .input-group-btn{width: auto; float: left;}
 #search .btn-lg:hover{
-    background-color: #da251d;
+    background-color: #da251d !important;
     border-color: #da251d;
 }
 #search .btn-lg i{font-size: 16px; padding: 9px 10px;}
@@ -4717,6 +4717,7 @@ opacity: 1;
     outline: none;
     transition: 0.3s;
     font-size: 14px;
+	background-color:#0a2823;
 }
 
 /* Input Focus */

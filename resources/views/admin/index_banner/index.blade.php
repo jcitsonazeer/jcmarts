@@ -40,6 +40,8 @@
                                             <tr>
                                                 <th>ID</th>
                                                 <th>Banner Image</th>
+                                                <th>Offer Name</th>
+                                                <th>Sub Category</th>
                                                 <th>Created By</th>
                                                 <th>Created Date</th>
                                                 <th>Updated By</th>
@@ -63,6 +65,8 @@
                                                              style="width: 180px; height: 70px; object-fit: cover; border-radius: 6px;"
                                                              onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
                                                     </td>
+                                                    <td>{{ $banner->offerDetail ? $banner->offerDetail->offer_name : '-' }}</td>
+                                                    <td>{{ $banner->subCategory ? $banner->subCategory->sub_category_name : '-' }}</td>
                                                     <td>{{ $banner->createdBy ? $banner->createdBy->admin_username : '-' }}</td>
                                                     <td>{{ $banner->created_date ? date('d-m-Y H:i', strtotime($banner->created_date)) : '-' }}</td>
                                                     <td>{{ $banner->updatedBy ? $banner->updatedBy->admin_username : '-' }}</td>
@@ -96,7 +100,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="7" class="text-center">
+                                                    <td colspan="9" class="text-center">
                                                         No banners found
                                                     </td>
                                                 </tr>

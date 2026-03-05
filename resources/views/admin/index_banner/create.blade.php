@@ -63,6 +63,31 @@
                                     </div>
 
                                     <div class="form-group row">
+                                        <div class="col-md-6">
+                                            <label>Offer Name (Optional)</label>
+                                            <select name="offer_details_id" class="form-control">
+                                                <option value="">Select Offer</option>
+                                                @foreach(($offers ?? collect()) as $offer)
+                                                    <option value="{{ $offer->id }}" {{ (string) old('offer_details_id') === (string) $offer->id ? 'selected' : '' }}>
+                                                        {{ $offer->offer_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label>Sub Category (Optional)</label>
+                                            <select name="sub_category_id" class="form-control">
+                                                <option value="">Select Sub Category</option>
+                                                @foreach(($subCategories ?? collect()) as $subCategory)
+                                                    <option value="{{ $subCategory->id }}" {{ (string) old('sub_category_id') === (string) $subCategory->id ? 'selected' : '' }}>
+                                                        {{ $subCategory->sub_category_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
                                         <div class="col-12">
                                             <button type="submit" class="btn btn-primary mr-2">
                                                 <i class="fa fa-save"></i> Submit

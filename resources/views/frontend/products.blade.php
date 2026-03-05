@@ -6,16 +6,21 @@
 <div id="product-category" class="container category">
   @php
     $isSearching = !empty($searchTerm);
+    $selectedOffer = $selectedOffer ?? null;
+    $selectedSubCategory = $selectedSubCategory ?? null;
   @endphp
   <ul class="breadcrumb">
     <li><a href="{{ route('frontend.home') }}"><i class="fa fa-home"></i></a></li>
     <li><a href="{{ route('frontend.products') }}">Products</a></li>
+    @if(!empty($selectedOffer))
+      <li><a href="{{ route('frontend.products', ['offer' => $selectedOffer->id]) }}">{{ $selectedOffer->offer_name }}</a></li>
+    @endif
     @if($selectedSubCategory)
-      <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategory->id]) }}">{{ $selectedSubCategory->sub_category_name }}</a></li>
+      <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategory->id, 'offer' => $selectedOffer?->id]) }}">{{ $selectedSubCategory->sub_category_name }}</a></li>
     @endif
     @if($isSearching)
-      @if($selectedSubCategory)
-        <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategory->id, 'search' => $searchTerm]) }}">Search: "{{ $searchTerm }}"</a></li>
+      @if($selectedSubCategory || $selectedOffer)
+        <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategory?->id, 'offer' => $selectedOffer?->id, 'search' => $searchTerm]) }}">Search: "{{ $searchTerm }}"</a></li>
       @else
         <li><a href="{{ route('frontend.products', ['search' => $searchTerm]) }}">Search: "{{ $searchTerm }}"</a></li>
       @endif
@@ -63,6 +68,8 @@
       <h1>
         @if($isSearching)
           Search results for "{{ $searchTerm }}"
+        @elseif($selectedOffer)
+          {{ $selectedOffer->offer_name }}
         @elseif($selectedSubCategory)
           {{ $selectedSubCategory->sub_category_name }}
         @else
@@ -92,29 +99,7 @@
             <button type="button" id="list-view" class="btn btn-default list" data-toggle="tooltip" title="List"><i class="fa fa-th-list"></i></button>
           </div>
         </div>
-        <div class="compare-total"><a href="#" id="compare-total">Product Compare (0)</a></div>
-        <div class="filter-product-right text-right">
-          <div class="sort-filter">
-            <div class="col-xs-4 col-sm-4 col-md-4 text-right">
-              <label class="control-label" for="input-sort">Sort By:</label>
-            </div>
-            <div class="col-xs-8 col-sm-8 col-md-8 text-right">
-              <select id="input-sort" class="form-control">
-                <option selected="selected">Default</option>
-              </select>
-            </div>
-          </div>
-          <div class="show-filter">
-            <div class="col-xs-6 col-sm-6 col-md-6 text-right">
-              <label class="control-label" for="input-limit">Show:</label>
-            </div>
-            <div class="col-xs-6 col-sm-6 col-md-6 text-right">
-              <select id="input-limit" class="form-control">
-                <option selected="selected">12</option>
-              </select>
-            </div>
-          </div>
-        </div>
+
       </div>
 
       <div class="products-collection">
@@ -126,7 +111,10 @@
           @empty
             <div class="col-sm-12">
               <div class="alert alert-info">
-                No products found{{ $isSearching ? ' for "' . $searchTerm . '"' : '' }}{{ $selectedSubCategory ? ' in selected sub category' : '' }}.
+                No products found
+                {{ $isSearching ? ' for "' . $searchTerm . '"' : '' }}
+                {{ $selectedSubCategory ? ' in selected sub category' : '' }}
+                {{ $selectedOffer ? ' for selected offer' : '' }}.
               </div>
             </div>
           @endforelse

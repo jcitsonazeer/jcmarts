@@ -14,6 +14,8 @@ use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\UomMasterController;
 use App\Http\Controllers\RateMasterController;
 use App\Http\Controllers\IndexBannerController;
+use App\Http\Controllers\OfferDetailController;
+use App\Http\Controllers\OfferProductController;
 
 Route::get('/', [FrontendController::class, 'index'])->name('frontend.home');
 Route::get('/products', [FrontendProductController::class, 'index'])->name('frontend.products');
@@ -49,6 +51,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('product-images/{productId}', [ProductImageController::class, 'update'])->name('product-images.update');
         Route::delete('product-images/{productId}', [ProductImageController::class, 'destroy'])->name('product-images.destroy');
         Route::resource('index-banners', IndexBannerController::class);
+        Route::resource('offer-details', OfferDetailController::class);
+        Route::resource('offer-products', OfferProductController::class);
         Route::resource('uom-masters', UomMasterController::class);
         Route::resource('rate-masters', RateMasterController::class);
         Route::get('selected-display', [RateMasterController::class, 'selectedDisplayIndex'])->name('selected-display.index');

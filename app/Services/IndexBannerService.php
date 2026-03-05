@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\IndexBanner;
+use App\Models\OfferDetail;
+use App\Models\SubCategory;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 
@@ -10,19 +12,34 @@ class IndexBannerService
 {
     public function getAll()
     {
-        return IndexBanner::with(['createdBy', 'updatedBy'])
+        return IndexBanner::with(['createdBy', 'updatedBy', 'subCategory', 'offerDetail'])
             ->orderBy('id', 'desc')
             ->get();
     }
 
     public function findForShow($id)
     {
-        return IndexBanner::with(['createdBy', 'updatedBy'])->findOrFail($id);
+        return IndexBanner::with(['createdBy', 'updatedBy', 'subCategory', 'offerDetail'])->findOrFail($id);
     }
 
     public function findForEdit($id)
     {
-        return IndexBanner::with(['createdBy', 'updatedBy'])->findOrFail($id);
+        return IndexBanner::with(['createdBy', 'updatedBy', 'subCategory', 'offerDetail'])->findOrFail($id);
+    }
+
+    public function getSubCategoriesForDropdown()
+    {
+        return SubCategory::query()
+            ->orderBy('sub_category_name')
+            ->get();
+    }
+
+    public function getOffersForDropdown()
+    {
+        return OfferDetail::query()
+            ->where('is_active', 1)
+            ->orderBy('offer_name')
+            ->get();
     }
 
     public function create($data, $adminId)
@@ -34,6 +51,8 @@ class IndexBannerService
 
         return IndexBanner::create([
             'banner_image' => $imageName,
+            'sub_category_id' => $data['sub_category_id'] ?? null,
+            'offer_details_id' => $data['offer_details_id'] ?? null,
             'created_by_id' => $adminId,
             'created_date' => Carbon::now(),
         ]);
@@ -54,6 +73,8 @@ class IndexBannerService
 
         $banner->update([
             'banner_image' => $imageName,
+            'sub_category_id' => $data['sub_category_id'] ?? null,
+            'offer_details_id' => $data['offer_details_id'] ?? null,
             'updated_by_id' => $adminId,
             'updated_date' => Carbon::now(),
         ]);

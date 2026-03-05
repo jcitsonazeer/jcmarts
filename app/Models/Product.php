@@ -66,4 +66,9 @@ class Product extends Model
     {
         return $this->hasMany(RateMaster::class, 'product_id');
     }
+
+    public function offerProducts()
+    {
+        return $this->hasMany(OfferProduct::class, 'products_id');
+    }
 }

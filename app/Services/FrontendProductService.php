@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Category;
+use App\Models\OfferDetail;
 use App\Models\Product;
 use App\Models\SubCategory;
 
@@ -24,12 +25,30 @@ class FrontendProductService
         return SubCategory::with('category')->find($subCategoryId);
     }
 
-    public function getProducts($subCategoryId = null, $searchTerm = null)
+    public function getSelectedOffer($offerId)
+    {
+        if (empty($offerId) || !is_numeric($offerId)) {
+            return null;
+        }
+
+        return OfferDetail::query()
+            ->where('is_active', 1)
+            ->find($offerId);
+    }
+
+    public function getProducts($subCategoryId = null, $searchTerm = null, $offerId = null)
     {
         $query = Product::query()
             ->where('is_active', 1)
             ->whereHas('rates', function ($query) {
                 $query->where('is_active', 1);
+            })
+            ->when(!empty($offerId), function ($query) use ($offerId) {
+                $query->whereHas('offerProducts', function ($offerProductQuery) use ($offerId) {
+                    $offerProductQuery
+                        ->where('offer_id', $offerId)
+                        ->where('is_active', 1);
+                });
             })
             ->when(!empty($subCategoryId), function ($query) use ($subCategoryId) {
                 $query->where('sub_category_id', $subCategoryId);
@@ -47,7 +66,7 @@ class FrontendProductService
             ])
             ->orderByDesc('id');
 
-        if (empty($subCategoryId) && empty($searchTerm)) {
+        if (empty($subCategoryId) && empty($searchTerm) && empty($offerId)) {
             $query->limit(12);
         }
 

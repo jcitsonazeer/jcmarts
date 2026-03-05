@@ -4,18 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class IndexBanner extends Model
+class OfferDetail extends Model
 {
-    protected $table = 'index_banner';
+    protected $table = 'offer_details';
 
     protected $primaryKey = 'id';
 
     public $timestamps = false;
 
     protected $fillable = [
-        'banner_image',
-        'offer_details_id',
-        'sub_category_id',
+        'offer_name',
+        'is_active',
         'created_by_id',
         'created_date',
         'updated_by_id',
@@ -23,6 +22,7 @@ class IndexBanner extends Model
     ];
 
     protected $casts = [
+        'is_active' => 'boolean',
         'created_date' => 'datetime',
         'updated_date' => 'datetime',
     ];
@@ -37,13 +37,8 @@ class IndexBanner extends Model
         return $this->belongsTo(AdminLogin::class, 'updated_by_id');
     }
 
-    public function subCategory()
+    public function offerProducts()
     {
-        return $this->belongsTo(SubCategory::class, 'sub_category_id');
-    }
-
-    public function offerDetail()
-    {
-        return $this->belongsTo(OfferDetail::class, 'offer_details_id');
+        return $this->hasMany(OfferProduct::class, 'offer_id');
     }
 }

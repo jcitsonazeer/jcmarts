@@ -46,6 +46,14 @@
                                         <td>{{ $banner->createdBy ? $banner->createdBy->admin_username : '-' }}</td>
                                     </tr>
                                     <tr>
+                                        <th>Offer Name</th>
+                                        <td>{{ $banner->offerDetail ? $banner->offerDetail->offer_name : '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Sub Category</th>
+                                        <td>{{ $banner->subCategory ? $banner->subCategory->sub_category_name : '-' }}</td>
+                                    </tr>
+                                    <tr>
                                         <th>Created Date</th>
                                         <td>{{ $banner->created_date ? date('d-m-Y H:i', strtotime($banner->created_date)) : '-' }}</td>
                                     </tr>

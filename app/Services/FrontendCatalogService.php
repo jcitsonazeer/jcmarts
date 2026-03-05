@@ -28,6 +28,7 @@ class FrontendCatalogService
     public function getIndexBanners()
     {
         return IndexBanner::query()
+            ->with(['subCategory', 'offerDetail'])
             ->orderByDesc('id')
             ->get();
     }

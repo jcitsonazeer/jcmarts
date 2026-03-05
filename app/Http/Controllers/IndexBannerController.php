@@ -23,13 +23,18 @@ class IndexBannerController extends Controller
 
     public function create()
     {
-        return view('admin.index_banner.create');
+        $subCategories = $this->indexBannerService->getSubCategoriesForDropdown();
+        $offers = $this->indexBannerService->getOffersForDropdown();
+
+        return view('admin.index_banner.create', compact('subCategories', 'offers'));
     }
 
     public function store(Request $request)
     {
         $validatedData = $request->validate([
             'banner_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'sub_category_id' => 'nullable|integer|exists:sub_category,id',
+            'offer_details_id' => 'nullable|integer|exists:offer_details,id',
         ]);
 
         $adminId = session('admin_id');
@@ -54,14 +59,18 @@ class IndexBannerController extends Controller
     public function edit($id)
     {
         $banner = $this->indexBannerService->findForEdit($id);
+        $subCategories = $this->indexBannerService->getSubCategoriesForDropdown();
+        $offers = $this->indexBannerService->getOffersForDropdown();
 
-        return view('admin.index_banner.edit', compact('banner'));
+        return view('admin.index_banner.edit', compact('banner', 'subCategories', 'offers'));
     }
 
     public function update(Request $request, $id)
     {
         $validatedData = $request->validate([
             'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'sub_category_id' => 'nullable|integer|exists:sub_category,id',
+            'offer_details_id' => 'nullable|integer|exists:offer_details,id',
         ]);
 
         $adminId = session('admin_id');

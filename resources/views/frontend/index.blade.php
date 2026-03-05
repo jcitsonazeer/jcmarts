@@ -15,9 +15,15 @@
           $bannerImage = $banner->banner_image
             ? asset('storage/index_banner/' . $banner->banner_image)
             : asset('assets/frontend/images/mainbanner.jpg');
+          $bannerRedirectUrl = null;
+          if (!empty($banner->offer_details_id)) {
+              $bannerRedirectUrl = route('frontend.products', ['offer' => $banner->offer_details_id]);
+          } elseif (!empty($banner->sub_category_id)) {
+              $bannerRedirectUrl = route('frontend.products', ['sub_category' => $banner->sub_category_id]);
+          }
         @endphp
         <div class="swiper-slide text-center">
-          <a href="#">
+          <a href="{{ $bannerRedirectUrl ?? 'javascript:void(0)' }}">
             <img src="{{ $bannerImage }}"
                  alt="Main Banner {{ $loop->iteration }}"
                  class="img-responsive"
@@ -219,4 +225,3 @@
 </div>
 
 @include('frontend.footer')
-

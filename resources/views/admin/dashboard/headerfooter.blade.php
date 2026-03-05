@@ -117,6 +117,16 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.offer-details.index') }}">
+                                        Offer Details
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.offer-products.index') }}">
+                                        Offer Products
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a class="nav-link" href="{{ route('admin.uom-masters.index') }}">
                                         UOM Master
                                     </a>
