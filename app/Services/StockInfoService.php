@@ -73,4 +73,13 @@ class StockInfoService
             'created_date' => Carbon::now(),
         ]);
     }
+
+    public function getHistoryByRate(int $rateMasterId)
+    {
+        return StockInfo::query()
+            ->with(['rate.product', 'rate.uom'])
+            ->where('rate_master_id', $rateMasterId)
+            ->orderByDesc('id')
+            ->get();
+    }
 }

@@ -142,8 +142,13 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.stock-infos.index') }}">
+                                        Stock History
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a class="nav-link" href="{{ route('admin.stock-infos.create') }}">
-                                        Stock Info
+                                        Add Stock
                                     </a>
                                 </li>
                                 <li class="nav-item">

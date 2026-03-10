@@ -73,6 +73,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('offer-products', OfferProductController::class);
         Route::resource('uom-masters', UomMasterController::class);
         Route::resource('rate-masters', RateMasterController::class);
+        Route::get('stock-infos', [StockInfoController::class, 'index'])->name('stock-infos.index');
         Route::get('stock-infos/create', [StockInfoController::class, 'create'])->name('stock-infos.create');
         Route::post('stock-infos', [StockInfoController::class, 'store'])->name('stock-infos.store');
         Route::get('selected-display', [RateMasterController::class, 'selectedDisplayIndex'])->name('selected-display.index');

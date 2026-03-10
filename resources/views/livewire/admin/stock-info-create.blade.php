@@ -35,12 +35,19 @@
 
                             <div class="form-group">
                                 <label>Product &amp; Weight <span class="text-danger">*</span></label>
-                                <select name="rate_master_id" class="form-control" wire:model.live="rate_master_id" required>
-                                    <option value="">Select Product</option>
+                                <input
+                                    type="text"
+                                    id="stock-rate-input"
+                                    class="form-control"
+                                    list="stock-rate-list"
+                                    placeholder="Select or type to search..."
+                                >
+                                <datalist id="stock-rate-list">
                                     @foreach($rateOptions as $rateOption)
-                                        <option value="{{ $rateOption['id'] }}">{{ $rateOption['label'] }}</option>
+                                        <option value="{{ $rateOption['label'] }}" data-id="{{ $rateOption['id'] }}"></option>
                                     @endforeach
-                                </select>
+                                </datalist>
+                                <input type="hidden" id="stock-rate-id" name="rate_master_id" wire:model.live="rate_master_id" required>
                             </div>
 
                             @if(!empty($rateDetails))
@@ -78,3 +85,42 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    (function () {
+        function bindStockRateInput() {
+            var input = document.getElementById('stock-rate-input');
+            var hidden = document.getElementById('stock-rate-id');
+            var list = document.getElementById('stock-rate-list');
+            if (!input || !hidden || !list) return;
+
+            if (input.dataset.bound === '1') return;
+            input.dataset.bound = '1';
+
+            input.addEventListener('input', function () {
+                var value = (input.value || '').trim();
+                var match = list.querySelector('option[value="' + value.replace(/"/g, '\\"') + '"]');
+                if (match) {
+                    hidden.value = match.dataset.id || '';
+                    hidden.dispatchEvent(new Event('input', { bubbles: true }));
+                } else {
+                    hidden.value = '';
+                    hidden.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+        }
+
+        document.addEventListener('livewire:initialized', function () {
+            bindStockRateInput();
+            if (window.Livewire && typeof window.Livewire.hook === 'function') {
+                try {
+                    window.Livewire.hook('message.processed', function () {
+                        bindStockRateInput();
+                    });
+                } catch (e) {}
+            }
+        });
+    })();
+</script>
+@endpush

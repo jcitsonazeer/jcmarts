@@ -20,6 +20,11 @@ class StockInfoController extends Controller
         return view('admin.stock_info.create');
     }
 
+    public function index()
+    {
+        return view('admin.stock_info.index');
+    }
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
