@@ -13,6 +13,7 @@ class ProductListCard extends Component
     public $rates = [];
     public $selectedRateId = null;
     public int $quantity = 1;
+    public bool $isSoldOut = false;
 
     public function mount(Product $product)
     {
@@ -30,12 +31,15 @@ class ProductListCard extends Component
                 'selling_price' => $rate->selling_price ?? 0,
                 'final_price' => $rate->final_price ?? 0,
                 'offer_percentage' => $rate->offer_percentage ?? 0,
+                'soldout_status' => $rate->soldout_status ?? 'NO',
             ];
         }
 
         if (!empty($this->rates)) {
             $this->selectedRateId = $this->rates[0]['id'];
         }
+
+        $this->syncSoldOut();
     }
 
     public function getSelectedRateProperty()
@@ -47,6 +51,19 @@ class ProductListCard extends Component
         }
 
         return null;
+    }
+
+    public function updatedSelectedRateId()
+    {
+        $this->syncSoldOut();
+    }
+
+    private function syncSoldOut(): void
+    {
+        $rate = $this->selectedRate;
+        $this->isSoldOut = $rate
+            ? strtoupper((string) ($rate['soldout_status'] ?? 'NO')) === 'YES'
+            : false;
     }
 
     public function getShownPriceProperty()
@@ -63,6 +80,10 @@ class ProductListCard extends Component
     public function addToCart(CartService $cartService): void
     {
         if (empty($this->selectedRateId)) {
+            return;
+        }
+
+        if ($this->isSoldOut) {
             return;
         }
 

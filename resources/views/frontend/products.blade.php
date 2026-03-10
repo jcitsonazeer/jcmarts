@@ -8,6 +8,7 @@
     $isSearching = !empty($searchTerm);
     $selectedOffer = $selectedOffer ?? null;
     $selectedSubCategory = $selectedSubCategory ?? null;
+    $selectedBrandIds = collect($selectedBrandIds ?? [])->map(fn($id) => (int) $id)->all();
   @endphp
   <ul class="breadcrumb">
     <li><a href="{{ route('frontend.home') }}"><i class="fa fa-home"></i></a></li>
@@ -59,6 +60,53 @@
               </li>
             @endforelse
           </ul>
+        </div>
+      </div>
+
+      <div class="ajaxfilter collapse in">
+        <div class="panel panel-default">
+          <div class="panel-heading">Filter</div>
+
+          <div class="list-group filter-selection hide">
+            <a class="list-group-item">Refine by:</a>
+            <div class="list-group-content"></div>
+            <div class="clear-all">Clear All</div>
+          </div>
+
+          <div class="list-group filter-by-manufacturers filter-group" data-group="manufacturer">
+            <a class="list-group-item">Manufacturers</a>
+            <div class="list-group-item">
+              <div id="filter-group-manufacturers">
+                <form id="brand-filter-form" method="GET" action="{{ route('frontend.products') }}">
+                  @if($selectedSubCategory)
+                    <input type="hidden" name="sub_category" value="{{ $selectedSubCategory->id }}">
+                  @endif
+                  @if($selectedOffer)
+                    <input type="hidden" name="offer" value="{{ $selectedOffer->id }}">
+                  @endif
+                  @if(!empty($searchTerm))
+                    <input type="hidden" name="search" value="{{ $searchTerm }}">
+                  @endif
+
+                  @forelse(($availableBrands ?? collect()) as $brand)
+                    <div class="checkbox">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="brands[]"
+                          value="{{ $brand->id }}"
+                          {{ in_array((int) $brand->id, $selectedBrandIds, true) ? 'checked' : '' }}
+                        >
+                        {{ $brand->brand_name }} ({{ $brand->product_count }})
+                      </label>
+                    </div>
+                  @empty
+                    <div>No brands found</div>
+                  @endforelse
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -121,16 +169,35 @@
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-sm-6 text-left"></div>
-        <div class="col-sm-6 text-right">Showing {{ ($products ?? collect())->count() }} products</div>
-      </div>
+<div class="row">
+    <div class="col-sm-12 text-center">
+        Showing {{ ($products ?? collect())->count() }} products
+    </div>
+</div>
     </div>
   </div>
 </div>
 
 <script>
   (function () {
+    function bindBrandFilterCheckboxes() {
+      var form = document.getElementById('brand-filter-form');
+      if (!form) {
+        return;
+      }
+
+      var checkboxes = form.querySelectorAll('input[type="checkbox"][name="brands[]"]');
+      checkboxes.forEach(function (checkbox) {
+        if (checkbox.dataset.brandFilterBound === '1') {
+          return;
+        }
+        checkbox.dataset.brandFilterBound = '1';
+        checkbox.addEventListener('change', function () {
+          form.submit();
+        });
+      });
+    }
+
     function applyCurrentDisplayMode() {
       var mode = localStorage.getItem('display') === 'list' ? 'list' : 'grid';
       if (mode === 'list') {
@@ -142,17 +209,20 @@
 
     document.addEventListener('livewire:initialized', function () {
       applyCurrentDisplayMode();
+      bindBrandFilterCheckboxes();
 
       if (window.Livewire && typeof window.Livewire.hook === 'function') {
         try {
           window.Livewire.hook('message.processed', function () {
             applyCurrentDisplayMode();
+            bindBrandFilterCheckboxes();
           });
         } catch (e) {}
 
         try {
           window.Livewire.hook('morph.updated', function () {
             applyCurrentDisplayMode();
+            bindBrandFilterCheckboxes();
           });
         } catch (e) {}
       }

@@ -29,7 +29,9 @@
                                 <tr><th>Offer Percentage</th><td>{{ $rate->offer_percentage }}</td></tr>
                                 <tr><th>Offer Price</th><td>{{ $rate->offer_price }}</td></tr>
                                 <tr><th>Final Price</th><td>{{ $rate->final_price }}</td></tr>
-                                <tr><th>Stock Qty</th><td>{{ $rate->stock_qty }}</td></tr>
+                                <tr><th>Current Stock</th><td>{{ $rate->latestStockInfo ? $rate->latestStockInfo->current_stock : 0 }}</td></tr>
+                                <tr><th>Sold Out</th><td>{{ $rate->soldout_status ?? 'NO' }}</td></tr>
+                                <tr><th>Stock Dependent</th><td>{{ $rate->stock_dependent ?? 'NO' }}</td></tr>
                                 <tr><th>Status</th><td>{{ $rate->is_active ? 'Active' : 'Inactive' }}</td></tr>
                                 <tr><th>Created By</th><td>{{ $rate->createdBy ? $rate->createdBy->admin_username : '-' }}</td></tr>
                                 <tr><th>Created Date</th><td>{{ $rate->created_date ? date('d-m-Y H:i', strtotime($rate->created_date)) : '-' }}</td></tr>

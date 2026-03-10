@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\RateMaster;
+use App\Models\Brand;
 use App\Models\SubCategory;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -13,7 +14,7 @@ class ProductService
 {
     public function getAll()
     {
-        return Product::with(['subCategory', 'createdBy', 'updatedBy'])
+        return Product::with(['subCategory', 'brand', 'createdBy', 'updatedBy'])
             ->orderBy('id', 'desc')
             ->get();
     }
@@ -50,14 +51,19 @@ class ProductService
         return SubCategory::orderBy('sub_category_name')->get();
     }
 
+    public function getBrandsForDropdown()
+    {
+        return Brand::where('is_active', 1)->orderBy('brand_name')->get();
+    }
+
     public function findForShow($id)
     {
-        return Product::with(['subCategory', 'createdBy', 'updatedBy'])->findOrFail($id);
+        return Product::with(['subCategory', 'brand', 'createdBy', 'updatedBy'])->findOrFail($id);
     }
 
     public function findForEdit($id)
     {
-        return Product::with(['subCategory', 'createdBy', 'updatedBy'])->findOrFail($id);
+        return Product::with(['subCategory', 'brand', 'createdBy', 'updatedBy'])->findOrFail($id);
     }
 
     public function create($data, $adminId)
@@ -71,6 +77,7 @@ class ProductService
 
         return Product::create([
             'sub_category_id' => $data['sub_category_id'],
+            'brand_id' => $data['brand_id'] ?? null,
             'product_name' => $productName,
             'product_image' => $imageName,
             'description' => $data['description'] ?? null,
@@ -97,6 +104,7 @@ class ProductService
 
         $product->update([
             'sub_category_id' => $data['sub_category_id'],
+            'brand_id' => $data['brand_id'] ?? null,
             'product_name' => $productName,
             'product_image' => $imageName,
             'description' => $data['description'] ?? null,

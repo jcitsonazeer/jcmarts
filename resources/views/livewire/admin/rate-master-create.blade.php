@@ -57,18 +57,19 @@
                                                 <th>Offer Percentage</th>
                                                 <th>Offer Price</th>
                                                 <th>Final Price</th>
-                                                <th>Stock Qty <span class="text-danger">*</span></th>
+                                                <th>Sold Out <span class="text-danger">*</span></th>
+                                                <th>Stock Dependent <span class="text-danger">*</span></th>
                                                 <th>Status <span class="text-danger">*</span></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @if (empty($primary_uom))
                                                 <tr>
-                                                    <td colspan="8" class="text-center text-muted">Select Primary UOM to load secondary rows.</td>
+                                                    <td colspan="9" class="text-center text-muted">Select Primary UOM to load secondary rows.</td>
                                                 </tr>
                                             @elseif (empty($rate_rows))
                                                 <tr>
-                                                    <td colspan="8" class="text-center text-muted">No secondary UOM found for selected primary UOM.</td>
+                                                    <td colspan="9" class="text-center text-muted">No secondary UOM found for selected primary UOM.</td>
                                                 </tr>
                                             @else
                                                 @foreach($rate_rows as $index => $row)
@@ -130,13 +131,26 @@
                                                             >
                                                         </td>
                                                         <td>
-                                                            <input
-                                                                type="number"
-                                                                min="0"
+                                                            <select
                                                                 class="form-control"
-                                                                wire:model.live="rate_rows.{{ $index }}.stock_qty"
-                                                                name="rate_rows[{{ $index }}][stock_qty]"
+                                                                wire:model.live="rate_rows.{{ $index }}.soldout_status"
+                                                                name="rate_rows[{{ $index }}][soldout_status]"
+                                                                required
                                                             >
+                                                                <option value="NO">NO</option>
+                                                                <option value="YES">YES</option>
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                class="form-control"
+                                                                wire:model.live="rate_rows.{{ $index }}.stock_dependent"
+                                                                name="rate_rows[{{ $index }}][stock_dependent]"
+                                                                required
+                                                            >
+                                                                <option value="NO">NO</option>
+                                                                <option value="YES">YES</option>
+                                                            </select>
                                                         </td>
                                                         <td>
                                                             <select

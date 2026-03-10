@@ -20,7 +20,8 @@ class RateMaster extends Model
         'offer_percentage',
         'offer_price',
         'final_price',
-        'stock_qty',
+        'soldout_status',
+        'stock_dependent',
         'is_active',
         'selected_display',
         'created_by_id',
@@ -71,5 +72,21 @@ class RateMaster extends Model
     public function updatedBy()
     {
         return $this->belongsTo(AdminLogin::class, 'updated_by_id');
+    }
+
+    /**
+     * Stock information entries
+     */
+    public function stockInfos()
+    {
+        return $this->hasMany(StockInfo::class, 'rate_master_id');
+    }
+
+    /**
+     * Latest stock info row
+     */
+    public function latestStockInfo()
+    {
+        return $this->hasOne(StockInfo::class, 'rate_master_id')->latestOfMany('id');
     }
 }

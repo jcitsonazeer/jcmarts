@@ -6,6 +6,7 @@
   $finalPrice = (float) ($rate['final_price'] ?? 0);
   $offer = (float) ($rate['offer_percentage'] ?? 0);
   $shown = (float) $this->shownPrice;
+  $isSoldOut = $this->isSoldOut;
 @endphp
 
 <div class=" product-items ">
@@ -48,7 +49,11 @@
             <label class="control-label col-sm-2 col-xs-2">Qty</label>
             <input type="number" wire:model.live="quantity" min="1" size="1" step="1" class="qty form-control col-sm-2 col-xs-9">
             <input type="hidden" name="product_id" value="{{ $product->id }}">
-            <button type="button" wire:click="addToCart" class="addtocart col-sm-4 pull-right">Add</button>
+            @if($isSoldOut)
+              <span class="text-danger" style="align-self:center;">Sold out</span>
+            @else
+              <button type="button" wire:click="addToCart" class="addtocart col-sm-4 pull-right">Add</button>
+            @endif
           </div>
         </div>
       </div>

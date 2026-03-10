@@ -458,7 +458,7 @@ box-shadow: rgb(37, 43, 39) 3px 3px 6px 0px inset, rgba(3, 56, 29, 0.979) -3px -
 
 #cart {
     float: left;
-    background-color: #014e3d;
+    background-color: #11362e;
     border-radius: 5px;
     padding: 11px 15px 11px 20px;
     margin: 0;
@@ -470,7 +470,7 @@ box-shadow: rgb(37, 43, 39) 3px 3px 6px 0px inset, rgba(3, 56, 29, 0.979) -3px -
 #cart > .btn {
     background: url(../images/sprite.png) no-repeat scroll 0px -140px transparent;
     border: none;
-    padding: 0 10px;
+    padding: 20px 20px;
 }
 #cart span{
     float: left;
@@ -483,9 +483,15 @@ box-shadow: rgb(37, 43, 39) 3px 3px 6px 0px inset, rgba(3, 56, 29, 0.979) -3px -
     text-transform: none;
 }
 #cart span.cart-total{
-    float: right;
-    clear: left;
-    margin: 0;
+   font-weight:bolder;
+    margin:0;
+    padding:2px 8px;
+    top:0px;right:-16px;
+    position:absolute;
+    background-color:#e53935;
+    border-radius:100%;
+    color:#ffffff;
+
 }
 
 .cart-total-res{display: none;}
@@ -3552,9 +3558,8 @@ box-shadow:inset -2px -2px 3px 2px #003025;
 .checkout .table.table-bordered.grand-total,
 .checkout .table.table-bordered.grand-total tr td{
     border: none;
-       background-color: #123a31;
+    background-color: #123a31;
 }
-
 .btn-primary{
     background:#065d4a !important;
 }
@@ -4717,7 +4722,7 @@ opacity: 1;
     outline: none;
     transition: 0.3s;
     font-size: 14px;
-	background-color:#0a2823;
+    background-color:#0a2823;
 }
 
 /* Input Focus */
@@ -4935,4 +4940,60 @@ body.common-home .header-top-right .login a .fa-user:before {
     width: auto !important;
     height: auto !important;
     margin-right: 6px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Header wishlist icon badge */
+.header-bottom-right .header-wishlist {
+    margin-left: 10px;
+    margin-top:12px;
+}
+
+.header-bottom-right .header-wishlist .wishlist-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #014e3d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #fff !important;
+}
+
+.header-bottom-right .header-wishlist .wishlist-btn .fa-heart {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.header-bottom-right .header-wishlist .wishlist-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #e53935;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.well{
+	background-color:#123a31 !important;
 }

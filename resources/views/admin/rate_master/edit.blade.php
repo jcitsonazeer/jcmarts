@@ -66,7 +66,8 @@
                                                 <th>Offer Percentage</th>
                                                 <th>Offer Price</th>
                                                 <th>Final Price</th>
-                                                <th>Stock Qty <span class="text-danger">*</span></th>
+                                                <th>Sold Out <span class="text-danger">*</span></th>
+                                                <th>Stock Dependent <span class="text-danger">*</span></th>
                                                 <th>Status <span class="text-danger">*</span></th>
                                             </tr>
                                         </thead>
@@ -78,7 +79,18 @@
                                                 <td><input type="number" step="0.01" min="0" max="100" id="offer_percentage" name="offer_percentage" class="form-control" value="{{ old('offer_percentage', $rate->offer_percentage) }}"></td>
                                                 <td><input type="number" step="0.01" min="0" id="offer_price" name="offer_price" class="form-control" value="{{ old('offer_price', $rate->offer_price) }}"></td>
                                                 <td><input type="number" step="0.01" min="0" id="final_price" name="final_price" class="form-control" value="{{ old('final_price', $rate->final_price) }}" readonly></td>
-                                                <td><input type="number" min="0" id="stock_qty" name="stock_qty" class="form-control" value="{{ old('stock_qty', $rate->stock_qty) }}" required></td>
+                                                <td>
+                                                    <select name="soldout_status" class="form-control" required>
+                                                        <option value="NO" {{ old('soldout_status', $rate->soldout_status) === 'NO' ? 'selected' : '' }}>NO</option>
+                                                        <option value="YES" {{ old('soldout_status', $rate->soldout_status) === 'YES' ? 'selected' : '' }}>YES</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select name="stock_dependent" class="form-control" required>
+                                                        <option value="NO" {{ old('stock_dependent', $rate->stock_dependent) === 'NO' ? 'selected' : '' }}>NO</option>
+                                                        <option value="YES" {{ old('stock_dependent', $rate->stock_dependent) === 'YES' ? 'selected' : '' }}>YES</option>
+                                                    </select>
+                                                </td>
                                                 <td>
                                                     <select name="is_active" class="form-control" required>
                                                         <option value="1" {{ old('is_active', $rate->is_active) == 1 ? 'selected' : '' }}>Active</option>

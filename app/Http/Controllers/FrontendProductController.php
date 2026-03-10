@@ -20,13 +20,37 @@ class FrontendProductController extends Controller
         $offerId = $request->query('offer');
         $searchTerm = trim((string) $request->query('search', ''));
         $searchTerm = $searchTerm !== '' ? $searchTerm : null;
+        $selectedBrandIds = collect((array) $request->query('brands', []))
+            ->filter(function ($brandId) {
+                return is_numeric($brandId);
+            })
+            ->map(function ($brandId) {
+                return (int) $brandId;
+            })
+            ->unique()
+            ->values()
+            ->all();
 
         $selectedSubCategory = $this->frontendProductService->getSelectedSubCategory($subCategoryId);
         $selectedOffer = $this->frontendProductService->getSelectedOffer($offerId);
 
         $menuCategories = $this->frontendProductService->getMenuCategories();
-        $products = $this->frontendProductService->getProducts($selectedSubCategory?->id, $searchTerm, $selectedOffer?->id);
+        $availableBrands = $this->frontendProductService->getAvailableBrands($selectedSubCategory?->id, $searchTerm, $selectedOffer?->id);
+        $products = $this->frontendProductService->getProductsByBrands(
+            $selectedSubCategory?->id,
+            $searchTerm,
+            $selectedOffer?->id,
+            $selectedBrandIds
+        );
 
-        return view('frontend.products', compact('menuCategories', 'products', 'selectedSubCategory', 'selectedOffer', 'searchTerm'));
+        return view('frontend.products', compact(
+            'menuCategories',
+            'products',
+            'selectedSubCategory',
+            'selectedOffer',
+            'searchTerm',
+            'availableBrands',
+            'selectedBrandIds'
+        ));
     }
 }

@@ -19,7 +19,6 @@
                 <tr>
                   <td class="text-center">Image</td>
                   <td class="text-left">Product Name</td>
-                  <td class="text-left">Model</td>
                   <td class="text-left">Quantity</td>
                   <td class="text-right">Unit Price</td>
                   <td class="text-right">Total</td>
@@ -47,18 +46,20 @@
                       <a href="{{ route('frontend.single_product', ['product_id' => $product?->id]) }}">{{ $product?->product_name }}</a><br>
                       <small>Packet Size: {{ $packetSize !== '' ? $packetSize : 'N/A' }}</small>
                     </td>
-                    <td class="text-left">Product {{ $product?->id }}</td>
                     <td class="text-left">
                       <div class="input-group btn-block" style="max-width: 220px; display:flex;">
-                        <input
-                          type="number"
-                          name="quantity"
-                          value="{{ (int) $cartItem->quantity }}"
-                          min="1"
-                          class="form-control"
-                          wire:model.change="quantities.{{ $cartItem->id }}"
-                          wire:change="updateQuantity({{ $cartItem->id }})"
-                        >
+<input
+  type="number"
+  min="1"
+  class="form-control"
+  wire:model.change="quantities.{{ $cartItem->id }}"
+  wire:change="updateQuantity({{ $cartItem->id }})"
+
+  onkeydown="return event.key === 'ArrowUp' || event.key === 'ArrowDown'"
+  onpaste="return false"
+  ondrop="return false"
+  onwheel="this.blur()"
+>
                         <button
                           type="button"
                           class="btn btn-danger delete"
@@ -100,7 +101,9 @@
 
       <div class="buttons clearfix">
         <div class="pull-left"><a href="{{ route('frontend.products') }}" class="btn btn-default">Continue Shopping</a></div>
-        <div class="pull-right"><a href="{{ route('frontend.checkout') }}" class="btn btn-primary">Checkout</a></div>
+        @if($itemCount > 0)
+          <div class="pull-right"><a href="{{ route('frontend.checkout') }}" class="btn btn-primary">Checkout</a></div>
+        @endif
       </div>
     </div>
   </div>

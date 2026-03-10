@@ -40,6 +40,20 @@
                                     </select>
                                 </div>
                                 <div class="col-md-6">
+                                    <label>Brand</label>
+                                    <select name="brand_id" class="form-control">
+                                        <option value="">Select Brand</option>
+                                        @foreach($brands as $brand)
+                                            <option value="{{ $brand->id }}" {{ (string) old('brand_id') === (string) $brand->id ? 'selected' : '' }}>
+                                                {{ $brand->brand_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <div class="col-md-6">
                                     <label>Product Name <span class="text-danger">*</span></label>
                                     <input type="text" name="product_name" class="form-control" value="{{ old('product_name') }}" required>
                                 </div>

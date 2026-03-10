@@ -102,6 +102,11 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.brands.index') }}">
+                                        Brands
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a class="nav-link" href="{{ route('admin.products.index') }}">
                                         Products
                                     </a>
@@ -134,6 +139,11 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="{{ route('admin.rate-masters.index') }}">
                                         Rate Master
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.stock-infos.create') }}">
+                                        Stock Info
                                     </a>
                                 </li>
                                 <li class="nav-item">

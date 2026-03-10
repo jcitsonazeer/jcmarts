@@ -12,7 +12,7 @@ class RateMasterService
 {
     public function getAll()
     {
-        return RateMaster::with(['product', 'uom', 'createdBy', 'updatedBy'])
+        return RateMaster::with(['product', 'uom', 'createdBy', 'updatedBy', 'latestStockInfo'])
             ->orderBy('id', 'desc')
             ->get();
     }
@@ -34,7 +34,7 @@ class RateMasterService
 
     public function getRatesForSelectedDisplayByProduct($productId)
     {
-        return RateMaster::with(['product', 'uom'])
+        return RateMaster::with(['product', 'uom', 'latestStockInfo'])
             ->where('product_id', $productId)
             ->where('is_active', 1)
             ->orderBy('id')
@@ -128,12 +128,12 @@ class RateMasterService
 
     public function findForShow($id)
     {
-        return RateMaster::with(['product', 'uom', 'createdBy', 'updatedBy'])->findOrFail($id);
+        return RateMaster::with(['product', 'uom', 'createdBy', 'updatedBy', 'latestStockInfo'])->findOrFail($id);
     }
 
     public function findForEdit($id)
     {
-        return RateMaster::with(['product', 'uom', 'createdBy', 'updatedBy'])->findOrFail($id);
+        return RateMaster::with(['product', 'uom', 'createdBy', 'updatedBy', 'latestStockInfo'])->findOrFail($id);
     }
 
     public function create($data, $adminId)
@@ -148,7 +148,8 @@ class RateMasterService
             'offer_percentage' => $prepared['offer_percentage'],
             'offer_price' => $prepared['offer_price'],
             'final_price' => $prepared['final_price'],
-            'stock_qty' => $prepared['stock_qty'],
+            'soldout_status' => $data['soldout_status'] ?? 'NO',
+            'stock_dependent' => $data['stock_dependent'] ?? 'NO',
             'is_active' => array_key_exists('is_active', $data) ? (int) $data['is_active'] : 1,
             'selected_display' => 0,
             'created_by_id' => $adminId,
@@ -172,7 +173,8 @@ class RateMasterService
                     'offer_percentage' => $prepared['offer_percentage'],
                     'offer_price' => $prepared['offer_price'],
                     'final_price' => $prepared['final_price'],
-                    'stock_qty' => $prepared['stock_qty'],
+                    'soldout_status' => $row['soldout_status'] ?? 'NO',
+                    'stock_dependent' => $row['stock_dependent'] ?? 'NO',
                     'is_active' => array_key_exists('is_active', $row) ? (int) $row['is_active'] : 1,
                     'selected_display' => 0,
                     'created_by_id' => $adminId,
@@ -197,7 +199,8 @@ class RateMasterService
             'offer_percentage' => $prepared['offer_percentage'],
             'offer_price' => $prepared['offer_price'],
             'final_price' => $prepared['final_price'],
-            'stock_qty' => $prepared['stock_qty'],
+            'soldout_status' => $data['soldout_status'] ?? $rate->soldout_status ?? 'NO',
+            'stock_dependent' => $data['stock_dependent'] ?? $rate->stock_dependent ?? 'NO',
             'is_active' => array_key_exists('is_active', $data) ? (int) $data['is_active'] : 1,
             'updated_by_id' => $adminId,
             'updated_date' => Carbon::now(),
@@ -219,8 +222,6 @@ class RateMasterService
         $offerPercentage = (float) ($data['offer_percentage'] ?? 0);
         $offerPriceInput = $data['offer_price'] ?? null;
         $finalPriceInput = $data['final_price'] ?? null;
-        $stockQty = (int) ($data['stock_qty'] ?? 0);
-
         $offerPrice = $offerPriceInput === null || $offerPriceInput === ''
             ? round(($sellingPrice * $offerPercentage) / 100, 2)
             : (float) $offerPriceInput;
@@ -235,7 +236,6 @@ class RateMasterService
             'offer_percentage' => $offerPercentage,
             'offer_price' => $offerPrice,
             'final_price' => $finalPrice,
-            'stock_qty' => $stockQty,
         ];
     }
 }

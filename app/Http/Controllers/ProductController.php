@@ -25,8 +25,9 @@ class ProductController extends Controller
     public function create()
     {
         $subCategories = $this->productService->getSubCategoriesForDropdown();
+        $brands = $this->productService->getBrandsForDropdown();
 
-        return view('admin.products.create', compact('subCategories'));
+        return view('admin.products.create', compact('subCategories', 'brands'));
     }
 
     public function store(Request $request)
@@ -37,6 +38,7 @@ class ProductController extends Controller
 
         $validatedData = $request->validate([
             'sub_category_id' => 'required|integer|exists:sub_category,id',
+            'brand_id' => 'nullable|integer|exists:brands,id',
             'product_name' => 'required|string|max:150|unique:products,product_name',
             'product_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'description' => 'nullable|string|max:1000',
@@ -67,8 +69,9 @@ class ProductController extends Controller
     {
         $product = $this->productService->findForEdit($id);
         $subCategories = $this->productService->getSubCategoriesForDropdown();
+        $brands = $this->productService->getBrandsForDropdown();
 
-        return view('admin.products.edit', compact('product', 'subCategories'));
+        return view('admin.products.edit', compact('product', 'subCategories', 'brands'));
     }
 
     public function update(Request $request, $id)
@@ -79,6 +82,7 @@ class ProductController extends Controller
 
         $validatedData = $request->validate([
             'sub_category_id' => 'required|integer|exists:sub_category,id',
+            'brand_id' => 'nullable|integer|exists:brands,id',
             'product_name' => 'required|string|max:150|unique:products,product_name,' . $id,
             'product_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'description' => 'nullable|string|max:1000',

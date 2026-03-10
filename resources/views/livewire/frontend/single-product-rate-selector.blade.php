@@ -2,6 +2,7 @@
     $selectedRate = $this->selectedRate;
     $displayPrice = (float) ($selectedRate['display_price'] ?? 0);
     $sellingPrice = (float) ($selectedRate['selling_price'] ?? 0);
+    $isSoldOut = $this->isSoldOut;
 @endphp
 
 <div>
@@ -39,9 +40,26 @@
 
         <div class="form-group">
             <label class="control-label" for="input-quantity">Qty</label>
-            <input type="text" name="quantity" value="1" size="2" id="input-quantity" class="form-control">
-            <input type="hidden">
-            <button type="button" id="button-cart" class="btn btn-primary btn-lg btn-block addtocart">Add</button>
+            <input
+                type="number"
+                min="1"
+                step="1"
+                wire:model.live="quantity"
+                id="input-quantity"
+                class="form-control"
+            >
+            @if($isSoldOut)
+                <div class="text-danger" style="margin-top: 10px;">Sold out</div>
+            @else
+                <button
+                    type="button"
+                    id="button-cart"
+                    wire:click="addToCart"
+                    class="btn btn-primary btn-lg btn-block addtocart"
+                >
+                    Add
+                </button>
+            @endif
         </div>
     </div>
     <style>

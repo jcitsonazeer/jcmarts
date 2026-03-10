@@ -67,7 +67,7 @@
 
         <div class="footer-bottom">
           <div class="copy-right col-md-12 col-sm-12 col-xs-12">
-            <div id="powered">Powered By <a href="#">OpenCart</a> JC Mart © 2023</div>
+            <div id="powered">Powered By <a href="#"></a> JC Mart © 2026</div>
           </div>
         </div>
       </div>

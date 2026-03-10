@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'sms_api' => [
+        'key' => env('SMS_API_KEY'),
+        'url' => env('SMS_API_URL', 'http://zozweb.com/smsapi/api.php'),
+    ],
+
 ];

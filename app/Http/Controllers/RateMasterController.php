@@ -97,7 +97,8 @@ class RateMasterController extends Controller
             'rate_rows.*.offer_percentage' => 'nullable|numeric|min:0|max:100',
             'rate_rows.*.offer_price' => 'nullable|numeric|min:0',
             'rate_rows.*.final_price' => 'nullable|numeric|min:0',
-            'rate_rows.*.stock_qty' => 'nullable|integer|min:0',
+            'rate_rows.*.soldout_status' => 'nullable|in:YES,NO',
+            'rate_rows.*.stock_dependent' => 'nullable|in:YES,NO',
             'rate_rows.*.is_active' => 'nullable|boolean',
         ]);
 
@@ -127,8 +128,7 @@ class RateMasterController extends Controller
 
             $hasAnyValue =
                 $this->isFilled($row['cost_price'] ?? null) ||
-                $this->isFilled($row['selling_price'] ?? null) ||
-                $this->isFilled($row['stock_qty'] ?? null);
+                $this->isFilled($row['selling_price'] ?? null);
 
             if (!$hasAnyValue) {
                 continue;
@@ -140,7 +140,8 @@ class RateMasterController extends Controller
                 'offer_percentage' => 'nullable|numeric|min:0|max:100',
                 'offer_price' => 'nullable|numeric|min:0',
                 'final_price' => 'nullable|numeric|min:0',
-                'stock_qty' => 'nullable|integer|min:0',
+                'soldout_status' => 'nullable|in:YES,NO',
+                'stock_dependent' => 'nullable|in:YES,NO',
             ]);
 
             if ($rowValidator->fails()) {
@@ -158,7 +159,8 @@ class RateMasterController extends Controller
                 'offer_percentage' => $row['offer_percentage'] ?? null,
                 'offer_price' => $row['offer_price'] ?? null,
                 'final_price' => $row['final_price'] ?? null,
-                'stock_qty' => $row['stock_qty'],
+                'soldout_status' => $row['soldout_status'] ?? 'NO',
+                'stock_dependent' => $row['stock_dependent'] ?? 'NO',
                 'is_active' => array_key_exists('is_active', $row) ? $row['is_active'] : 1,
             ];
 
@@ -236,7 +238,8 @@ class RateMasterController extends Controller
             'offer_percentage' => 'nullable|numeric|min:0|max:100',
             'offer_price' => 'nullable|numeric|min:0',
             'final_price' => 'nullable|numeric|min:0',
-            'stock_qty' => 'required|integer|min:0',
+            'soldout_status' => 'required|in:YES,NO',
+            'stock_dependent' => 'required|in:YES,NO',
             'is_active' => 'required|boolean',
         ]);
 

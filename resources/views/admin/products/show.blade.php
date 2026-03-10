@@ -30,6 +30,7 @@
                             <tbody>
                                 <tr><th width="220">ID</th><td>{{ $product->id }}</td></tr>
                                 <tr><th>Sub Category</th><td>{{ $product->subCategory ? $product->subCategory->sub_category_name : '-' }}</td></tr>
+                                <tr><th>Brand</th><td>{{ $product->brand ? $product->brand->brand_name : '-' }}</td></tr>
                                 <tr><th>Product Name</th><td>{{ $product->product_name }}</td></tr>
                                 <tr>
                                     <th>Image</th>
@@ -56,4 +57,3 @@
     </div>
 </div>
 @endsection
-

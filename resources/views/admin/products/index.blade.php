@@ -38,6 +38,7 @@
                                     <tr>
                                         <th>ID</th>
                                         <th>Sub Category</th>
+                                        <th>Brand</th>
                                         <th>Product Name</th>
                                         <th>Image</th>
                                         <th>Status</th>
@@ -57,6 +58,7 @@
                                         <tr>
                                             <td>{{ $product->id }}</td>
                                             <td>{{ $product->subCategory ? $product->subCategory->sub_category_name : '-' }}</td>
+                                            <td>{{ $product->brand ? $product->brand->brand_name : '-' }}</td>
                                             <td>{{ $product->product_name }}</td>
                                             <td>
                                                 <img src="{{ $productImage }}"
@@ -94,7 +96,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="text-center">No products found</td>
+                                            <td colspan="9" class="text-center">No products found</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -107,4 +109,3 @@
     </div>
 </div>
 @endsection
-

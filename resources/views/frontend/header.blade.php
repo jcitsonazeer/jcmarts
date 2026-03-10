@@ -64,10 +64,20 @@
 <div class="row">
 <div class="header-top-block col-sm-12">
   
-  <div class="header-top-right pull-right">
+<div class="header-top-right pull-right">
     <div class="telephone"><a href="#"><i class="fa fa-phone"></i>9514486111</a></div>
-        <div class="login"><a href="#"><i class="fa fa-user"></i>Login</a></div>
-    <div><a href="{{ route('frontend.register') }}">Signup</a></div>
+    @if(session()->has('customer_id'))
+      <div class="login"><span><i class="fa fa-user"></i>Hello {{ session('customer_name') }}</span></div>
+      <div>
+        <form method="POST" action="{{ route('frontend.logout') }}" style="display:inline;">
+          @csrf
+          <button type="submit" style="background:none;border:none;padding:0;color:#000;">Logout</button>
+        </form>
+      </div>
+    @else
+      <div class="login"><a href="{{ route('frontend.login') }}"><i class="fa fa-user"></i>Login</a></div>
+      <div><a href="{{ route('frontend.register') }}">Signup</a></div>
+    @endif
       </div>
 </div>
 <div class="header-bottom-block col-sm-12">
@@ -80,6 +90,14 @@
     <div class="header-cart">
       <livewire:frontend.cart-summary />
 </div>
+
+<div class="header-wishlist">
+  <a href="#" class="wishlist-btn" aria-label="Wishlist">
+    <span class="wishlist-count">1</span>
+    <i class="fa fa-heart" aria-hidden="true"></i>
+  </a>
+</div>
+
     <div class="header-link-search">
   <div class="header-search">
     <div class="actions">
@@ -181,7 +199,11 @@
 
   </div>
   <div class="login_icon">
-        <a href="#"><i class="fa fa-user"></i>Login</a>
+      @if(session()->has('customer_id'))
+        <a href="javascript:void(0);"><i class="fa fa-user"></i>Hello {{ session('customer_name') }}</a>
+      @else
+        <a href="{{ route('frontend.login') }}"><i class="fa fa-user"></i>Login</a>
+      @endif
       </div>
   <div class="telephone_icon">
     <a href="#"><i class="fa fa-phone"></i>Contact Us</a>

@@ -3,6 +3,7 @@
 namespace App\Livewire\Frontend;
 
 use App\Models\Product;
+use App\Services\CartService;
 use Livewire\Component;
 
 class SingleProductRateSelector extends Component
@@ -11,6 +12,8 @@ class SingleProductRateSelector extends Component
 
     public array $rates = [];
     public $selectedRateId = null;
+    public int $quantity = 1;
+    public bool $isSoldOut = false;
 
     public function mount(Product $product)
     {
@@ -30,12 +33,15 @@ class SingleProductRateSelector extends Component
                 'label' => $label !== '' ? $label : 'Option ' . $rate->id,
                 'selling_price' => $sellingPrice,
                 'display_price' => $finalPrice > 0 ? $finalPrice : $sellingPrice,
+                'soldout_status' => $rate->soldout_status ?? 'NO',
             ];
         }
 
         if (!empty($this->rates)) {
             $this->selectedRateId = $this->rates[0]['id'];
         }
+
+        $this->syncSoldOut();
     }
 
     public function getSelectedRateProperty()
@@ -47,6 +53,41 @@ class SingleProductRateSelector extends Component
         }
 
         return null;
+    }
+
+    public function updatedSelectedRateId()
+    {
+        $this->syncSoldOut();
+    }
+
+    private function syncSoldOut(): void
+    {
+        $rate = $this->selectedRate;
+        $this->isSoldOut = $rate
+            ? strtoupper((string) ($rate['soldout_status'] ?? 'NO')) === 'YES'
+            : false;
+    }
+
+    public function addToCart(CartService $cartService): void
+    {
+        if (empty($this->selectedRateId)) {
+            return;
+        }
+
+        if ($this->isSoldOut) {
+            return;
+        }
+
+        $cartService->addItem(
+            (int) $this->product->id,
+            (int) $this->selectedRateId,
+            max(1, (int) $this->quantity),
+            null
+        );
+
+        $this->quantity = 1;
+        $this->dispatch('cart-updated');
+        $this->dispatch('cart-item-added');
     }
 
     public function render()

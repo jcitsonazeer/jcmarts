@@ -35,6 +35,8 @@
                                         <th>Offer %</th>
                                         <th>Final Price</th>
                                         <th>Stock</th>
+                                        <th>Sold Out</th>
+                                        <th>Stock Dependent</th>
                                         <th>Status</th>
                                         <th width="160">Actions</th>
                                     </tr>
@@ -55,7 +57,9 @@
                                             <td>{{ $rate->selling_price }}</td>
                                             <td>{{ $rate->offer_percentage }}</td>
                                             <td>{{ $rate->final_price }}</td>
-                                            <td>{{ $rate->stock_qty }}</td>
+                                            <td>{{ $rate->latestStockInfo ? $rate->latestStockInfo->current_stock : 0 }}</td>
+                                            <td>{{ $rate->soldout_status ?? 'NO' }}</td>
+                                            <td>{{ $rate->stock_dependent ?? 'NO' }}</td>
                                             <td>
                                                 @if($rate->is_active)
                                                     <span class="badge badge-success">Active</span>
@@ -84,7 +88,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="10" class="text-center">No rates found</td>
+                                            <td colspan="12" class="text-center">No rates found</td>
                                         </tr>
                                     @endforelse
                                 </tbody>

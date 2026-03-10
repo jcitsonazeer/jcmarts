@@ -77,7 +77,7 @@
                                                 <td>{{ $rate->selling_price }}</td>
                                                 <td>{{ $rate->offer_percentage }}</td>
                                                 <td>{{ $rate->final_price }}</td>
-                                                <td>{{ $rate->stock_qty }}</td>
+                                                <td>{{ $rate->latestStockInfo ? $rate->latestStockInfo->current_stock : 0 }}</td>
                                                 <td>
                                                     @if((int) $rate->selected_display === 1)
                                                         <span class="badge badge-success">Selected</span>
