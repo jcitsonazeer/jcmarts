@@ -13,19 +13,38 @@
 
                         <div class="form-group">
                             <label>Product &amp; Weight <span class="text-danger">*</span></label>
-                            <input
-                                type="text"
-                                id="stock-history-input"
-                                class="form-control"
-                                list="stock-history-list"
-                                placeholder="Select or type to search..."
-                            >
-                            <datalist id="stock-history-list">
-                                @foreach($rateOptions as $rateOption)
-                                    <option value="{{ $rateOption['label'] }}" data-id="{{ $rateOption['id'] }}"></option>
-                                @endforeach
-                            </datalist>
-                            <input type="hidden" id="stock-history-id" wire:model.live="rate_master_id">
+                            <div class="position-relative" wire:click.outside="closeRateDropdown">
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Search product & weight..."
+                                    autocomplete="off"
+                                    wire:model.live="rate_search"
+                                    wire:input="clearRateSelection"
+                                    wire:focus="openRateDropdown"
+                                    wire:keydown.escape="closeRateDropdown"
+                                >
+                                <input type="hidden" wire:model.live="rate_master_id">
+
+                                @if($rate_dropdown_open)
+                                    <div class="list-group position-absolute w-100 mt-1" style="z-index: 1000; max-height: 240px; overflow: auto;">
+                                        @forelse($rate_results as $rateOption)
+                                            <button
+                                                type="button"
+                                                class="list-group-item list-group-item-action"
+                                                wire:click="selectRate({{ $rateOption['id'] }}, @js($rateOption['label']))"
+                                            >
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span>{{ $rateOption['label'] }}</span>
+                                                    <small class="text-muted">#{{ $rateOption['id'] }}</small>
+                                                </div>
+                                            </button>
+                                        @empty
+                                            <div class="list-group-item text-muted">No matching products found.</div>
+                                        @endforelse
+                                    </div>
+                                @endif
+                            </div>
                         </div>
 
                         <div class="table-responsive">
@@ -74,42 +93,3 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-    (function () {
-        function bindStockHistoryInput() {
-            var input = document.getElementById('stock-history-input');
-            var hidden = document.getElementById('stock-history-id');
-            var list = document.getElementById('stock-history-list');
-            if (!input || !hidden || !list) return;
-
-            if (input.dataset.bound === '1') return;
-            input.dataset.bound = '1';
-
-            input.addEventListener('input', function () {
-                var value = (input.value || '').trim();
-                var match = list.querySelector('option[value="' + value.replace(/"/g, '\\"') + '"]');
-                if (match) {
-                    hidden.value = match.dataset.id || '';
-                    hidden.dispatchEvent(new Event('input', { bubbles: true }));
-                } else {
-                    hidden.value = '';
-                    hidden.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            });
-        }
-
-        document.addEventListener('livewire:initialized', function () {
-            bindStockHistoryInput();
-            if (window.Livewire && typeof window.Livewire.hook === 'function') {
-                try {
-                    window.Livewire.hook('message.processed', function () {
-                        bindStockHistoryInput();
-                    });
-                } catch (e) {}
-            }
-        });
-    })();
-</script>
-@endpush

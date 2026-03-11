@@ -14,30 +14,42 @@ class StockInfoService
             ->where('stock_dependent', 'YES')
             ->orderByDesc('id')
             ->get()
-            ->map(function ($rate) {
-                $labelParts = [];
+            ->map(fn ($rate) => $this->formatRateOption($rate));
+    }
 
-                if ($rate->product) {
-                    $labelParts[] = $rate->product->product_name;
-                }
+    public function searchRateOptions(string $term, int $limit = 10)
+    {
+        $trimmed = trim($term);
 
-                if ($rate->uom) {
-                    $labelParts[] = trim(($rate->uom->secondary_uom ?? '') . ' ' . ($rate->uom->primary_uom ?? ''));
-                }
+        $query = RateMaster::with(['product', 'uom', 'latestStockInfo'])
+            ->where('stock_dependent', 'YES');
 
-                $label = trim(implode(' - ', array_filter($labelParts)));
-
-                return [
-                    'id' => $rate->id,
-                    'label' => $label !== '' ? $label : 'Rate ' . $rate->id,
-                    'cost_price' => $rate->cost_price,
-                    'selling_price' => $rate->selling_price,
-                    'offer_percentage' => $rate->offer_percentage,
-                    'offer_price' => $rate->offer_price,
-                    'final_price' => $rate->final_price,
-                    'current_stock' => $rate->latestStockInfo ? $rate->latestStockInfo->current_stock : 0,
-                ];
+        if ($trimmed !== '') {
+            $query->where(function ($builder) use ($trimmed) {
+                $builder->where('id', $trimmed)
+                    ->orWhereHas('product', function ($productQuery) use ($trimmed) {
+                        $productQuery->where('product_name', 'like', '%' . $trimmed . '%');
+                    })
+                    ->orWhereHas('uom', function ($uomQuery) use ($trimmed) {
+                        $uomQuery->where('primary_uom', 'like', '%' . $trimmed . '%')
+                            ->orWhere('secondary_uom', 'like', '%' . $trimmed . '%');
+                    });
             });
+        }
+
+        return $query->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($rate) => $this->formatRateOption($rate));
+    }
+
+    public function getRateOption(int $rateMasterId): ?array
+    {
+        $rate = RateMaster::with(['product', 'uom', 'latestStockInfo'])
+            ->where('stock_dependent', 'YES')
+            ->find($rateMasterId);
+
+        return $rate ? $this->formatRateOption($rate) : null;
     }
 
     public function findRateDetails(int $rateMasterId)
@@ -81,5 +93,31 @@ class StockInfoService
             ->where('rate_master_id', $rateMasterId)
             ->orderByDesc('id')
             ->get();
+    }
+
+    private function formatRateOption(RateMaster $rate): array
+    {
+        $labelParts = [];
+
+        if ($rate->product) {
+            $labelParts[] = $rate->product->product_name;
+        }
+
+        if ($rate->uom) {
+            $labelParts[] = trim(($rate->uom->secondary_uom ?? '') . ' ' . ($rate->uom->primary_uom ?? ''));
+        }
+
+        $label = trim(implode(' - ', array_filter($labelParts)));
+
+        return [
+            'id' => $rate->id,
+            'label' => $label !== '' ? $label : 'Rate ' . $rate->id,
+            'cost_price' => $rate->cost_price,
+            'selling_price' => $rate->selling_price,
+            'offer_percentage' => $rate->offer_percentage,
+            'offer_price' => $rate->offer_price,
+            'final_price' => $rate->final_price,
+            'current_stock' => $rate->latestStockInfo ? $rate->latestStockInfo->current_stock : 0,
+        ];
     }
 }

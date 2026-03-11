@@ -30,24 +30,44 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('admin.stock-infos.store') }}">
-                            @csrf
+                        <form wire:submit.prevent="save">
 
                             <div class="form-group">
                                 <label>Product &amp; Weight <span class="text-danger">*</span></label>
-                                <input
-                                    type="text"
-                                    id="stock-rate-input"
-                                    class="form-control"
-                                    list="stock-rate-list"
-                                    placeholder="Select or type to search..."
-                                >
-                                <datalist id="stock-rate-list">
-                                    @foreach($rateOptions as $rateOption)
-                                        <option value="{{ $rateOption['label'] }}" data-id="{{ $rateOption['id'] }}"></option>
-                                    @endforeach
-                                </datalist>
-                                <input type="hidden" id="stock-rate-id" name="rate_master_id" wire:model.live="rate_master_id" required>
+                                <div class="position-relative" wire:click.outside="closeRateDropdown">
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        placeholder="Search product & weight..."
+                                        autocomplete="off"
+                                        wire:model.live="rate_search"
+                                        wire:input="clearRateSelection"
+                                        wire:focus="openRateDropdown"
+                                        wire:keydown.escape="closeRateDropdown"
+                                        wire:blur="resolveRateSelection"
+                                    >
+                                    <input type="hidden" id="rate-master-id" name="rate_master_id" wire:model.live="rate_master_id" required>
+                                    <small class="form-text text-muted">Select a product from the dropdown list.</small>
+
+                                    @if($rate_dropdown_open)
+                                        <div class="list-group position-absolute w-100 mt-1" style="z-index: 1000; max-height: 240px; overflow: auto;">
+                                            @forelse($rate_results as $rateOption)
+                                                <button
+                                                    type="button"
+                                                    class="list-group-item list-group-item-action"
+                                                    wire:click="selectRate({{ $rateOption['id'] }}, @js($rateOption['label']))"
+                                                >
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span>{{ $rateOption['label'] }}</span>
+                                                        <small class="text-muted">#{{ $rateOption['id'] }}</small>
+                                                    </div>
+                                                </button>
+                                            @empty
+                                                <div class="list-group-item text-muted">No matching products found.</div>
+                                            @endforelse
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
 
                             @if(!empty($rateDetails))
@@ -71,7 +91,7 @@
 
                             <div class="form-group">
                                 <label>Add Stock <span class="text-danger">*</span></label>
-                                <input type="number" min="1" name="stock_in_count" class="form-control" value="{{ old('stock_in_count') }}" required>
+                                <input type="number" min="1" name="stock_in_count" class="form-control" wire:model.live="stock_in_count" required>
                             </div>
 
                             <div class="form-group">
@@ -85,42 +105,3 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-    (function () {
-        function bindStockRateInput() {
-            var input = document.getElementById('stock-rate-input');
-            var hidden = document.getElementById('stock-rate-id');
-            var list = document.getElementById('stock-rate-list');
-            if (!input || !hidden || !list) return;
-
-            if (input.dataset.bound === '1') return;
-            input.dataset.bound = '1';
-
-            input.addEventListener('input', function () {
-                var value = (input.value || '').trim();
-                var match = list.querySelector('option[value="' + value.replace(/"/g, '\\"') + '"]');
-                if (match) {
-                    hidden.value = match.dataset.id || '';
-                    hidden.dispatchEvent(new Event('input', { bubbles: true }));
-                } else {
-                    hidden.value = '';
-                    hidden.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            });
-        }
-
-        document.addEventListener('livewire:initialized', function () {
-            bindStockRateInput();
-            if (window.Livewire && typeof window.Livewire.hook === 'function') {
-                try {
-                    window.Livewire.hook('message.processed', function () {
-                        bindStockRateInput();
-                    });
-                } catch (e) {}
-            }
-        });
-    })();
-</script>
-@endpush
