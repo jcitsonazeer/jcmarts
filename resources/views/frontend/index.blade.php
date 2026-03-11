@@ -54,7 +54,7 @@
                 <div id="content" class="col-sm-12"><div class="breadcrumb"></div>  
 
 <div class="category-banner-block wow fadeInUp" data-wow-duration="0.5s" data-wow-delay="0.5s">
-<h3>sub category</h3>
+<h3>Product category</h3>
 <div class="manufacture-slider">
     @forelse(($topSubCategories ?? collect()) as $subCategory)
       @php

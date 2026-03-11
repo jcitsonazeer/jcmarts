@@ -10,7 +10,6 @@
           <ul class="list-unstyled collapse" id="dropdown-account">
             <li><a href="#">My Account</a></li>
             <li><a href="#">Order History</a></li>
-            <li><a href="#">Contact Us</a></li>
           </ul>
         </div>
                 <div class="col-xs-12 col-sm-12 col-md-4 column information">
@@ -30,7 +29,7 @@
         
          <div class="col-xs-12 col-sm-12 col-md-4 column contacts">   <div class="footer-common collapsible mobile-collapsible">
   <div class="footer-static">
-    <h4>Contacts </h4>
+    <h4>Contact Us </h4>
     <h5 class="collapsed" data-target="#dropdown-contact" data-toggle="collapse">Contacts <span class="icon"></span> </h5>
     <ul class="clearfix collapse" id="dropdown-contact">
       <li class="item">Saravana Arcade, Old Bridge Road,<br>Kuzhithurai,<br>Marthandam.</li>
@@ -56,9 +55,7 @@
   <div class="section-heading">Social media</div>
   <ul class="social-icon">
     <li><a class="facebook" title="Facebook" href="#"><i class="fa fa-facebook"> </i></a></li>
-    <li><a class="twitter" title="Twitter" href="#"><i class="fa fa-twitter"> </i></a></li>
     <li><a class="instagram" title="Instagram" href="#"><i class="fa fa-instagram"> </i></a></li>
-    <li><a class="rss" title="RSS" href="#"><i class="fa fa-rss"> </i></a></li>
     <li><a class="youtube" title="youtube" href="#"><i class="fa fa-youtube"> </i></a></li>
   </ul>
 </div>
