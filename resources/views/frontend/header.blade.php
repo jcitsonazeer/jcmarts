@@ -116,13 +116,13 @@
 </div>
 
     @php($firstCategory = ($menuCategories ?? collect())->first())
-    <div class="header-menu" data-first-cat="{{ $firstCategory ? 'cat-' . $firstCategory->id : '' }}">
+    <div class="header-menu" data-first-cat="{{ $firstCategory?->id ?? '' }}">
       <div class="menu-btn">Shop by Category</div>
 
       <div class="mega-menu">
         <div class="category-list">
           @forelse(($menuCategories ?? collect()) as $category)
-            <div class="category" onmouseover="showSub('cat-{{ $category->id }}')">
+            <div class="category" data-category-id="{{ $category->id }}">
               {{ $category->category_name }}
             </div>
           @empty
@@ -132,7 +132,7 @@
 
         <div class="subcategory">
           @foreach(($menuCategories ?? collect()) as $category)
-            <div id="cat-{{ $category->id }}" class="submenu">
+            <div class="submenu" data-category-id="{{ $category->id }}">
               @forelse($category->subCategories as $subCategory)
                 <a href="{{ route('frontend.products', ['sub_category' => $subCategory->id]) }}">
                   {{ $subCategory->sub_category_name }}

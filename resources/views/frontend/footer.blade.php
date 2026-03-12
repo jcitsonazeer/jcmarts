@@ -287,23 +287,20 @@ document.addEventListener('livewire:init', function () {
 
 <script>
 
-function showSub(cat){
+function showSub(categoryId){
+  if (!categoryId) {
+    return;
+  }
 
-let menus=document.querySelectorAll(".submenu");
+  var menus = document.querySelectorAll(".header-menu .submenu");
+  menus.forEach(function(m){
+    m.classList.remove("active");
+  });
 
-menus.forEach(function(m){
-m.classList.remove("active");
-});
-
-var target = document.getElementById(cat);
-if (target) {
-  target.classList.add("active");
-}
-
-if(document.getElementById(cat+"-sub")){
-document.getElementById(cat+"-sub").classList.add("active");
-}
-
+  var target = document.querySelector('.header-menu .submenu[data-category-id="' + categoryId + '"]');
+  if (target) {
+    target.classList.add("active");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", function(){
@@ -311,6 +308,13 @@ document.addEventListener("DOMContentLoaded", function(){
   var menuBtn = document.querySelector(".menu-btn");
 
   if (menuBtn && headerMenu) {
+    var categoryItems = headerMenu.querySelectorAll(".category-list .category[data-category-id]");
+    categoryItems.forEach(function(item){
+      item.addEventListener("mouseenter", function(){
+        showSub(item.getAttribute("data-category-id"));
+      });
+    });
+
     menuBtn.addEventListener("click", function(e){
       e.stopPropagation();
       headerMenu.classList.toggle("open");

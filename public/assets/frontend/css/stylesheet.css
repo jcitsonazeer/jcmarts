@@ -5053,6 +5053,12 @@ padding:10px;
 cursor:pointer;
 }
 
+.subcategory a{
+display:block;
+padding:10px;
+white-space:normal;
+}
+
 
 
 /* SUB SUB */
