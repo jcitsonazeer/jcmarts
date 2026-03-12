@@ -91,12 +91,7 @@
       <livewire:frontend.cart-summary />
 </div>
 
-<div class="header-wishlist">
-  <a href="#" class="wishlist-btn" aria-label="Wishlist">
-    <span class="wishlist-count">1</span>
-    <i class="fa fa-heart" aria-hidden="true"></i>
-  </a>
-</div>
+<livewire:frontend.wishlist-summary />
 
     <div class="header-link-search">
   <div class="header-search">

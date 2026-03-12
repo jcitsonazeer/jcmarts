@@ -114,6 +114,9 @@
                    onerror="this.onerror=null;this.src='{{ asset('assets/frontend/images/no_image.png') }}';">
             </a>
           </div>
+          <livewire:frontend.wishlist-toggle-button
+            :product-id="$offer->product_id"
+            :key="'wishlist-toggle-offer-' . $offer->product_id" />
           <div class="saleback"><span class="sale">sale</span></div>
         </div>
         <div class="mt-3">

@@ -58,7 +58,12 @@
                     @if($product->brand)
                         <div class="product-brand">{{ $product->brand->brand_name }}</div>
                     @endif
-                    <h1>{{ $product->product_name }}</h1>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <h1 style="margin:0;">{{ $product->product_name }}</h1>
+                        <livewire:frontend.wishlist-toggle-button
+                          :product-id="$product->id"
+                          :key="'wishlist-toggle-single-' . $product->id" />
+                    </div>
 
                     <ul class="list-unstyled detail">
                         <li class="manufacturer">

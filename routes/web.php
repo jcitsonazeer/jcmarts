@@ -20,6 +20,7 @@ use App\Http\Controllers\OfferDetailController;
 use App\Http\Controllers\OfferProductController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\StockInfoController;
+use App\Http\Controllers\FrontendWishlistController;
 
 Route::get('/', [FrontendController::class, 'index'])->name('frontend.home');
 Route::get('/products', [FrontendProductController::class, 'index'])->name('frontend.products');
@@ -28,6 +29,7 @@ Route::get('/cart', [FrontendCartController::class, 'index'])->name('frontend.ca
 Route::post('/cart/{cartId}/quantity', [FrontendCartController::class, 'updateQuantity'])->name('frontend.cart.update');
 Route::post('/cart/{cartId}/remove', [FrontendCartController::class, 'remove'])->name('frontend.cart.remove');
 Route::get('/checkout', [FrontendCheckoutController::class, 'index'])->name('frontend.checkout');
+Route::get('/wishlist', [FrontendWishlistController::class, 'index'])->name('frontend.wishlist');
 Route::post('/checkout/proceed', [FrontendCheckoutController::class, 'proceedToPayment'])->name('frontend.checkout.proceed');
 Route::get('/payment', [FrontendCheckoutController::class, 'payment'])->name('frontend.payment');
 Route::get('/register', [CustomerAuthController::class, 'register'])->name('frontend.register');

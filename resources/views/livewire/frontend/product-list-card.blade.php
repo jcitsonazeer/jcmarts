@@ -24,6 +24,9 @@
              class="img-responsive"
              onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
       </a>
+      <livewire:frontend.wishlist-toggle-button
+        :product-id="$product->id"
+        :key="'wishlist-toggle-' . $product->id" />
     </div>
 
     <div class="product-details">
@@ -63,7 +66,6 @@
               <button type="button" wire:click="addToCart" class="addtocart">Add</button>
             @endif
             <button type="button" class="compare pull-right"><i class="fa fa-exchange"></i></button>
-            <button type="button" class="wishlist pull-right"><i class="fa fa-heart"></i></button>
             <a class="quickview pull-right" href="#"><i class="fa fa-eye"></i></a>
           </div>
         </div>

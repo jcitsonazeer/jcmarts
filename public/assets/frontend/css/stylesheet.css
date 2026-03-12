@@ -761,7 +761,7 @@ box-shadow: rgb(37, 43, 39) 3px 3px 6px 0px inset, rgba(3, 56, 29, 0.979) -3px -
 
 .header-menu{
     border-radius: 5px;
-    background-color: #014234;
+    background-color:#123a31;
     padding: 0px 10px;
 }
 .header-menu .responsive-menubar-block > span:first-child{
@@ -3334,6 +3334,97 @@ box-shadow:inset -2px -2px 3px 2px #003025;
 }
 .product-list .product-thumb .button-group i{display: block;}
 
+.product-thumb .button-group button.wishlist-toggle,
+.product-list .product-thumb .button-group button.wishlist-toggle{
+    display: inline-block;
+    background: #fff;
+    color: #000;
+    height: 26px;
+    width: 26px;
+    border: 1px solid #ebebeb;
+    border-radius: 5px;
+    padding: 5px;
+    line-height: 1;
+    margin: 0 6px;
+}
+
+.product-thumb .button-group button.wishlist-toggle i{
+    display: block;
+}
+
+.product-grid .product-thumb .button-group button.wishlist-toggle{
+    display: inline-block;
+}
+
+.product-thumb .image .wishlist-toggle{
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-radius: 5px;
+    width: 26px;
+    height: 26px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    pointer-events: auto;
+}
+
+.product-thumb .imageproduct-cstm .wishlist-toggle{
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-radius: 5px;
+    width: 26px;
+    height: 26px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    pointer-events: auto;
+}
+
+.product-thumb .imageproduct-cstm .wishlist-toggle .fa-heart{
+    color: #5c5252;
+}
+
+.product-thumb .imageproduct-cstm .wishlist-toggle.active .fa-heart{
+    color: #edb41c;
+}
+
+.product-thumb .image .wishlist-toggle .fa-heart{
+    color: #5c5252;
+}
+
+.product-thumb .image .wishlist-toggle.active .fa-heart{
+    color: #edb41c;
+}
+
+.productpage .wishlist-toggle{
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-radius: 5px;
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+    line-height: 1;
+    margin: 0;
+}
+
+.productpage .wishlist-toggle .fa-heart{
+    color: #5c5252;
+}
+
+.productpage .wishlist-toggle.active .fa-heart{
+    color: #edb41c;
+}
+
 #product #input-quantity {
     display: inline;
     width: 50px;
@@ -4994,12 +5085,16 @@ body.common-home .header-top-right .login a .fa-user:before {
     line-height: 1;
 }
 
+.wishlist-toggle.active .fa-heart {
+    color: #edb41c;
+}
+
 .menu-btn{
 background:#6aa21d;
 color:white;
 padding:10px 10px;
 display:inline-block;
-margin:10px;
+margin:0px;
 border-radius:4px;
 }
 
@@ -5007,7 +5102,7 @@ border-radius:4px;
 
 .mega-menu{
 width:500px;
-height:420px;
+height:310px;
 background:white;
 display:flex;
 align-items:stretch;
@@ -5103,5 +5198,29 @@ z-index:10000;
 
 .header-menu.open .mega-menu{
 display:flex;
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 6px; /* thin scrollbar */
+}
+
+::-webkit-scrollbar-track {
+  background: #000; /* black track line */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #00c853; /* green scrollbar */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00e676; /* lighter green on hover */
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #00c853 #0a5429; /* green thumb, black track */
 }
 

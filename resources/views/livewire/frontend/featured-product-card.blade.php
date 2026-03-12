@@ -20,6 +20,9 @@
         <a href="{{ route('frontend.single_product', ['product_id' => $product->id]) }}">
           <img src="{{ $productImage }}" alt="{{ $product->product_name }}" title="{{ $product->product_name }}" class="img-responsive" onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
         </a>
+        <livewire:frontend.wishlist-toggle-button
+          :product-id="$product->id"
+          :key="'wishlist-toggle-featured-' . $product->id" />
       </div>
     </div>
 
