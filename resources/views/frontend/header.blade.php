@@ -115,70 +115,35 @@
   </div>
 </div>
 
-    <div class="header-menu">
-    <div class="responsive-menubar-block">
-      <span>Shop By<br> Category</span>
-    <span class="menu-bar collapsed" data-target="#menu" data-toggle="collapse"><i class="fa fa-bars"></i></span>
-    </div>
-    <nav id="menu" class="navbar collapse">
-<div class="navbar-header"> <span id="category" class="visible-xs">Top categories</span>
-  <button type="button" class="btn btn-navbar navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse"><i class="fa fa-bars"></i></button>
-</div>
-<div class="collapse navbar-collapse navbar-ex1-collapse">
-  <ul class="nav navbar-nav main-navigation">
-    @forelse(($menuCategories ?? collect()) as $category)
-      <li class="main_cat dropdown">
-        <a href="{{ $category->subCategories->isNotEmpty() ? 'javascript:void(0);' : route('frontend.products') }}">{{ $category->category_name }}</a>
-        @if($category->subCategories->isNotEmpty())
-          <div class="dropdown-menu megamenu column1">
-            <div class="dropdown-inner">
-              <ul class="list-unstyled childs_1">
-                @foreach($category->subCategories as $subCategory)
-                  <li class="main_cat">
-                    <a href="{{ route('frontend.products', ['sub_category' => $subCategory->id]) }}">{{ $subCategory->sub_category_name }}</a>
-                  </li>
-                @endforeach
-              </ul>
+    @php($firstCategory = ($menuCategories ?? collect())->first())
+    <div class="header-menu" data-first-cat="{{ $firstCategory ? 'cat-' . $firstCategory->id : '' }}">
+      <div class="menu-btn">Shop by Category</div>
+
+      <div class="mega-menu">
+        <div class="category-list">
+          @forelse(($menuCategories ?? collect()) as $category)
+            <div class="category" onmouseover="showSub('cat-{{ $category->id }}')">
+              {{ $category->category_name }}
             </div>
-          </div>
-        @endif
-      </li>
-    @empty
-      <li class="main_cat"><a href="{{ route('frontend.products') }}">Categories</a></li>
-    @endforelse
-  </ul>
-  </div>
+          @empty
+            <div class="category">Categories</div>
+          @endforelse
+        </div>
 
-</nav>
-<div id="responsive-menu" class="nav-container1 nav-responsive navbar collapse">
-
-     <div class="navbar-collapse navbar-ex1-collapse collapse">
-              <ul class="nav navbar-nav">
-                @forelse(($menuCategories ?? collect()) as $category)
-                  @php($collapseId = 'cat-' . \Illuminate\Support\Str::slug($category->category_name) . '-' . $category->id)
-                  @if($category->subCategories->isNotEmpty())
-                    <li class="collapsed" data-toggle="collapse" data-target="#{{ $collapseId }}">
-                      <a href="javascript:void(0);">{{ $category->category_name }}</a>
-                      <span><i class="fa fa-plus"></i></span>
-                      <ul class="menu-dropdown collapse" id="{{ $collapseId }}">
-                        @foreach($category->subCategories as $subCategory)
-                          <li class="main_cat">
-                            <a href="{{ route('frontend.products', ['sub_category' => $subCategory->id]) }}">{{ $subCategory->sub_category_name }}</a>
-                          </li>
-                        @endforeach
-                      </ul>
-                    </li>
-                  @else
-                    <li><a href="{{ route('frontend.products') }}">{{ $category->category_name }}</a></li>
-                  @endif
-                @empty
-                  <li><a href="{{ route('frontend.products') }}">Categories</a></li>
-                @endforelse
-              </ul>
-            </div></div>
-
-
- 
+        <div class="subcategory">
+          @foreach(($menuCategories ?? collect()) as $category)
+            <div id="cat-{{ $category->id }}" class="submenu">
+              @forelse($category->subCategories as $subCategory)
+                <a href="{{ route('frontend.products', ['sub_category' => $subCategory->id]) }}">
+                  {{ $subCategory->sub_category_name }}
+                </a>
+              @empty
+                <a href="{{ route('frontend.products') }}">View products</a>
+              @endforelse
+            </div>
+          @endforeach
+        </div>
+      </div>
     </div>
  </div>
 </div>

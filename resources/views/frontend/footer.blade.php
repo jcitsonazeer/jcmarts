@@ -285,6 +285,58 @@ document.addEventListener('livewire:init', function () {
 });
 </script>
 
+<script>
+
+function showSub(cat){
+
+let menus=document.querySelectorAll(".submenu");
+
+menus.forEach(function(m){
+m.classList.remove("active");
+});
+
+var target = document.getElementById(cat);
+if (target) {
+  target.classList.add("active");
+}
+
+if(document.getElementById(cat+"-sub")){
+document.getElementById(cat+"-sub").classList.add("active");
+}
+
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  var headerMenu = document.querySelector(".header-menu");
+  var menuBtn = document.querySelector(".menu-btn");
+
+  if (menuBtn && headerMenu) {
+    menuBtn.addEventListener("click", function(e){
+      e.stopPropagation();
+      headerMenu.classList.toggle("open");
+      if (headerMenu.classList.contains("open")) {
+        var firstCat = headerMenu.getAttribute("data-first-cat");
+        if (firstCat) {
+          showSub(firstCat);
+        }
+      }
+    });
+
+    var mega = headerMenu.querySelector(".mega-menu");
+    if (mega) {
+      mega.addEventListener("click", function(e){
+        e.stopPropagation();
+      });
+    }
+
+    document.addEventListener("click", function(){
+      headerMenu.classList.remove("open");
+    });
+  }
+});
+
+</script>
+
 
 
 @livewireScripts
