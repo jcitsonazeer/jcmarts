@@ -11,6 +11,11 @@
 
 <div class="product-layout product-list col-xs-12">
   <div class="product-thumb">
+  
+      @if($offer > 0)
+      <p class="tag">{{ (int) round($offer) }}<br> % <br> <i>off</i></p>
+    @endif
+  
     <div class="image">
       <a href="{{ route('frontend.single_product', ['product_id' => $product->id]) }}">
         <img src="{{ $productImage }}"

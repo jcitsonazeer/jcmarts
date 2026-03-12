@@ -24,6 +24,7 @@ class SingleProductService
             })
             ->with([
                 'subCategory.category',
+                'brand',
                 'rates' => function ($query) {
                     $query->where('is_active', 1)->with('uom')->orderBy('id');
                 },

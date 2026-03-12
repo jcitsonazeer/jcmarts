@@ -55,6 +55,9 @@
                 </div>
 
                 <div class="col-sm-6 col-md-7 right">
+                    @if($product->brand)
+                        <div class="product-brand">{{ $product->brand->brand_name }}</div>
+                    @endif
                     <h1>{{ $product->product_name }}</h1>
 
                     <ul class="list-unstyled detail">
