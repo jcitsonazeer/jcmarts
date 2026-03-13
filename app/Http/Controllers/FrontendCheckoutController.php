@@ -5,24 +5,34 @@ namespace App\Http\Controllers;
 use App\Models\CustomerAddress;
 use App\Services\CartService;
 use App\Services\FrontendCatalogService;
+use App\Services\OrderService;
+use App\Services\Payment\RazorpayService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
-use Razorpay\Api\Api;
+use RuntimeException;
 use Throwable;
 
 class FrontendCheckoutController extends Controller
 {
     protected FrontendCatalogService $frontendCatalogService;
     protected CartService $cartService;
+    protected RazorpayService $razorpayService;
+    protected OrderService $orderService;
 
-    public function __construct(FrontendCatalogService $frontendCatalogService, CartService $cartService)
-    {
+    public function __construct(
+        FrontendCatalogService $frontendCatalogService,
+        CartService $cartService,
+        RazorpayService $razorpayService,
+        OrderService $orderService
+    ) {
         $this->frontendCatalogService = $frontendCatalogService;
         $this->cartService = $cartService;
+        $this->razorpayService = $razorpayService;
+        $this->orderService = $orderService;
     }
 
     public function index(): RedirectResponse|View
@@ -174,16 +184,22 @@ class FrontendCheckoutController extends Controller
         $amountInPaise = (int) round($total * 100);
 
         if ($amountInPaise < 100) {
-            return response()->json(['message' => 'Minimum payable amount is ₹1.'], 422);
+            return response()->json(['message' => 'Minimum payable amount is Rs 1.'], 422);
         }
 
-        $api = new Api(config('razorpay.key'), config('razorpay.secret'));
+        $cartItems = $this->cartService->getActiveItems();
 
-        $order = $api->order->create([
-            'receipt' => 'jcmart_' . now()->format('YmdHis'),
-            'amount' => $amountInPaise,
-            'currency' => config('razorpay.currency', 'INR'),
-        ]);
+        try {
+            $this->orderService->assertStockAvailable($cartItems);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $order = $this->razorpayService->createOrder(
+            $amountInPaise,
+            'jcmart_' . now()->format('YmdHis'),
+            (string) config('razorpay.currency', 'INR')
+        );
 
         session([
             'razorpay_order_id' => $order['id'],
@@ -197,7 +213,6 @@ class FrontendCheckoutController extends Controller
             'key' => config('razorpay.key'),
         ]);
     }
-
     public function verifyRazorpayPayment(Request $request): JsonResponse
     {
         $guardRedirect = $this->ensureCheckoutAccess();
@@ -216,15 +231,26 @@ class FrontendCheckoutController extends Controller
         }
 
         try {
-            $api = new Api(config('razorpay.key'), config('razorpay.secret'));
+            $this->razorpayService->verifySignature(
+                $validated['razorpay_order_id'],
+                $validated['razorpay_payment_id'],
+                $validated['razorpay_signature']
+            );
 
-            $api->utility->verifyPaymentSignature([
-                'razorpay_order_id' => $validated['razorpay_order_id'],
-                'razorpay_payment_id' => $validated['razorpay_payment_id'],
-                'razorpay_signature' => $validated['razorpay_signature'],
-            ]);
+            $cartItems = $this->cartService->getActiveItems();
+            $orderSummary = $this->buildOrderSummary();
+            $customerId = (int) session('customer_id');
+            $addressId = (int) session('checkout_address_id');
 
-            session()->forget(['razorpay_order_id', 'razorpay_amount']);
+            $this->orderService->createPaidOrderFromCart(
+                $customerId,
+                $addressId,
+                $orderSummary,
+                $cartItems,
+                $validated
+            );
+
+            session()->forget(['razorpay_order_id', 'razorpay_amount', 'checkout_address_id']);
 
             return response()->json([
                 'message' => 'Payment successful.',
@@ -235,7 +261,6 @@ class FrontendCheckoutController extends Controller
             ], 422);
         }
     }
-
     private function ensureCheckoutAccess(): ?RedirectResponse
     {
         if (!session()->has('customer_id')) {
@@ -276,3 +301,5 @@ class FrontendCheckoutController extends Controller
         ];
     }
 }
+
+
