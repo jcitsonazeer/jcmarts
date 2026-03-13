@@ -7,9 +7,12 @@ use App\Services\CartService;
 use App\Services\FrontendCatalogService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Razorpay\Api\Api;
+use Throwable;
 
 class FrontendCheckoutController extends Controller
 {
@@ -157,6 +160,80 @@ class FrontendCheckoutController extends Controller
             'otherCharge' => $orderSummary['other_charge'],
             'total' => $orderSummary['total'],
         ]);
+    }
+
+    public function createRazorpayOrder(Request $request): JsonResponse
+    {
+        $guardRedirect = $this->ensureCheckoutAccess();
+        if ($guardRedirect) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $orderSummary = $this->buildOrderSummary();
+        $total = (float) $orderSummary['total'];
+        $amountInPaise = (int) round($total * 100);
+
+        if ($amountInPaise < 100) {
+            return response()->json(['message' => 'Minimum payable amount is ₹1.'], 422);
+        }
+
+        $api = new Api(config('razorpay.key'), config('razorpay.secret'));
+
+        $order = $api->order->create([
+            'receipt' => 'jcmart_' . now()->format('YmdHis'),
+            'amount' => $amountInPaise,
+            'currency' => config('razorpay.currency', 'INR'),
+        ]);
+
+        session([
+            'razorpay_order_id' => $order['id'],
+            'razorpay_amount' => $amountInPaise,
+        ]);
+
+        return response()->json([
+            'order_id' => $order['id'],
+            'amount' => $amountInPaise,
+            'currency' => $order['currency'],
+            'key' => config('razorpay.key'),
+        ]);
+    }
+
+    public function verifyRazorpayPayment(Request $request): JsonResponse
+    {
+        $guardRedirect = $this->ensureCheckoutAccess();
+        if ($guardRedirect) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'razorpay_order_id' => ['required', 'string'],
+            'razorpay_payment_id' => ['required', 'string'],
+            'razorpay_signature' => ['required', 'string'],
+        ]);
+
+        if ($validated['razorpay_order_id'] !== (string) session('razorpay_order_id')) {
+            return response()->json(['message' => 'Order mismatch.'], 422);
+        }
+
+        try {
+            $api = new Api(config('razorpay.key'), config('razorpay.secret'));
+
+            $api->utility->verifyPaymentSignature([
+                'razorpay_order_id' => $validated['razorpay_order_id'],
+                'razorpay_payment_id' => $validated['razorpay_payment_id'],
+                'razorpay_signature' => $validated['razorpay_signature'],
+            ]);
+
+            session()->forget(['razorpay_order_id', 'razorpay_amount']);
+
+            return response()->json([
+                'message' => 'Payment successful.',
+            ]);
+        } catch (Throwable $e) {
+            return response()->json([
+                'message' => 'Payment verification failed.',
+            ], 422);
+        }
     }
 
     private function ensureCheckoutAccess(): ?RedirectResponse

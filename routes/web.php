@@ -32,6 +32,8 @@ Route::get('/checkout', [FrontendCheckoutController::class, 'index'])->name('fro
 Route::get('/wishlist', [FrontendWishlistController::class, 'index'])->name('frontend.wishlist');
 Route::post('/checkout/proceed', [FrontendCheckoutController::class, 'proceedToPayment'])->name('frontend.checkout.proceed');
 Route::get('/payment', [FrontendCheckoutController::class, 'payment'])->name('frontend.payment');
+Route::post('/payment/create-order', [FrontendCheckoutController::class, 'createRazorpayOrder'])->name('frontend.payment.create_order');
+Route::post('/payment/verify', [FrontendCheckoutController::class, 'verifyRazorpayPayment'])->name('frontend.payment.verify');
 Route::get('/register', [CustomerAuthController::class, 'register'])->name('frontend.register');
 Route::post('/register', [CustomerAuthController::class, 'storeRegister'])->name('frontend.register.store');
 Route::get('/login', [CustomerAuthController::class, 'login'])->name('frontend.login');
