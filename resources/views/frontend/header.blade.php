@@ -68,6 +68,7 @@
     <div class="telephone"><a href="#"><i class="fa fa-phone"></i>9514486111</a></div>
     @if(session()->has('customer_id'))
       <div class="login"><span><i class="fa fa-user"></i>Hello {{ session('customer_name') }}</span></div>
+      <div class="login"><a href="{{ route('frontend.orders.index') }}"><i class="fa fa-shopping-bag"></i>My Orders</a></div>
       <div>
         <form method="POST" action="{{ route('frontend.logout') }}" style="display:inline;">
           @csrf

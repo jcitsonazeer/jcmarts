@@ -162,7 +162,7 @@
 
                     <!-- Orders (Future) -->
                     <li class="nav-item">
-                        <a href="#" class="nav-link">
+                        <a href="{{ route('admin.orders.index') }}" class="nav-link">
                             <i class="ti-shopping-cart menu-icon"></i>
                             <span class="menu-title">Orders</span>
                         </a>
