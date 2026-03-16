@@ -9,7 +9,7 @@
   $isSoldOut = $this->isSoldOut;
 @endphp
 
-<div class="product-layout product-list col-xs-12">
+ <div class="product-layout product-grid col-lg-3 col-md-4 col-sm-4 col-xs-12">
   <div class="product-thumb">
   
       @if($offer > 0)

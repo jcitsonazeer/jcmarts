@@ -143,8 +143,7 @@
         <div class="btn-grid-list">
           <div class="btn-group btn-group-sm">
             <button type="button" id="filter-view" class="btn btn-default filter collapsed" data-target="#" data-toggle="collapse" title="Refine Search"><i class="fa fa-th-list"></i></button>
-            <button type="button" id="grid-view" class="btn btn-default grid" data-toggle="tooltip" title="Grid"><i class="fa fa-th"></i></button>
-            <button type="button" id="list-view" class="btn btn-default list" data-toggle="tooltip" title="List"><i class="fa fa-th-list"></i></button>
+
           </div>
         </div>
 
