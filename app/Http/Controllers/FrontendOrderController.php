@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\CustomerAuthService;
 use App\Services\FrontendCatalogService;
 use App\Services\FrontendOrderService;
+use Illuminate\Http\Request;
 
 class FrontendOrderController extends Controller
 {
@@ -22,7 +23,7 @@ class FrontendOrderController extends Controller
         $this->frontendOrderService = $frontendOrderService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         if (!$this->customerAuthService->isCustomerLoggedIn()) {
             return redirect()
@@ -32,29 +33,26 @@ class FrontendOrderController extends Controller
 
         $customerId = (int) session('customer_id');
         $menuCategories = $this->frontendCatalogService->getMenuCategories();
-        $orders = $this->frontendOrderService->getOrdersForCustomer($customerId);
+        $search = (string) $request->query('q', '');
+        $orders = $this->frontendOrderService->getOrdersForCustomer($customerId, $search);
 
-        return view('frontend.orders.index', compact('menuCategories', 'orders'));
+        $selectedOrderId = (int) $request->query('order_id', 0);
+        if ($selectedOrderId === 0 && $orders->isNotEmpty()) {
+            $selectedOrderId = (int) $orders->first()->id;
+        }
+
+        $selectedOrder = null;
+        if ($selectedOrderId > 0) {
+            $selectedOrder = $this->frontendOrderService->getOrderForCustomer($selectedOrderId, $customerId);
+        }
+
+        return view('frontend.orders.index', compact('menuCategories', 'orders', 'selectedOrder', 'search', 'selectedOrderId'));
     }
 
     public function show($orderId)
     {
-        if (!$this->customerAuthService->isCustomerLoggedIn()) {
-            return redirect()
-                ->route('frontend.login')
-                ->with('error', 'Please login to view your orders.');
-        }
-
-        $customerId = (int) session('customer_id');
-        $menuCategories = $this->frontendCatalogService->getMenuCategories();
-        $order = $this->frontendOrderService->getOrderForCustomer((int) $orderId, $customerId);
-
-        if (!$order) {
-            return redirect()
-                ->route('frontend.orders.index')
-                ->with('error', 'Order not found.');
-        }
-
-        return view('frontend.orders.show', compact('menuCategories', 'order'));
+        return redirect()->route('frontend.orders.index', [
+            'order_id' => (int) $orderId,
+        ]);
     }
 }
