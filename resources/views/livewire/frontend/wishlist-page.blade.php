@@ -2,23 +2,16 @@
   $defaultImage = asset('assets/frontend/images/no_image.png');
 @endphp
 
-<div class="wishlist page_wishlist">
-  <h2>My Wishlist</h2>
+<div class="wishlist page_wishlist orders-theme order-page-wrapper container">
+  <div class="order-details">
+    <div class="top-row">
+      <h3>My Wishlist</h3>
+    </div>
 
-  @if(($items ?? collect())->isEmpty())
-    <div class="alert alert-info">No items in your wishlist.</div>
-  @else
-    <div class="table-responsive">
-      <table class="table table-bordered">
-        <thead>
-        <tr>
-          <td>Image</td>
-          <td>Product</td>
-          <td>Price</td>
-          <td>Action</td>
-        </tr>
-        </thead>
-        <tbody>
+    @if(($items ?? collect())->isEmpty())
+      <div class="alert alert-info">No items in your wishlist.</div>
+    @else
+      <div class="product-list">
         @foreach($items as $item)
           @php
             $product = $item->product;
@@ -30,33 +23,33 @@
             $final = (float) ($rate->final_price ?? 0);
             $shown = $final > 0 ? $final : $selling;
           @endphp
-          <tr>
-            <td style="width:120px;">
+          <div class="product-card">
+            <div class="cart-left">
               <a href="{{ route('frontend.single_product', ['product_id' => $product?->id]) }}">
                 <img src="{{ $productImage }}"
                      alt="{{ $product?->product_name }}"
                      title="{{ $product?->product_name }}"
-                     class="img-responsive"
+                     class="cart-thumb"
                      onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
               </a>
-            </td>
-            <td>
-              <a href="{{ route('frontend.single_product', ['product_id' => $product?->id]) }}">
-                {{ $product?->product_name ?? 'Product' }}
-              </a>
-            </td>
-            <td>
-              &#8377;{{ number_format($shown, 2) }}
-            </td>
-            <td>
+              <div>
+                <div class="title">
+                  <a href="{{ route('frontend.single_product', ['product_id' => $product?->id]) }}">
+                    {{ $product?->product_name ?? 'Product' }}
+                  </a>
+                </div>
+                <div class="meta">Price</div>
+              </div>
+            </div>
+            <div class="cart-right">
+              <div class="price">&#8377;{{ number_format($shown, 2) }}</div>
               <button type="button" class="btn btn-danger btn-xs" wire:click="removeItem({{ $item->id }})">
                 Remove
               </button>
-            </td>
-          </tr>
+            </div>
+          </div>
         @endforeach
-        </tbody>
-      </table>
-    </div>
-  @endif
+      </div>
+    @endif
+  </div>
 </div>

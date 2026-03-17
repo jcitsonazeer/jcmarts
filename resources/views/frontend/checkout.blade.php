@@ -1,7 +1,7 @@
 @include('frontend.header')
 <div class="content-top-breadcum"></div>
 
-<div id="checkout-checkout" class="container">
+<div id="checkout-checkout" class="container order-page-wrapper orders-theme">
   <ul class="breadcrumb">
     <h1>Checkout</h1>
     <li><a href="{{ route('frontend.home') }}"><i class="fa fa-home"></i></a></li>
@@ -23,85 +23,79 @@
         @csrf
         <input type="hidden" name="selected_address_id" id="selected_address_id" value="{{ old('selected_address_id', '') }}">
 
-        <div class="row">
+        <div class="row equal-height">
           <div class="col-sm-7">
-            <div class="panel panel-default">
-              <div class="panel-heading"><h4 class="panel-title">Delivery Address</h4></div>
-              <div class="panel-body">
-                @if($errors->has('selected_address_id'))
-                  <div class="alert alert-danger">{{ $errors->first('selected_address_id') }}</div>
-                @endif
+            <div class="order-sidebar">
+              <h3>Delivery Address</h3>
 
-                @if($addresses->isEmpty())
-                  <p>No delivery address found for your account.</p>
-                @else
+              @if($errors->has('selected_address_id'))
+                <div class="alert alert-danger">{{ $errors->first('selected_address_id') }}</div>
+              @endif
+
+              @if($addresses->isEmpty())
+                <p>No delivery address found for your account.</p>
+              @else
+                <div class="address-list scrollable">
                   @foreach($addresses as $address)
                     @php
                       $isChecked = (string) old('selected_address_id') === (string) $address->id;
                     @endphp
-                    <div class="well" style="margin-bottom: 12px;">
-                      <label style="display:flex; gap:10px; align-items:flex-start; margin:0;">
-                        <input
-                          type="checkbox"
-                          class="address-checkbox"
-                          value="{{ $address->id }}"
-                          {{ $isChecked ? 'checked' : '' }}
-                          style="margin-top: 2px;"
-                        >
-                        <span>
-                          <strong>{{ $address->address_line_1 }}</strong><br>
-                          @if(!empty($address->address_line_2))
-                            {{ $address->address_line_2 }}<br>
-                          @endif
-                          {{ $address->location }} - {{ $address->pincode }}<br>
-                          Landmark: {{ $address->landmark ?: 'N/A' }}
-                        </span>
-                      </label>
-                    </div>
+                    <label class="address-option">
+                      <input
+                        type="checkbox"
+                        class="address-checkbox"
+                        value="{{ $address->id }}"
+                        {{ $isChecked ? 'checked' : '' }}
+                      >
+                      <span class="address-card">
+                        <strong>{{ $address->address_line_1 }}</strong><br>
+                        @if(!empty($address->address_line_2))
+                          {{ $address->address_line_2 }}<br>
+                        @endif
+                        {{ $address->location }} - {{ $address->pincode }}<br>
+                        Landmark: {{ $address->landmark ?: 'N/A' }}
+                      </span>
+                    </label>
                   @endforeach
-                @endif
+                </div>
+              @endif
 
-                <a href="{{ route('frontend.add_address') }}" class="btn btn-default">
-                  Add NEW address
-                </a>
-              </div>
+              <a href="{{ route('frontend.add_address') }}" class="btn btn-default">
+                Add NEW address
+              </a>
             </div>
           </div>
 
           <div class="col-sm-5">
-            <div class="panel panel-default">
-              <div class="panel-heading"><h4 class="panel-title">Price Details</h4></div>
-              <div class="panel-body" style="padding:0;">
-                <table class="table table-bordered" style="margin:0;">
-                  <tbody>
-                    <tr>
-                      <td><strong>Sub-Total</strong></td>
-                      <td class="text-right">&#8377;{{ number_format($subTotal, 2) }}</td>
-                    </tr>
-                    <tr>
-                      <td>Delivery Charges</td>
-                      <td class="text-right">&#8377;{{ number_format($deliveryCharge, 2) }}</td>
-                    </tr>
-                    <tr>
-                      <td>Packing Charges</td>
-                      <td class="text-right">&#8377;{{ number_format($packingCharge, 2) }}</td>
-                    </tr>
-                    <tr>
-                      <td>Other Charges</td>
-                      <td class="text-right">&#8377;{{ number_format($otherCharge, 2) }}</td>
-                    </tr>
-                    <tr>
-                      <td><strong>Total</strong></td>
-                      <td class="text-right"><strong>&#8377;{{ number_format($total, 2) }}</strong></td>
-                    </tr>
-                  </tbody>
-                </table>
+            <div class="order-details">
+              <h3>Price Details</h3>
+              <div class="amount-card">
+                <div class="amount-row">
+                  <div class="label">Sub-Total</div>
+                  <div class="value">&#8377;{{ number_format($subTotal, 2) }}</div>
+                </div>
+                <div class="amount-row">
+                  <div class="label">Delivery Charges</div>
+                  <div class="value">&#8377;{{ number_format($deliveryCharge, 2) }}</div>
+                </div>
+                <div class="amount-row">
+                  <div class="label">Packing Charges</div>
+                  <div class="value">&#8377;{{ number_format($packingCharge, 2) }}</div>
+                </div>
+                <div class="amount-row">
+                  <div class="label">Other Charges</div>
+                  <div class="value">&#8377;{{ number_format($otherCharge, 2) }}</div>
+                </div>
+                <div class="amount-row">
+                  <div class="label">Total</div>
+                  <div class="value">&#8377;{{ number_format($total, 2) }}</div>
+                </div>
               </div>
-            </div>
 
-            <button type="submit" id="proceed-payment-btn" class="btn btn-primary btn-block" disabled>
-              Proceed to payment
-            </button>
+              <button type="submit" id="proceed-payment-btn" class="btn btn-primary btn-block" disabled>
+                Proceed to payment
+              </button>
+            </div>
           </div>
         </div>
       </form>

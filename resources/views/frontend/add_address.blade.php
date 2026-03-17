@@ -1,7 +1,7 @@
 @include('frontend.header')
 <div class="content-top-breadcum"></div>
 
-<div id="account-address" class="container">
+<div id="account-address" class="container order-page-wrapper orders-theme">
   <ul class="breadcrumb">
     <h1>Add Delivery Address</h1>
     <li><a href="{{ route('frontend.home') }}"><i class="fa fa-home"></i></a></li>
@@ -15,11 +15,12 @@
         <div class="alert alert-danger">{{ session('error') }}</div>
       @endif
 
-      <div class="panel panel-default" style="max-width: 700px;">
-        <div class="panel-heading">
-          <h4 class="panel-title">New Address</h4>
-        </div>
-        <div class="panel-body">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+          <div class="order-details address-form-card">
+            <div class="top-row">
+              <h3>New Address</h3>
+            </div>
           <form method="POST" action="{{ route('frontend.add_address.store') }}">
             @csrf
 
@@ -72,6 +73,7 @@
               </div>
             </div>
           </form>
+          </div>
         </div>
       </div>
     </div>
