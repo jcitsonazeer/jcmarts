@@ -32,7 +32,7 @@
     <h4>Contact Us </h4>
     <h5 class="collapsed" data-target="#dropdown-contact" data-toggle="collapse">Contacts <span class="icon"></span> </h5>
     <ul class="clearfix collapse" id="dropdown-contact">
-      <li class="item">Saravana Arcade, Old Bridge Road,<br>Kuzhithurai,<br>Marthandam.</li>
+      <li class="item">15-62/10, Chengamoolai, <br>Kuzhithurai P.O, Vilavancode Taluk, <br>Kanyakumari District, Pin : 629163</li>
       <li class="item email"><a href="">info@jcmarts.com</a></li>
       <li class="item call">(+91) 9514486111</li>
     </ul>
