@@ -5,17 +5,17 @@
         <div class="footer_block">
        <div class="row">
         <div class="col-xs-12 col-sm-12 col-md-4 column myaccount">
-          <h4>My Account</h4>
+          <h4 data-aos="fade-up-right">My Account</h4>
           <h5 class="collapsed" data-target="#dropdown-account" data-toggle="collapse">My Account <span class="icon"></span></h5>
-          <ul class="list-unstyled collapse" id="dropdown-account">
+          <ul class="list-unstyled collapse" id="dropdown-account" data-aos="fade-up-right">
             <li><a href="#">My Account</a></li>
             <li><a href="#">Order History</a></li>
           </ul>
         </div>
                 <div class="col-xs-12 col-sm-12 col-md-4 column information">
-          <h4>Information</h4>
+          <h4 data-aos="fade-up-left">Information</h4>
           <h5 class="collapsed" data-target="#dropdown-information" data-toggle="collapse">Information <span class="icon"></span></h5>
-          <ul class="list-unstyled collapse" id="dropdown-information">
+          <ul class="list-unstyled collapse" id="dropdown-information"  data-aos="flip-down">
                         <li><a href="#">About Us</a></li>
                         <li><a href="#">Delivery Information</a></li>
                         <li><a href="#">Privacy Policy</a></li>
@@ -29,9 +29,9 @@
         
          <div class="col-xs-12 col-sm-12 col-md-4 column contacts">   <div class="footer-common collapsible mobile-collapsible">
   <div class="footer-static">
-    <h4>Contact Us </h4>
+    <h4 data-aos="fade-up-left">Contact Us </h4>
     <h5 class="collapsed" data-target="#dropdown-contact" data-toggle="collapse">Contacts <span class="icon"></span> </h5>
-    <ul class="clearfix collapse" id="dropdown-contact">
+    <ul class="clearfix collapse" id="dropdown-contact" data-aos="flip-down">
       <li class="item">15-62/10, Chengamoolai, <br>Kuzhithurai P.O, Vilavancode Taluk, <br>Kanyakumari District, Pin : 629163</li>
       <li class="item email"><a href="">info@jcmarts.com</a></li>
       <li class="item call">(+91) 9514486111</li>
@@ -52,8 +52,8 @@
   
 
   <div class="footer-bottom-section3 footer_social section col-md-12 col-xs-12">
-  <div class="section-heading">Social media</div>
-  <ul class="social-icon">
+  <div class="section-heading" data-aos="fade-left">Social media</div>
+  <ul class="social-icon" >
     <li><a class="facebook" title="Facebook" href="#"><i class="fa fa-facebook"> </i></a></li>
     <li><a class="instagram" title="Instagram" href="#"><i class="fa fa-instagram"> </i></a></li>
     <li><a class="youtube" title="youtube" href="#"><i class="fa fa-youtube"> </i></a></li>
@@ -342,6 +342,9 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 
+<script>
+  AOS.init();
+</script>
 
 @livewireScripts
 </body></html>

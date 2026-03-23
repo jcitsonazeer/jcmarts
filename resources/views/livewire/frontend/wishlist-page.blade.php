@@ -3,7 +3,7 @@
 @endphp
 
 <div class="wishlist page_wishlist orders-theme order-page-wrapper container">
-  <div class="order-details">
+  <div class="order-details" style="width:50%;margin:auto">
     <div class="top-row">
       <h3>My Wishlist</h3>
     </div>

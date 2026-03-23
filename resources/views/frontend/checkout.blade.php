@@ -60,9 +60,9 @@
                 </div>
               @endif
 
-              <a href="{{ route('frontend.add_address') }}" class="btn btn-default">
+              <center><a href="{{ route('frontend.add_address') }}" class="btn btn-default">
                 Add NEW address
-              </a>
+              </a></center>
             </div>
           </div>
 
@@ -92,9 +92,9 @@
                 </div>
               </div>
 
-              <button type="submit" id="proceed-payment-btn" class="btn btn-primary btn-block" disabled>
+              <center><button type="submit" id="proceed-payment-btn" class="btn btn-primary w-auto" disabled>
                 Proceed to payment
-              </button>
+              </button></center>
             </div>
           </div>
         </div>

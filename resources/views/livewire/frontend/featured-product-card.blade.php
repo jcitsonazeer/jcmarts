@@ -15,10 +15,10 @@
       <p class="tag">{{ (int) round($offer) }}<br> % <br> <i>off</i></p>
     @endif
 
-    <div class="image">
+    <div class="image" >
       <div class="first_image">
         <a href="{{ route('frontend.single_product', ['product_id' => $product->id]) }}">
-          <img src="{{ $productImage }}" alt="{{ $product->product_name }}" title="{{ $product->product_name }}" class="img-responsive" onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
+          <img src="{{ $productImage }}" alt="{{ $product->product_name }}" title="{{ $product->product_name }}" class="img-responsive" onerror="this.onerror=null;this.src='{{ $defaultImage }}';"  data-aos="fade-down">
         </a>
         <livewire:frontend.wishlist-toggle-button
           :product-id="$product->id"
@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <div class="product-details">
+    <div class="product-details" data-aos="fade-up">
       <div class="caption">
         <h4><a href="{{ route('frontend.single_product', ['product_id' => $product->id]) }}">{{ $product->product_name }}</a></h4>
         <div class="model">Product {{ $product->id }}</div>

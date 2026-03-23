@@ -4,6 +4,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>JcMarts</title>
 
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
 <script src="{{ asset('assets/frontend/js/jquery-2.1.1.min.js') }}"></script>
 <link href="{{ asset('assets/frontend/css/bootstrap.min_1.css') }}" rel="stylesheet" media="screen">
 <script src="{{ asset('assets/frontend/js/bootstrap.min.js') }}"></script>
@@ -67,16 +70,16 @@
 <div class="header-top-right pull-right">
     <div class="telephone"><a href="#"><i class="fa fa-phone"></i>9514486111</a></div>
     @if(session()->has('customer_id'))
-      <div class="login"><span><i class="fa fa-user"></i>Hello {{ session('customer_name') }}</span></div>
+      <div class="login"><span><i class="fa fa-user" ></i>Hello {{ session('customer_name') }}</span></div>
       <div class="login"><a href="{{ route('frontend.orders.index') }}"><i class="fa fa-shopping-bag"></i>My Orders</a></div>
       <div>
         <form method="POST" action="{{ route('frontend.logout') }}" style="display:inline;">
           @csrf
-          <button type="submit" style="background:none;border:none;padding:0;color:#000;">Logout</button>
+          <button type="submit" style="background:none;border:none;padding:0;">Logout</button>
         </form>
       </div>
     @else
-      <div class="login"><a href="{{ route('frontend.login') }}"><i class="fa fa-user"></i>Login</a></div>
+      <div class="login"><a href="{{ route('frontend.login') }}"><i class="fa fa-user" ></i>Login</a></div>
       <div><a href="{{ route('frontend.register') }}">Signup</a></div>
     @endif
       </div>

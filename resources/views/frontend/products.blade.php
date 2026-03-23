@@ -139,15 +139,6 @@
         </div>
       </div>
 
-      <div class="filter-product">
-        <div class="btn-grid-list">
-          <div class="btn-group btn-group-sm">
-            <button type="button" id="filter-view" class="btn btn-default filter collapsed" data-target="#" data-toggle="collapse" title="Refine Search"><i class="fa fa-th-list"></i></button>
-
-          </div>
-        </div>
-
-      </div>
 
       <div class="products-collection">
         <div class="row product-layoutrow">

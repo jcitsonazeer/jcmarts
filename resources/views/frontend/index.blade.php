@@ -54,7 +54,7 @@
                 <div id="content" class="col-sm-12"><div class="breadcrumb"></div>  
 
 <div class="category-banner-block wow fadeInUp" data-wow-duration="0.5s" data-wow-delay="0.5s">
-<h3>Product category</h3>
+<h3 data-aos="fade-right" data-aos-offset="250">Product category</h3>
 <div class="manufacture-slider">
     @forelse(($topSubCategories ?? collect()) as $subCategory)
       @php
@@ -64,12 +64,12 @@
       @endphp
       <div class="product-layout">
         <div class="product-thumb transition">
-          <div class="caption categoryname">
-            <h4><a href="{{ route('frontend.products', ['sub_category' => $subCategory->id]) }}">{{ $subCategory->sub_category_name }}</a></h4>
+          <div class="caption categoryname"  >
+            <h4><a href="{{ route('frontend.products', ['sub_category' => $subCategory->id]) }}" data-aos="fade-left">{{ $subCategory->sub_category_name }}</a></h4>
           </div>
           <div class="image-cstm">
             <a href="{{ route('frontend.products', ['sub_category' => $subCategory->id]) }}">
-              <img src="{{ $subCategoryImage }}" alt="{{ $subCategory->sub_category_name }}" title="{{ $subCategory->sub_category_name }}" class="img-responsive fixed-img">
+              <img src="{{ $subCategoryImage }}" alt="{{ $subCategory->sub_category_name }}" title="{{ $subCategory->sub_category_name }}" class="img-responsive fixed-img" data-aos="fade-up">
             </a>
           </div>
         </div>
@@ -93,7 +93,7 @@
 
 
 <div class="section featured">
-<div class="section-heading">Product Offers</div>
+<div class="section-heading" data-aos="fade-right">Product Offers</div>
 
 <div class="owl-carousel product-carousel">
   @forelse(($productOffers ?? collect()) as $offer)
@@ -103,9 +103,9 @@
     @endphp
     <div class=" product-items ">
       <div class="product-thumb transition">
-        <p class="tag">{{ (int) round((float) ($offer->offer_percentage ?? 0)) }}<br> % <br> <i>off</i></p>
+        <p class="tag" data-aos="fade-down"  data-aos-duration="1000">{{ (int) round((float) ($offer->offer_percentage ?? 0)) }}<br> % <br> <i>off</i></p>
         <div class="imageproduct-cstm">
-          <div class="">
+          <div class="" data-aos="zoom-in">
             <a href="{{ route('frontend.single_product', ['product_id' => $offer->product_id]) }}">
               <img src="{{ !empty($offer->product_image) ? asset('storage/product/' . $offer->product_image) : asset('assets/frontend/images/no_image.png') }}"
                    alt="{{ $offer->product_name }}"
@@ -159,35 +159,35 @@
 </div>
 
 
-<div class="shipping-outer  wow fadeInUp" data-wow-duration="0.5s" data-wow-delay="0.5s">
+<div class="shipping-outer" data-aos="fade-down">
 <div class="shipping-inner">
 <div class="heading col-md-3 col-sm-12 col-xs-12">
-  <h2>Why choose us?</h2>
+  <h2 data-aos="fade-right" data-aos-offset="200" data-aos-duration="500">Why choose us?</h2>
 </div>
 <div class="subtitle-part subtitle-part1 col-md-3 col-sm-4 col-xs-12">
-<div class="subtitle-part-inner">
+<div class="subtitle-part-inner" data-aos="fade-right" data-aos-offset="200">
 <div class="subtitile">
 <div class="subtitle-part-image"></div>  
-<div class="subtitile1">On time delivery</div>
-<div class="subtitile2">Fast & Reliable Service</div>
+<div class="subtitile1" data-aos="zoom-in-right"  data-aos-offset="200" data-aos-duration="500">On time delivery</div>
+<div class="subtitile2" data-aos="zoom-in-left"  data-aos-offset="200" data-aos-duration="500">Fast & Reliable Service</div>
 </div>
 </div>
 </div>
 <div class="subtitle-part subtitle-part2 col-md-3 col-sm-4 col-xs-12">
-<div class="subtitle-part-inner">
+<div class="subtitle-part-inner" data-aos="fade-right" data-aos-offset="200">
 <div class="subtitile">
 <div class="subtitle-part-image"></div>  
-<div class="subtitile1">Free delivery</div>
-<div class="subtitile2">Order over Rs.500</div>
+<div class="subtitile1" data-aos="zoom-in-right"  data-aos-offset="200" data-aos-duration="500">Free delivery</div>
+<div class="subtitile2" data-aos="zoom-in-left"  data-aos-offset="200" data-aos-duration="500">Order over Rs.500</div>
 </div>
 </div>
 </div>
 <div class="subtitle-part subtitle-part3 col-md-3 col-sm-4 col-xs-12">
-<div class="subtitle-part-inner">
+<div class="subtitle-part-inner" data-aos="fade-right" data-aos-offset="200">
 <div class="subtitile">
 <div class="subtitle-part-image"></div>  
-<div class="subtitile1">Quality assurance</div>
-<div class="subtitile2">Excellence in Every Detail</div>
+<div class="subtitile1" data-aos="zoom-in-right"  data-aos-offset="200" data-aos-duration="500">Quality assurance</div>
+<div class="subtitile2" data-aos="zoom-in-left"  data-aos-offset="200" data-aos-duration="500">Excellence in Every Detail</div>
 </div>
 </div>
 </div>
@@ -196,7 +196,7 @@
 
 
 <div class="section featured">
-<div class="section-heading">Featured Products</div>
+<div class="section-heading" data-aos="fade-right">Featured Products</div>
 
 <div class="owl-carousel product-carousel">
   @forelse(($featuredProducts ?? collect()) as $product)
@@ -204,14 +204,14 @@
   @empty
     <div class=" product-items ">
       <div class="product-thumb transition">
-        <div class="image">
-          <div class="first_image">
+        <div class="image" data-aos="fade-down">
+          <div class="first_image" >
             <a href="{{ route('frontend.single_product') }}">
               <img src="{{ asset('assets/frontend/images/no_image.png') }}" alt="No featured products" title="No featured products" class="img-responsive">
             </a>
           </div>
         </div>
-        <div class="product-details">
+        <div class="product-details" data-aos="fade-up">
           <div class="caption">
             <h4><a href="{{ route('frontend.single_product') }}">No featured products available</a></h4>
           </div>

@@ -51,9 +51,9 @@
           </div>
         </div>
 
-        <button id="continue-payment" class="btn btn-primary btn-block" type="button">
+        <center><button id="continue-payment" class="btn btn-primary btn-block w-auto" type="button" style="margin-top:10px;">
           Continue Payment
-        </button>
+        </button></center>
         <p id="payment-status" class="text-center payment-status"></p>
       </div>
     </div>
