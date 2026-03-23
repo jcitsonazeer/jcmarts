@@ -204,14 +204,14 @@
   @empty
     <div class=" product-items ">
       <div class="product-thumb transition">
-        <div class="image" data-aos="fade-down">
+        <div class="image">
           <div class="first_image" >
             <a href="{{ route('frontend.single_product') }}">
               <img src="{{ asset('assets/frontend/images/no_image.png') }}" alt="No featured products" title="No featured products" class="img-responsive">
             </a>
           </div>
         </div>
-        <div class="product-details" data-aos="fade-up">
+        <div class="product-details">
           <div class="caption">
             <h4><a href="{{ route('frontend.single_product') }}">No featured products available</a></h4>
           </div>
