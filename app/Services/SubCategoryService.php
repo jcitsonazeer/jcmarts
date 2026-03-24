@@ -10,9 +10,19 @@ use Illuminate\Support\Facades\Storage;
 
 class SubCategoryService
 {
-    public function getAll()
+    public function getAll(?string $searchTerm = null)
     {
         return SubCategory::with(['category', 'createdBy', 'updatedBy'])
+            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
+                $term = trim((string) $searchTerm);
+
+                $query->where(function ($innerQuery) use ($term) {
+                    $innerQuery->where('sub_category_name', 'like', '%' . $term . '%')
+                        ->orWhereHas('category', function ($categoryQuery) use ($term) {
+                            $categoryQuery->where('category_name', 'like', '%' . $term . '%');
+                        });
+                });
+            })
             ->orderBy('id', 'desc')
             ->get();
     }

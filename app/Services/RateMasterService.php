@@ -10,18 +10,33 @@ use Illuminate\Support\Facades\DB;
 
 class RateMasterService
 {
-    public function getAll()
+    public function getAll(?string $searchTerm = null)
     {
         return RateMaster::with(['product', 'uom', 'createdBy', 'updatedBy', 'latestStockInfo'])
+            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
+                $term = trim((string) $searchTerm);
+
+                $query->where(function ($innerQuery) use ($term) {
+                    $innerQuery->whereHas('product', function ($productQuery) use ($term) {
+                        $productQuery->where('product_name', 'like', '%' . $term . '%');
+                    })->orWhereHas('uom', function ($uomQuery) use ($term) {
+                        $uomQuery->where('primary_uom', 'like', '%' . $term . '%')
+                            ->orWhere('secondary_uom', 'like', '%' . $term . '%');
+                    });
+                });
+            })
             ->orderBy('id', 'desc')
             ->get();
     }
 
-    public function getProductsForSelectedDisplay()
+    public function getProductsForSelectedDisplay(?string $searchTerm = null)
     {
         return Product::select('id', 'product_name', 'product_image')
             ->whereHas('rates', function ($query) {
                 $query->where('is_active', 1);
+            })
+            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
+                $query->where('product_name', 'like', '%' . trim((string) $searchTerm) . '%');
             })
             ->withCount([
                 'rates' => function ($query) {
@@ -67,6 +82,37 @@ class RateMasterService
     public function getProductsForDropdown()
     {
         return Product::orderBy('product_name')->get();
+    }
+
+    public function searchProductOptions(?string $searchTerm = null, int $limit = 10)
+    {
+        return Product::query()
+            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
+                $query->where('product_name', 'like', '%' . trim((string) $searchTerm) . '%');
+            })
+            ->orderBy('product_name')
+            ->limit($limit)
+            ->get(['id', 'product_name'])
+            ->map(function (Product $product) {
+                return [
+                    'id' => (int) $product->id,
+                    'label' => (string) $product->product_name,
+                ];
+            });
+    }
+
+    public function getProductOption(int $productId): ?array
+    {
+        $product = Product::query()->find($productId, ['id', 'product_name']);
+
+        if (!$product) {
+            return null;
+        }
+
+        return [
+            'id' => (int) $product->id,
+            'label' => (string) $product->product_name,
+        ];
     }
 
     public function getUomsForDropdown()

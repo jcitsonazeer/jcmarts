@@ -27,12 +27,40 @@
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label>Product <span class="text-danger">*</span></label>
-                                    <select name="product_id" class="form-control" wire:model.live="product_id" required>
-                                        <option value="">Select Product</option>
-                                        @foreach($products as $product)
-                                            <option value="{{ $product['id'] }}">{{ $product['product_name'] }}</option>
-                                        @endforeach
-                                    </select>
+                                    <div class="position-relative" wire:click.outside="closeProductDropdown">
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            placeholder="Search product..."
+                                            autocomplete="off"
+                                            wire:model.live="product_search"
+                                            wire:input="clearProductSelection"
+                                            wire:focus="openProductDropdown"
+                                            wire:keydown.escape="closeProductDropdown"
+                                            wire:blur="resolveProductSelection"
+                                            required
+                                        >
+                                        <input type="hidden" name="product_id" wire:model.live="product_id" required>
+
+                                        @if($product_dropdown_open)
+                                            <div class="list-group position-absolute w-100 mt-1" style="z-index: 1000; max-height: 240px; overflow: auto;">
+                                                @forelse($product_results as $productOption)
+                                                    <button
+                                                        type="button"
+                                                        class="list-group-item list-group-item-action"
+                                                        wire:click="selectProduct({{ $productOption['id'] }}, @js($productOption['label']))"
+                                                    >
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <span>{{ $productOption['label'] }}</span>
+                                                            <small class="text-muted">#{{ $productOption['id'] }}</small>
+                                                        </div>
+                                                    </button>
+                                                @empty
+                                                    <div class="list-group-item text-muted">No matching products found.</div>
+                                                @endforelse
+                                            </div>
+                                        @endif
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label>Primary UOM <span class="text-danger">*</span></label>

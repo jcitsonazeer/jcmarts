@@ -30,25 +30,44 @@
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label>Sub Category <span class="text-danger">*</span></label>
-                                    <select name="sub_category_id" class="form-control" required>
-                                        <option value="">Select Sub Category</option>
+                                    <input
+                                        type="text"
+                                        name="sub_category_name"
+                                        class="form-control"
+                                        list="sub-category-options"
+                                        value="{{ old('sub_category_name') }}"
+                                        placeholder="Type or select sub category"
+                                        autocomplete="off"
+                                        required
+                                    >
+                                    <datalist id="sub-category-options">
                                         @foreach($subCategories as $subCategory)
-                                            <option value="{{ $subCategory->id }}" {{ old('sub_category_id') == $subCategory->id ? 'selected' : '' }}>
-                                                {{ $subCategory->sub_category_name }}
-                                            </option>
+                                            <option value="{{ $subCategory->sub_category_name }}"></option>
                                         @endforeach
-                                    </select>
+                                    </datalist>
+                                    @error('sub_category_name')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6">
                                     <label>Brand</label>
-                                    <select name="brand_id" class="form-control">
-                                        <option value="">Select Brand</option>
+                                    <input
+                                        type="text"
+                                        name="brand_name"
+                                        class="form-control"
+                                        list="brand-options"
+                                        value="{{ old('brand_name') }}"
+                                        placeholder="Type or select brand"
+                                        autocomplete="off"
+                                    >
+                                    <datalist id="brand-options">
                                         @foreach($brands as $brand)
-                                            <option value="{{ $brand->id }}" {{ (string) old('brand_id') === (string) $brand->id ? 'selected' : '' }}>
-                                                {{ $brand->brand_name }}
-                                            </option>
+                                            <option value="{{ $brand->brand_name }}"></option>
                                         @endforeach
-                                    </select>
+                                    </datalist>
+                                    @error('brand_name')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                 </div>
                             </div>
 

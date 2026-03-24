@@ -14,29 +14,49 @@ class ProductImageController extends Controller
         $this->productImageService = $productImageService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $products = $this->productImageService->getAllProducts();
+        $search = trim((string) $request->query('search'));
+        $products = $this->productImageService->getAllProducts($search);
 
-        return view('admin.product_images.index', compact('products'));
+        return view('admin.product_images.index', compact('products', 'search'));
     }
 
     public function create()
     {
         $products = $this->productImageService->getProductsForDropdown();
+        $selectedProductName = '';
 
-        return view('admin.product_images.create', compact('products'));
+        if (request()->filled('product_id')) {
+            $selectedProductName = optional(
+                $products->firstWhere('id', (int) request('product_id'))
+            )->product_name ?? '';
+        }
+
+        return view('admin.product_images.create', compact('products', 'selectedProductName'));
     }
 
     public function store(Request $request)
     {
+        $request->merge([
+            'product_name' => trim((string) $request->input('product_name')),
+        ]);
+
         $validatedData = $request->validate([
-            'product_id' => 'required|integer|exists:products,id',
+            'product_name' => 'required|string|max:150',
             'single_image_1' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|required_without_all:single_image_2,single_image_3,single_image_4',
             'single_image_2' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|required_without_all:single_image_1,single_image_3,single_image_4',
             'single_image_3' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|required_without_all:single_image_1,single_image_2,single_image_4',
             'single_image_4' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|required_without_all:single_image_1,single_image_2,single_image_3',
         ]);
+
+        $validatedData['product_id'] = $this->productImageService->findProductIdByName($validatedData['product_name']);
+
+        if (!$validatedData['product_id']) {
+            return back()
+                ->withErrors(['product_name' => 'Please select a valid product from the suggestion list.'])
+                ->withInput();
+        }
 
         $adminId = session('admin_id');
         if (!$adminId) {

@@ -6,12 +6,24 @@ use App\Models\OfferDetail;
 use App\Models\OfferProduct;
 use App\Models\Product;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class OfferProductService
 {
-    public function getAll()
+    public function getAll(?string $searchTerm = null)
     {
         return OfferProduct::with(['offer', 'product', 'createdBy', 'updatedBy'])
+            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
+                $term = trim((string) $searchTerm);
+
+                $query->where(function ($innerQuery) use ($term) {
+                    $innerQuery->whereHas('offer', function ($offerQuery) use ($term) {
+                        $offerQuery->where('offer_name', 'like', '%' . $term . '%');
+                    })->orWhereHas('product', function ($productQuery) use ($term) {
+                        $productQuery->where('product_name', 'like', '%' . $term . '%');
+                    });
+                });
+            })
             ->orderByDesc('id')
             ->get();
     }
@@ -30,6 +42,22 @@ class OfferProductService
             ->where('is_active', 1)
             ->orderBy('product_name')
             ->get();
+    }
+
+    public function findProductIdByName(string $productName): ?int
+    {
+        $productName = trim($productName);
+
+        if ($productName === '') {
+            return null;
+        }
+
+        $product = Product::query()
+            ->where('is_active', 1)
+            ->whereRaw('LOWER(product_name) = ?', [Str::lower($productName)])
+            ->first(['id']);
+
+        return $product ? (int) $product->id : null;
     }
 
     public function findForShow($id)

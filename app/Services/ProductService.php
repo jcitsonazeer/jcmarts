@@ -12,9 +12,22 @@ use Illuminate\Support\Str;
 
 class ProductService
 {
-    public function getAll()
+    public function getAll(?string $searchTerm = null)
     {
         return Product::with(['subCategory', 'brand', 'createdBy', 'updatedBy'])
+            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
+                $term = trim((string) $searchTerm);
+
+                $query->where(function ($innerQuery) use ($term) {
+                    $innerQuery->where('product_name', 'like', '%' . $term . '%')
+                        ->orWhereHas('subCategory', function ($subCategoryQuery) use ($term) {
+                            $subCategoryQuery->where('sub_category_name', 'like', '%' . $term . '%');
+                        })
+                        ->orWhereHas('brand', function ($brandQuery) use ($term) {
+                            $brandQuery->where('brand_name', 'like', '%' . $term . '%');
+                        });
+                });
+            })
             ->orderBy('id', 'desc')
             ->get();
     }
@@ -54,6 +67,37 @@ class ProductService
     public function getBrandsForDropdown()
     {
         return Brand::where('is_active', 1)->orderBy('brand_name')->get();
+    }
+
+    public function findSubCategoryIdByName(string $subCategoryName): ?int
+    {
+        $subCategoryName = trim($subCategoryName);
+
+        if ($subCategoryName === '') {
+            return null;
+        }
+
+        $subCategory = SubCategory::query()
+            ->whereRaw('LOWER(sub_category_name) = ?', [Str::lower($subCategoryName)])
+            ->first();
+
+        return $subCategory ? (int) $subCategory->id : null;
+    }
+
+    public function findBrandIdByName(?string $brandName): ?int
+    {
+        $brandName = trim((string) $brandName);
+
+        if ($brandName === '') {
+            return null;
+        }
+
+        $brand = Brand::query()
+            ->where('is_active', 1)
+            ->whereRaw('LOWER(brand_name) = ?', [Str::lower($brandName)])
+            ->first();
+
+        return $brand ? (int) $brand->id : null;
     }
 
     public function findForShow($id)

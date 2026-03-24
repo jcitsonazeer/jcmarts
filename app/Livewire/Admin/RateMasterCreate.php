@@ -12,6 +12,10 @@ class RateMasterCreate extends Component
     public $secondaryUomMap = [];
 
     public $product_id = '';
+    public string $product_search = '';
+    public array $product_results = [];
+    public bool $product_dropdown_open = false;
+    public bool $product_ignore_search = false;
     public $primary_uom = '';
     public $rate_rows = [];
 
@@ -37,8 +41,79 @@ class RateMasterCreate extends Component
         $this->product_id = $old['product_id'] ?? '';
         $this->primary_uom = $old['primary_uom'] ?? '';
 
+        if (!empty($this->product_id)) {
+            $this->syncSelectedProduct();
+        }
+
         if (!empty($this->primary_uom)) {
             $this->loadRows($old['rate_rows'] ?? []);
+        }
+    }
+
+    public function updatedProductSearch()
+    {
+        if ($this->product_ignore_search) {
+            $this->product_ignore_search = false;
+            return;
+        }
+
+        $this->product_dropdown_open = true;
+        $this->loadProductResults();
+    }
+
+    public function openProductDropdown()
+    {
+        $this->product_dropdown_open = true;
+        $this->loadProductResults();
+    }
+
+    public function closeProductDropdown()
+    {
+        $this->product_dropdown_open = false;
+    }
+
+    public function selectProduct(int $productId, string $label)
+    {
+        $this->product_ignore_search = true;
+        $this->product_id = (string) $productId;
+        $this->product_search = $label;
+        $this->product_results = [];
+        $this->product_dropdown_open = false;
+    }
+
+    public function clearProductSelection()
+    {
+        if ($this->product_ignore_search) {
+            return;
+        }
+
+        $this->product_id = '';
+    }
+
+    public function resolveProductSelection()
+    {
+        if (!empty($this->product_id)) {
+            return;
+        }
+
+        $term = trim($this->product_search);
+        if ($term === '') {
+            return;
+        }
+
+        $service = app(RateMasterService::class);
+        $results = $service->searchProductOptions($term, 5);
+
+        $match = $results->first(function ($row) use ($term) {
+            return isset($row['label']) && strcasecmp($row['label'], $term) === 0;
+        });
+
+        if (!$match && $results->count() === 1) {
+            $match = $results->first();
+        }
+
+        if ($match) {
+            $this->selectProduct((int) $match['id'], (string) $match['label']);
         }
     }
 
@@ -161,6 +236,22 @@ class RateMasterCreate extends Component
             number_format(max($final, 0), 2, '.', '');
 
         $this->isRecalculating = false;
+    }
+
+    private function loadProductResults()
+    {
+        $service = app(RateMasterService::class);
+        $this->product_results = $service->searchProductOptions($this->product_search, 10)->toArray();
+    }
+
+    private function syncSelectedProduct()
+    {
+        $service = app(RateMasterService::class);
+        $option = $service->getProductOption((int) $this->product_id);
+
+        if ($option) {
+            $this->product_search = $option['label'];
+        }
     }
 
     public function render()

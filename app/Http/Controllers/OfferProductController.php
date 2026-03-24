@@ -14,11 +14,12 @@ class OfferProductController extends Controller
         $this->offerProductService = $offerProductService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $offerProducts = $this->offerProductService->getAll();
+        $search = trim((string) $request->query('search'));
+        $offerProducts = $this->offerProductService->getAll($search);
 
-        return view('admin.offer_products.index', compact('offerProducts'));
+        return view('admin.offer_products.index', compact('offerProducts', 'search'));
     }
 
     public function create()
@@ -31,11 +32,23 @@ class OfferProductController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'product_name' => trim((string) $request->input('product_name')),
+        ]);
+
         $validatedData = $request->validate([
             'offer_id' => 'required|integer|exists:offer_details,id',
-            'products_id' => 'required|integer|exists:products,id',
+            'product_name' => 'required|string|max:150',
             'is_active' => 'required|boolean',
         ]);
+
+        $validatedData['products_id'] = $this->offerProductService->findProductIdByName($validatedData['product_name']);
+
+        if (!$validatedData['products_id']) {
+            return back()
+                ->withErrors(['product_name' => 'Please select a valid product from the suggestion list.'])
+                ->withInput();
+        }
 
         if ($this->offerProductService->existsDuplicate((int) $validatedData['offer_id'], (int) $validatedData['products_id'])) {
             return redirect()->back()

@@ -32,6 +32,22 @@
                             </div>
                         @endif
 
+                        <form method="GET" action="{{ route('admin.sub-categories.index') }}" class="mb-3 js-auto-search-form">
+                            <div class="form-group row align-items-end mb-0">
+                                <div class="col-md-6">
+                                    <label>Filter Sub Category</label>
+                                    <input
+                                        type="text"
+                                        name="search"
+                                        class="form-control js-auto-search-input"
+                                        value="{{ $search ?? '' }}"
+                                        placeholder="Search category or sub category"
+                                        autocomplete="off"
+                                    >
+                                </div>
+                            </div>
+                        </form>
+
                         <div class="row">
                             <div class="col-sm-12 col-xs-12">
                                 <div class="table-responsive">

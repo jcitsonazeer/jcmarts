@@ -214,6 +214,33 @@
 <script src="{{ asset('assets/admin/js/template.js') }}"></script>
 <script src="{{ asset('assets/admin/js/active.js') }}"></script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.js-auto-search-form').forEach(function (form) {
+        const input = form.querySelector('.js-auto-search-input');
+
+        if (!input) {
+            return;
+        }
+
+        let timeoutId = null;
+        const initialValue = input.value;
+
+        input.addEventListener('input', function () {
+            window.clearTimeout(timeoutId);
+
+            timeoutId = window.setTimeout(function () {
+                if (input.value === initialValue && window.location.search !== '') {
+                    return;
+                }
+
+                form.submit();
+            }, 300);
+        });
+    });
+});
+</script>
+
 @livewireScripts
 @stack('scripts')
 

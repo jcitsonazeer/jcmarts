@@ -16,11 +16,12 @@ class RateMasterController extends Controller
         $this->rateMasterService = $rateMasterService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $rates = $this->rateMasterService->getAll();
+        $search = trim((string) $request->query('search'));
+        $rates = $this->rateMasterService->getAll($search);
 
-        return view('admin.rate_master.index', compact('rates'));
+        return view('admin.rate_master.index', compact('rates', 'search'));
     }
 
     public function create()
@@ -28,11 +29,12 @@ class RateMasterController extends Controller
         return view('admin.rate_master.create');
     }
 
-    public function selectedDisplayIndex()
+    public function selectedDisplayIndex(Request $request)
     {
-        $products = $this->rateMasterService->getProductsForSelectedDisplay();
+        $search = trim((string) $request->query('search'));
+        $products = $this->rateMasterService->getProductsForSelectedDisplay($search);
 
-        return view('admin.rate_master.selected_display_index', compact('products'));
+        return view('admin.rate_master.selected_display_index', compact('products', 'search'));
     }
 
     public function selectedDisplayEdit($productId)

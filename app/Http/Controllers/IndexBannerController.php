@@ -31,11 +31,23 @@ class IndexBannerController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'sub_category_name' => trim((string) $request->input('sub_category_name')),
+        ]);
+
         $validatedData = $request->validate([
             'banner_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'sub_category_id' => 'nullable|integer|exists:sub_category,id',
+            'sub_category_name' => 'nullable|string|max:100',
             'offer_details_id' => 'nullable|integer|exists:offer_details,id',
         ]);
+
+        $validatedData['sub_category_id'] = $this->indexBannerService->findSubCategoryIdByName($validatedData['sub_category_name'] ?? null);
+
+        if (!empty($validatedData['sub_category_name']) && !$validatedData['sub_category_id']) {
+            return back()
+                ->withErrors(['sub_category_name' => 'Please select a valid sub category from the suggestion list.'])
+                ->withInput();
+        }
 
         $adminId = session('admin_id');
         if (!$adminId) {

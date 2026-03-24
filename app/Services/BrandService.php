@@ -8,9 +8,12 @@ use Carbon\Carbon;
 
 class BrandService
 {
-    public function getAll()
+    public function getAll(?string $searchTerm = null)
     {
         return Brand::with(['createdBy', 'updatedBy'])
+            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
+                $query->where('brand_name', 'like', '%' . trim((string) $searchTerm) . '%');
+            })
             ->orderBy('id', 'desc')
             ->get();
     }

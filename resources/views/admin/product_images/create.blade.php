@@ -32,15 +32,24 @@
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label>Product <span class="text-danger">*</span></label>
-                                    <select name="product_id" class="form-control" required>
-                                        <option value="">Select Product</option>
+                                    <input
+                                        type="text"
+                                        name="product_name"
+                                        class="form-control"
+                                        list="product-options"
+                                        value="{{ old('product_name', $selectedProductName ?? '') }}"
+                                        placeholder="Type or select product"
+                                        autocomplete="off"
+                                        required
+                                    >
+                                    <datalist id="product-options">
                                         @foreach($products as $product)
-                                            <option value="{{ $product->id }}"
-                                                {{ old('product_id', request('product_id')) == $product->id ? 'selected' : '' }}>
-                                                {{ $product->product_name }}
-                                            </option>
+                                            <option value="{{ $product->product_name }}"></option>
                                         @endforeach
-                                    </select>
+                                    </datalist>
+                                    @error('product_name')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                     <small class="text-muted">Choose product and upload any one or more images.</small>
                                 </div>
                             </div>

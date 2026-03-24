@@ -47,14 +47,24 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label>Product <span class="text-danger">*</span></label>
-                                    <select name="products_id" class="form-control" required>
-                                        <option value="">Select Product</option>
+                                    <input
+                                        type="text"
+                                        name="product_name"
+                                        class="form-control"
+                                        list="product-options"
+                                        value="{{ old('product_name') }}"
+                                        placeholder="Type or select product"
+                                        autocomplete="off"
+                                        required
+                                    >
+                                    <datalist id="product-options">
                                         @foreach(($products ?? collect()) as $product)
-                                            <option value="{{ $product->id }}" {{ (string) old('products_id') === (string) $product->id ? 'selected' : '' }}>
-                                                {{ $product->product_name }}
-                                            </option>
+                                            <option value="{{ $product->product_name }}"></option>
                                         @endforeach
-                                    </select>
+                                    </datalist>
+                                    @error('product_name')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                 </div>
                             </div>
 

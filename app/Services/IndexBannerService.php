@@ -7,6 +7,7 @@ use App\Models\OfferDetail;
 use App\Models\SubCategory;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class IndexBannerService
 {
@@ -32,6 +33,21 @@ class IndexBannerService
         return SubCategory::query()
             ->orderBy('sub_category_name')
             ->get();
+    }
+
+    public function findSubCategoryIdByName(?string $subCategoryName): ?int
+    {
+        $subCategoryName = trim((string) $subCategoryName);
+
+        if ($subCategoryName === '') {
+            return null;
+        }
+
+        $subCategory = SubCategory::query()
+            ->whereRaw('LOWER(sub_category_name) = ?', [Str::lower($subCategoryName)])
+            ->first(['id']);
+
+        return $subCategory ? (int) $subCategory->id : null;
     }
 
     public function getOffersForDropdown()

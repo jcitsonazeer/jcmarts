@@ -76,14 +76,23 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label>Sub Category (Optional)</label>
-                                            <select name="sub_category_id" class="form-control">
-                                                <option value="">Select Sub Category</option>
+                                            <input
+                                                type="text"
+                                                name="sub_category_name"
+                                                class="form-control"
+                                                list="sub-category-options"
+                                                value="{{ old('sub_category_name') }}"
+                                                placeholder="Type or select sub category"
+                                                autocomplete="off"
+                                            >
+                                            <datalist id="sub-category-options">
                                                 @foreach(($subCategories ?? collect()) as $subCategory)
-                                                    <option value="{{ $subCategory->id }}" {{ (string) old('sub_category_id') === (string) $subCategory->id ? 'selected' : '' }}>
-                                                        {{ $subCategory->sub_category_name }}
-                                                    </option>
+                                                    <option value="{{ $subCategory->sub_category_name }}"></option>
                                                 @endforeach
-                                            </select>
+                                            </datalist>
+                                            @error('sub_category_name')
+                                                <span class="text-danger d-block">{{ $message }}</span>
+                                            @enderror
                                         </div>
                                     </div>
 

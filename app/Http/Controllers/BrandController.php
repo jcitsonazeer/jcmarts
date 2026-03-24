@@ -15,11 +15,12 @@ class BrandController extends Controller
         $this->brandService = $brandService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $brands = $this->brandService->getAll();
+        $search = trim((string) $request->query('search'));
+        $brands = $this->brandService->getAll($search);
 
-        return view('admin.brands.index', compact('brands'));
+        return view('admin.brands.index', compact('brands', 'search'));
     }
 
     public function create()

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductImageService
 {
@@ -15,9 +16,19 @@ class ProductImageService
         'single_image_4',
     ];
 
-    public function getAllProducts()
+    public function getAllProducts(?string $searchTerm = null)
     {
         return Product::with(['subCategory'])
+            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
+                $term = trim((string) $searchTerm);
+
+                $query->where(function ($innerQuery) use ($term) {
+                    $innerQuery->where('product_name', 'like', '%' . $term . '%')
+                        ->orWhereHas('subCategory', function ($subCategoryQuery) use ($term) {
+                            $subCategoryQuery->where('sub_category_name', 'like', '%' . $term . '%');
+                        });
+                });
+            })
             ->orderBy('id', 'desc')
             ->get();
     }
@@ -25,6 +36,21 @@ class ProductImageService
     public function getProductsForDropdown()
     {
         return Product::orderBy('product_name')->get(['id', 'product_name']);
+    }
+
+    public function findProductIdByName(string $productName): ?int
+    {
+        $productName = trim($productName);
+
+        if ($productName === '') {
+            return null;
+        }
+
+        $product = Product::query()
+            ->whereRaw('LOWER(product_name) = ?', [Str::lower($productName)])
+            ->first(['id']);
+
+        return $product ? (int) $product->id : null;
     }
 
     public function findProduct($id)

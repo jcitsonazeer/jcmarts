@@ -15,11 +15,12 @@ class SubCategoryController extends Controller
         $this->subCategoryService = $subCategoryService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $subCategories = $this->subCategoryService->getAll();
+        $search = trim((string) $request->query('search'));
+        $subCategories = $this->subCategoryService->getAll($search);
 
-        return view('admin.sub_category.index', compact('subCategories'));
+        return view('admin.sub_category.index', compact('subCategories', 'search'));
     }
 
     public function create()

@@ -23,6 +23,15 @@
                             </div>
                         @endif
 
+                        <form method="GET" action="{{ route('admin.rate-masters.index') }}" class="mb-3 js-auto-search-form">
+                            <div class="form-group row align-items-end mb-0">
+                                <div class="col-md-6">
+                                    <label>Filter Rate</label>
+                                    <input type="text" name="search" class="form-control js-auto-search-input" value="{{ $search ?? '' }}" placeholder="Search product or UOM" autocomplete="off">
+                                </div>
+                            </div>
+                        </form>
+
                         <div class="table-responsive">
                             <table class="table table-striped table-bordered">
                                 <thead class="thead-dark">
