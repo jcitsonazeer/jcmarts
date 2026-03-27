@@ -29,7 +29,30 @@
 
                         @php($orderDate = $order->created_date ?: $order->paid_at)
 
-                        <div class="row">
+<div>
+<div class="col-md-12">
+                                <h5>Update Order Status</h5>
+                                @if (empty($nextAllowedStatuses))
+                                    <div class="alert alert-info">This order has already reached the final stage.</div>
+                                @else
+                                    <form method="POST" action="{{ route('admin.orders.process.update', $order->id) }}" onsubmit="return confirm('Are you sure you want to update this order status?');">
+                                        @csrf
+                                        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                                            @foreach($statusFlow as $status)
+                                                <button
+                                                    type="submit"
+                                                    name="order_status"
+                                                    value="{{ $status }}"
+                                                    class="btn btn-cstm {{ in_array($status, $nextAllowedStatuses, true) ? 'btn-primary' : 'btn-secondary' }}"
+                                                    {{ in_array($status, $nextAllowedStatuses, true) ? '' : 'disabled' }}
+                                                >
+                                                    {{ $status }}
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </form>
+                                @endif
+								<div class="row">
                             <div class="col-md-6">
                                 <h5>Basic Order Details</h5>
                                 <table class="table table-bordered">
@@ -59,31 +82,8 @@
                                     </tr>
                                 </table>
                             </div>
-
-                            <div class="col-md-6">
-                                <h5>Update Order Status</h5>
-                                @if (empty($nextAllowedStatuses))
-                                    <div class="alert alert-info">This order has already reached the final stage.</div>
-                                @else
-                                    <form method="POST" action="{{ route('admin.orders.process.update', $order->id) }}" onsubmit="return confirm('Are you sure you want to update this order status?');">
-                                        @csrf
-                                        <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                                            @foreach($statusFlow as $status)
-                                                <button
-                                                    type="submit"
-                                                    name="order_status"
-                                                    value="{{ $status }}"
-                                                    class="btn {{ in_array($status, $nextAllowedStatuses, true) ? 'btn-primary' : 'btn-secondary' }}"
-                                                    {{ in_array($status, $nextAllowedStatuses, true) ? '' : 'disabled' }}
-                                                >
-                                                    {{ $status }}
-                                                </button>
-                                            @endforeach
-                                        </div>
-                                    </form>
-                                @endif
-
-                                <div class="mt-4">
+<div class="col-md-6">
+<div class="mt-4">
                                     <h5>Process Order</h5>
                                     <ol class="pl-3">
                                         @foreach($timeline as $step)
@@ -101,8 +101,14 @@
                                         @endforeach
                                     </ol>
                                 </div>
-                            </div>
+</div>
+                            
                         </div>
+
+                                
+                            </div>
+</div>
+                        
                     </div>
                 </div>
             </div>

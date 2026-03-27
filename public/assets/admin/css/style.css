@@ -156,6 +156,11 @@ p {
   font-weight: 400;
   font-family: "Overpass", sans-serif; }
 
+button.btn.btn-cstm.btn-secondary{
+	width:12%;
+	padding:0px;
+}
+
 a,
 a:hover,
 a:focus {
