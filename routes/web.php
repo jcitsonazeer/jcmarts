@@ -23,6 +23,7 @@ use App\Http\Controllers\StockInfoController;
 use App\Http\Controllers\FrontendWishlistController;
 use App\Http\Controllers\FrontendOrderController;
 use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\OrderProcessController;
 
 Route::get('/', [FrontendController::class, 'index'])->name('frontend.home');
 Route::get('/products', [FrontendProductController::class, 'index'])->name('frontend.products');
@@ -92,5 +93,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('users/{id}/status', [AdminUserController::class, 'toggleStatus'])->name('users.status');
         Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
         Route::get('orders/{id}', [AdminOrderController::class, 'show'])->name('orders.show');
+        Route::get('orders/{orderId}/process', [OrderProcessController::class, 'adminShow'])->name('orders.process.show');
+        Route::post('orders/{orderId}/process', [OrderProcessController::class, 'adminUpdate'])->name('orders.process.update');
     });
 });

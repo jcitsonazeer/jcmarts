@@ -37,7 +37,7 @@
                                     </div>
                                     <div class="order-right">
                                         <div class="order-total">{{ $order->currency }} {{ number_format((float) $order->total_amount, 2) }}</div>
-                                        <div class="status-pill">{{ $order->payment_status ?? '-' }}</div>
+                                        <div class="status-pill">{{ $order->current_order_status ? ucwords(str_replace('_', ' ', $order->current_order_status)) : 'Not Started' }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -55,13 +55,39 @@
                     @php($orderDate = $selectedOrder->created_date ?: $selectedOrder->paid_at)
                     <div class="top-row">
                         <h3>Order - {{ $selectedOrder->id }}</h3>
-                        @php($isPaid = strtolower((string) $selectedOrder->payment_status) === 'paid')
-                        <span class="badge-status {{ $isPaid ? 'badge-paid' : 'badge-unpaid' }}">
-                            {{ $selectedOrder->payment_status ?? 'Status' }}
+                        @php($hasProcessStatus = !empty($selectedOrder->current_order_status))
+                        <span class="badge-status {{ $hasProcessStatus ? 'badge-paid' : 'badge-unpaid' }}">
+                            {{ $selectedOrder->current_order_status ? ucwords(str_replace('_', ' ', $selectedOrder->current_order_status)) : 'Not Started' }}
                         </span>
                     </div>
 
                     <div class="order-date">Order date: {{ $orderDate ? date('d-m-Y H:i', strtotime($orderDate)) : '-' }}</div>
+
+                    <div class="section-title">Order Progress</div>
+                    <div class="order-worm-graph horizontal-worm-graph">
+                        @foreach($selectedOrder->order_status_timeline ?? [] as $step)
+                            <div class="worm-step {{ $step['is_completed'] ? 'completed' : '' }} {{ $step['is_current'] ? 'current' : '' }} {{ $step['is_pending'] ? 'pending' : '' }}">
+                                <div class="worm-marker"></div>
+                                <div class="worm-content">
+                                    <div class="worm-title">{{ $step['label'] }}</div>
+                                    <div class="worm-meta">
+                                        @if ($step['action_time'])
+                                            {{ $step['action_time']->format('d-m-Y H:i') }}
+                                        @else
+                                            Pending
+                                        @endif
+                                    </div>
+                                    <div class="worm-meta">
+                                        @if (!empty($step['actor_name']))
+                                            Updated by {{ $step['actor_name'] }}
+                                        @else
+                                            Waiting for update
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
 
                     <div class="section-title">Order Info</div>
                     <div class="info-card">
@@ -78,6 +104,10 @@
                             <div class="value">{{ $selectedOrder->payment_status ?? '-' }}</div>
                         </div>
                         <div class="info-row">
+                            <div class="label">Order Process Status</div>
+                            <div class="value">{{ $selectedOrder->current_order_status ? ucwords(str_replace('_', ' ', $selectedOrder->current_order_status)) : 'Not Started' }}</div>
+                        </div>
+                        <div class="info-row">
                             <div class="label">Active</div>
                             <div class="value">{{ $selectedOrder->is_active ? 'Yes' : 'No' }}</div>
                         </div>
@@ -86,29 +116,25 @@
                     <div class="section-title">Products ({{ $selectedOrder->items->count() }})</div>
                     <div class="product-list">
                         @forelse($selectedOrder->items as $item)
-<div class="product-card d-flex justify-content-between align-items-center">
-    
-    <div class="d-flex gap-3 align-items-center">
+                            <div class="product-card d-flex justify-content-between align-items-center">
+                                <div class="d-flex gap-3 align-items-center">
+                                    <span class="title">
+                                        {{ $item->product?->product_name ?? 'Product' }}
+                                    </span>
 
-        <span class="title">
-            {{ $item->product?->product_name ?? 'Product' }}
-        </span>
+                                    <span class="meta">
+                                        Qty: {{ $item->quantity }}
+                                    </span>
 
-        <span class="meta">
-            Qty: {{ $item->quantity }}
-        </span>
+                                    <span class="meta">
+                                        Unit: {{ $selectedOrder->currency }} {{ number_format((float) $item->unit_price, 2) }}
+                                    </span>
+                                </div>
 
-        <span class="meta">
-            Unit: {{ $selectedOrder->currency }} {{ number_format((float) $item->unit_price, 2) }}
-        </span>
-
-    </div>
-
-    <div class="price">
-        {{ $selectedOrder->currency }} {{ number_format((float) $item->line_total, 2) }}
-    </div>
-
-</div>
+                                <div class="price">
+                                    {{ $selectedOrder->currency }} {{ number_format((float) $item->line_total, 2) }}
+                                </div>
+                            </div>
                         @empty
                             <div class="text-center">No items found.</div>
                         @endforelse
@@ -116,8 +142,6 @@
 
                     <div class="section-title">Summary</div>
                     <div class="two-card-row">
-
-
                         <div class="address-card">
                             <div><strong>Address:</strong> {{ $selectedOrder->address?->address_line_1 ?? '-' }}</div>
                             <div>{{ $selectedOrder->address?->address_line_2 ?? '' }}</div>
@@ -125,8 +149,8 @@
                             <div><strong>Pincode:</strong> {{ $selectedOrder->address?->pincode ?? '-' }}</div>
                             <div><strong>Landmark:</strong> {{ $selectedOrder->address?->landmark ?? '-' }}</div>
                         </div>
-						
-						  <div class="amount-card">
+
+                        <div class="amount-card">
                             <div class="amount-row">
                                 <div class="label">Sub Total</div>
                                 <div class="value">{{ $selectedOrder->currency }} {{ number_format((float) $selectedOrder->sub_total, 2) }}</div>
@@ -148,7 +172,6 @@
                                 <div class="value">{{ $selectedOrder->currency }} {{ number_format((float) $selectedOrder->total_amount, 2) }}</div>
                             </div>
                         </div>
-						
                     </div>
                 @else
                     <div class="text-center">Select an order to view details.</div>

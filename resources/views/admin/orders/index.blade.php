@@ -37,10 +37,11 @@
                                         <th>Customer</th>
                                         <th>Mobile</th>
                                         <th>Total</th>
-                                        <th>Status</th>
+                                        <th>Payment Status</th>
+                                        <th>Order Process</th>
                                         <th>Items</th>
                                         <th>Created Date</th>
-                                        <th width="90">Action</th>
+                                        <th width="190">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -52,17 +53,21 @@
                                             <td>{{ $order->customer?->mobile_number ?? '-' }}</td>
                                             <td>{{ $order->currency }} {{ number_format((float) $order->total_amount, 2) }}</td>
                                             <td>{{ $order->payment_status ?? '-' }}</td>
+                                            <td>{{ $order->current_order_status ? ucwords(str_replace('_', ' ', $order->current_order_status)) : 'Not Started' }}</td>
                                             <td>{{ $order->items_count ?? 0 }}</td>
                                             <td>{{ $orderDate ? date('d-m-Y H:i', strtotime($orderDate)) : '-' }}</td>
                                             <td>
                                                 <a href="{{ route('admin.orders.show', $order->id) }}" class="btn btn-info btn-sm">
                                                     <i class="fa fa-eye"></i>
                                                 </a>
+                                                <a href="{{ route('admin.orders.process.show', $order->id) }}" class="btn btn-primary btn-sm">
+                                                    Proceed Order
+                                                </a>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="text-center">No orders found</td>
+                                            <td colspan="9" class="text-center">No orders found</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
