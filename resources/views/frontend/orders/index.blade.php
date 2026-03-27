@@ -16,7 +16,7 @@
     @endif
 
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="order-sidebar order-fixed">
                 <h3>Order History</h3>
 
@@ -49,19 +49,20 @@
             </div>
         </div>
 
-        <div class="col-md-8">
+        <div class="col-md-9">
             <div class="order-details order-fixed">
                 @if($selectedOrder)
                     @php($orderDate = $selectedOrder->created_date ?: $selectedOrder->paid_at)
                     <div class="top-row">
                         <h3>Order - {{ $selectedOrder->id }}</h3>
+                        <span class="order-date">Order date: {{ $orderDate ? date('d-m-Y H:i', strtotime($orderDate)) : '-' }}</span>
                         @php($hasProcessStatus = !empty($selectedOrder->current_order_status))
                         <span class="badge-status {{ $hasProcessStatus ? 'badge-paid' : 'badge-unpaid' }}">
                             {{ $selectedOrder->current_order_status ? ucwords(str_replace('_', ' ', $selectedOrder->current_order_status)) : 'Not Started' }}
                         </span>
                     </div>
 
-                    <div class="order-date">Order date: {{ $orderDate ? date('d-m-Y H:i', strtotime($orderDate)) : '-' }}</div>
+                    
 
                     <div class="section-title">Order Progress</div>
                     <div class="order-worm-graph horizontal-worm-graph">
@@ -88,8 +89,9 @@
                             </div>
                         @endforeach
                     </div>
-
-                    <div class="section-title">Order Info</div>
+<div class="row">
+    <div class="col-md-6">
+                        <div class="section-title">Order Info</div>
                     <div class="info-card">
                         <div class="info-row">
                             <div class="label">Order ID</div>
@@ -112,7 +114,8 @@
                             <div class="value">{{ $selectedOrder->is_active ? 'Yes' : 'No' }}</div>
                         </div>
                     </div>
-
+                </div>
+            <div class="col-md-6">
                     <div class="section-title">Products ({{ $selectedOrder->items->count() }})</div>
                     <div class="product-list">
                         @forelse($selectedOrder->items as $item)
@@ -139,6 +142,8 @@
                             <div class="text-center">No items found.</div>
                         @endforelse
                     </div>
+                       </div>
+        </div>
 
                     <div class="section-title">Summary</div>
                     <div class="two-card-row">
@@ -176,9 +181,9 @@
                 @else
                     <div class="text-center">Select an order to view details.</div>
                 @endif
-            </div>
-        </div>
+         
     </div>
+</div>
 </div>
 
 @include('frontend.footer')

@@ -5470,7 +5470,7 @@ span.title{color:#161615}
   height: 28px;
   border-radius: 50%;
   background: #f7efcb;
-  border: 3px solid #ffd25d;
+  border: 3px solid #ff0000;
   box-shadow: 0 0 0 6px rgba(255, 210, 93, 0.14);
 }
 .orders-theme .worm-step.completed .worm-marker,
@@ -5492,7 +5492,7 @@ span.title{color:#161615}
   border-radius: 14px;
   padding: 12px 14px;
 }
-.orders-theme .worm-title { font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+.orders-theme .worm-title { font-weight: 800; color: var(--ink); }
 .orders-theme .worm-meta { color: var(--muted); font-size: 13px; }
 @media (max-width: 991px) {
   .orders-theme .process-grid { grid-template-columns: 1fr; }
@@ -5532,7 +5532,7 @@ span.title{color:#161615}
 }
 .orders-theme .horizontal-worm-graph .worm-content {
   width: 100%;
-  min-height: 110px;
+  padding:5px 10px;
 }
 
 .orders-theme .order-details.order-fixed {
@@ -5541,6 +5541,7 @@ span.title{color:#161615}
   overflow: visible;
 }
 .orders-theme .product-list {
-  max-height: none;
+  max-height: 180px;
   overflow: visible;
+  overflow-y:scroll
 }
