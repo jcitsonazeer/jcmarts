@@ -21,7 +21,7 @@
             <div class="top-row">
               <h3>New Address</h3>
             </div>
-          <form method="POST" action="{{ route('frontend.add_address.store') }}">
+          <form method="POST" action="{{ route('frontend.add_address.store') }}" id="add-address-form">
             @csrf
 
             <div class="form-group">
@@ -34,7 +34,7 @@
 
             <div class="form-group">
               <label for="address_line_2">Address Line 2</label>
-              <input type="text" name="address_line_2" id="address_line_2" class="form-control" value="{{ old('address_line_2') }}">
+              <input type="text" name="address_line_2" id="address_line_2" class="form-control" value="{{ old('address_line_2') }}" required>
               @error('address_line_2')
                 <div class="text-danger">{{ $message }}</div>
               @enderror
@@ -50,7 +50,17 @@
 
             <div class="form-group">
               <label for="pincode">Pincode</label>
-              <input type="text" name="pincode" id="pincode" class="form-control" value="{{ old('pincode') }}" required>
+              <input
+                type="text"
+                name="pincode"
+                id="pincode"
+                class="form-control"
+                value="{{ old('pincode') }}"
+                required
+                inputmode="numeric"
+                maxlength="6"
+                pattern="[0-9]{6}"
+              >
               @error('pincode')
                 <div class="text-danger">{{ $message }}</div>
               @enderror
@@ -58,7 +68,7 @@
 
             <div class="form-group">
               <label for="landmark">Landmark</label>
-              <input type="text" name="landmark" id="landmark" class="form-control" value="{{ old('landmark') }}">
+              <input type="text" name="landmark" id="landmark" class="form-control" value="{{ old('landmark') }}" required>
               @error('landmark')
                 <div class="text-danger">{{ $message }}</div>
               @enderror
@@ -79,5 +89,58 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    var form = document.getElementById('add-address-form');
+    var pincodeInput = document.getElementById('pincode');
+    var allowedPincodes = @json($serviceablePincodes ?? []);
+    var deliveryMessage = 'Delivery not available for the entered pincode';
+
+    if (!form || !pincodeInput) {
+      return;
+    }
+
+    function validatePincode(showAlert) {
+      var pincode = pincodeInput.value.trim();
+
+      if (!/^\d{6}$/.test(pincode)) {
+        pincodeInput.setCustomValidity('Pincode must be exactly 6 digits.');
+        return false;
+      }
+
+      if (allowedPincodes.indexOf(pincode) === -1) {
+        pincodeInput.setCustomValidity(deliveryMessage);
+        if (showAlert) {
+          alert(deliveryMessage);
+        }
+
+        return false;
+      }
+
+      pincodeInput.setCustomValidity('');
+
+      return true;
+    }
+
+    pincodeInput.addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '').slice(0, 6);
+      this.setCustomValidity('');
+    });
+
+    pincodeInput.addEventListener('blur', function () {
+      if (this.value.trim() !== '') {
+        validatePincode(true);
+      }
+    });
+
+    form.addEventListener('submit', function (event) {
+      if (!validatePincode(true)) {
+        event.preventDefault();
+        pincodeInput.reportValidity();
+      }
+    });
+  })();
+</script>
 
 @include('frontend.footer')

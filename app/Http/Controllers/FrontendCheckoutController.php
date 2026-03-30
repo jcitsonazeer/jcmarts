@@ -13,11 +13,37 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use RuntimeException;
 use Throwable;
 
 class FrontendCheckoutController extends Controller
 {
+    private const SERVICEABLE_PINCODES = [
+        '629151',
+        '629152',
+        '629153',
+        '629154',
+        '629158',
+        '629160',
+        '629162',
+        '629163',
+        '629165',
+        '629167',
+        '629168',
+        '629171',
+        '629172',
+        '629173',
+        '629177',
+        '629179',
+        '629188',
+        '629190',
+        '629191',
+        '629194',
+        '629195',
+        '629197',
+    ];
+
     protected FrontendCatalogService $frontendCatalogService;
     protected CartService $cartService;
     protected RazorpayService $razorpayService;
@@ -73,7 +99,10 @@ class FrontendCheckoutController extends Controller
 
         $menuCategories = $this->frontendCatalogService->getMenuCategories();
 
-        return view('frontend.add_address', compact('menuCategories'));
+        return view('frontend.add_address', [
+            'menuCategories' => $menuCategories,
+            'serviceablePincodes' => self::SERVICEABLE_PINCODES,
+        ]);
     }
 
     public function storeAddress(Request $request): RedirectResponse
@@ -86,10 +115,12 @@ class FrontendCheckoutController extends Controller
 
         $validated = $request->validate([
             'address_line_1' => ['required', 'string', 'max:255'],
-            'address_line_2' => ['nullable', 'string', 'max:255'],
+            'address_line_2' => ['required', 'string', 'max:255'],
             'location' => ['required', 'string', 'max:150'],
-            'pincode' => ['required', 'digits_between:4,10'],
-            'landmark' => ['nullable', 'string', 'max:255'],
+            'pincode' => ['required', 'digits:6', Rule::in(self::SERVICEABLE_PINCODES)],
+            'landmark' => ['required', 'string', 'max:255'],
+        ], [
+            'pincode.in' => 'Delivery not available for the entered pincode',
         ]);
 
         CustomerAddress::query()->create([
