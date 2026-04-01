@@ -231,7 +231,7 @@ div.required .control-label:before {
 
 .header-logo{
     float: left;
-    margin-top: 6px;
+    margin-top: -12px;
 }
 
 .header_menu_dropdown {
@@ -5541,7 +5541,7 @@ span.title{color:#161615}
   overflow: visible;
 }
 .orders-theme .product-list {
-  max-height: 180px;
+  max-height: 500px;
   overflow: visible;
   overflow-y:scroll
 }

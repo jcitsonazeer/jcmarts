@@ -164,32 +164,6 @@
                 </ul>
   </div>
 
-
- <div class="testimonial-block section fadeInUp" data-wow-duration="0.5s" data-wow-delay="0.5s">
- <div class="section-heading">Testimonial</div>
-<div class="testimonial owlCarousel">
-
-
-               <div class="item">
-               <img class="testimonial-img img-responsive" src="{{ asset('assets/frontend/images/person1.jpg') }}" alt="#">
-              <div class="testmonial-author-name">johny walker</div>
-              <div class="testmonial-author">php Developer</div>
-              <div class="desc">It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution</div>
-
-             </div>
-               <div class="item">
-               <img class="testimonial-img img-responsive" src="{{ asset('assets/frontend/images/person2.jpg') }}" alt="#">
-              <div class="testmonial-author-name">johny walker</div>
-              <div class="testmonial-author">Lorem ipsum</div>
-              <div class="desc">Very nice product ...................!</div>
-
-             </div>
-        
-  </div>
-   </div>
-
-
-
 </div>
     
 </div>
