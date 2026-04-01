@@ -79,6 +79,10 @@ class RateMasterCreate extends Component
         $this->product_search = $label;
         $this->product_results = [];
         $this->product_dropdown_open = false;
+
+        if (!empty($this->primary_uom)) {
+            $this->loadRows($this->rate_rows);
+        }
     }
 
     public function clearProductSelection()
@@ -88,6 +92,10 @@ class RateMasterCreate extends Component
         }
 
         $this->product_id = '';
+
+        if (!empty($this->primary_uom)) {
+            $this->loadRows($this->rate_rows);
+        }
     }
 
     public function resolveProductSelection()
@@ -135,17 +143,34 @@ class RateMasterCreate extends Component
     private function loadRows($oldRows = [])
     {
         $secondaryRows = $this->secondaryUomMap[$this->primary_uom] ?? [];
+        $existingRates = [];
+        $existingUomIds = [];
+        $uomIds = array_map(function ($row) {
+            return (int) ($row['id'] ?? 0);
+        }, $secondaryRows);
+
+        if (!empty($this->product_id) && !empty($secondaryRows)) {
+            $service = app(RateMasterService::class);
+            $existingUomIds = $service->getExistingUomIdsForProduct(
+                (int) $this->product_id,
+                $uomIds
+            );
+            $existingRates = $service->getExistingRatesForProduct((int) $this->product_id, $uomIds);
+        }
 
         $this->rate_rows = [];
 
         foreach ($secondaryRows as $row) {
-
-            // Find old row data if exists
-            $existing = collect($oldRows)
+            $uomId = (int) ($row['id'] ?? 0);
+            $alreadyExists = in_array($uomId, $existingUomIds, true);
+            $oldRow = collect($oldRows)
                 ->firstWhere('uom_id', $row['id']) ?? [];
+            $existing = $alreadyExists
+                ? ($existingRates[$uomId] ?? [])
+                : $oldRow;
 
             $this->rate_rows[] = [
-                'uom_id' => $row['id'],
+                'uom_id' => $uomId,
                 'secondary_uom' => $row['secondary_uom'],
                 'cost_price' => $existing['cost_price'] ?? '',
                 'selling_price' => $existing['selling_price'] ?? '',
@@ -155,6 +180,7 @@ class RateMasterCreate extends Component
                 'soldout_status' => $existing['soldout_status'] ?? 'NO',
                 'stock_dependent' => $existing['stock_dependent'] ?? 'NO',
                 'is_active' => array_key_exists('is_active', $existing) ? (string) $existing['is_active'] : '1',
+                'already_exists' => $alreadyExists,
             ];
         }
     }
@@ -171,6 +197,7 @@ class RateMasterCreate extends Component
         [$index, $field] = explode('.', $key);
 
         if (!isset($this->rate_rows[$index])) return;
+        if (!empty($this->rate_rows[$index]['already_exists'])) return;
 
         if ($field == 'offer_price') {
             $this->calculateFromOfferPrice($index);

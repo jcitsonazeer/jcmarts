@@ -11,6 +11,12 @@
                             </a>
                         </div>
 
+                        <div
+                            id="rate-master-client-error"
+                            class="alert alert-danger d-none"
+                            role="alert"
+                        ></div>
+
                         @if ($errors->any())
                             <div class="alert alert-danger">
                                 <ul class="mb-0">
@@ -21,7 +27,7 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('admin.rate-masters.store') }}">
+                        <form method="POST" action="{{ route('admin.rate-masters.store') }}" id="rate-master-create-form">
                             @csrf
 
                             <div class="form-group row">
@@ -33,6 +39,8 @@
                                             class="form-control"
                                             placeholder="Search product..."
                                             autocomplete="off"
+                                            name="product_search"
+                                            value="{{ $product_search }}"
                                             wire:model.live="product_search"
                                             wire:input="clearProductSelection"
                                             wire:focus="openProductDropdown"
@@ -40,7 +48,7 @@
                                             wire:blur="resolveProductSelection"
                                             required
                                         >
-                                        <input type="hidden" name="product_id" wire:model.live="product_id" required>
+                                        <input type="hidden" name="product_id" value="{{ $product_id }}" wire:model.live="product_id" required>
 
                                         @if($product_dropdown_open)
                                             <div class="list-group position-absolute w-100 mt-1" style="z-index: 1000; max-height: 240px; overflow: auto;">
@@ -101,95 +109,132 @@
                                                 </tr>
                                             @else
                                                 @foreach($rate_rows as $index => $row)
-                                                    <tr>
+                                                    <tr data-existing-rate="{{ !empty($row['already_exists']) ? '1' : '0' }}">
                                                         <td>
                                                             <strong>{{ $row['secondary_uom'] }}</strong>
-                                                            <input type="hidden" name="rate_rows[{{ $index }}][uom_id]" value="{{ $row['uom_id'] }}">
+                                                            @if(!empty($row['already_exists']))
+                                                                <div class="text-info small mt-1">Existing rate already saved for this product and UOM.</div>
+                                                            @endif
+                                                            @if(empty($row['already_exists']))
+                                                                <input type="hidden" name="rate_rows[{{ $index }}][uom_id]" value="{{ $row['uom_id'] }}">
+                                                            @endif
                                                         </td>
                                                         <td>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                min="0"
-                                                                class="form-control"
-                                                                wire:model.live="rate_rows.{{ $index }}.cost_price"
-                                                                name="rate_rows[{{ $index }}][cost_price]"
-                                                            >
+                                                            @if(!empty($row['already_exists']))
+                                                                <div class="form-control bg-light">{{ $row['cost_price'] }}</div>
+                                                            @else
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    class="form-control"
+                                                                    wire:model.live="rate_rows.{{ $index }}.cost_price"
+                                                                    name="rate_rows[{{ $index }}][cost_price]"
+                                                                >
+                                                            @endif
                                                         </td>
                                                         <td>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                min="0"
-                                                                class="form-control"
-                                                                wire:model.live="rate_rows.{{ $index }}.selling_price"
-                                                                name="rate_rows[{{ $index }}][selling_price]"
-                                                            >
+                                                            @if(!empty($row['already_exists']))
+                                                                <div class="form-control bg-light">{{ $row['selling_price'] }}</div>
+                                                            @else
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    class="form-control"
+                                                                    wire:model.live="rate_rows.{{ $index }}.selling_price"
+                                                                    name="rate_rows[{{ $index }}][selling_price]"
+                                                                >
+                                                            @endif
                                                         </td>
                                                         <td>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                min="0"
-                                                                max="100"
-                                                                class="form-control"
-                                                                wire:model.live="rate_rows.{{ $index }}.offer_percentage"
-                                                                name="rate_rows[{{ $index }}][offer_percentage]"
-                                                            >
+                                                            @if(!empty($row['already_exists']))
+                                                                <div class="form-control bg-light">{{ $row['offer_percentage'] }}</div>
+                                                            @else
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    max="100"
+                                                                    class="form-control"
+                                                                    wire:model.live="rate_rows.{{ $index }}.offer_percentage"
+                                                                    name="rate_rows[{{ $index }}][offer_percentage]"
+                                                                >
+                                                            @endif
                                                         </td>
                                                         <td>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                min="0"
-                                                                class="form-control"
-                                                                wire:model.live="rate_rows.{{ $index }}.offer_price"
-                                                                name="rate_rows[{{ $index }}][offer_price]"
-                                                            >
+                                                            @if(!empty($row['already_exists']))
+                                                                <div class="form-control bg-light">{{ $row['offer_price'] }}</div>
+                                                            @else
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    class="form-control"
+                                                                    wire:model.live="rate_rows.{{ $index }}.offer_price"
+                                                                    name="rate_rows[{{ $index }}][offer_price]"
+                                                                >
+                                                            @endif
                                                         </td>
                                                         <td>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                min="0"
-                                                                class="form-control"
-                                                                value="{{ $row['final_price'] }}"
-                                                                name="rate_rows[{{ $index }}][final_price]"
-                                                                readonly
-                                                            >
+                                                            @if(!empty($row['already_exists']))
+                                                                <div class="form-control bg-light">{{ $row['final_price'] }}</div>
+                                                            @else
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    class="form-control"
+                                                                    value="{{ $row['final_price'] }}"
+                                                                    name="rate_rows[{{ $index }}][final_price]"
+                                                                    readonly
+                                                                >
+                                                            @endif
                                                         </td>
                                                         <td>
-                                                            <select
-                                                                class="form-control"
-                                                                wire:model.live="rate_rows.{{ $index }}.soldout_status"
-                                                                name="rate_rows[{{ $index }}][soldout_status]"
-                                                                required
-                                                            >
-                                                                <option value="NO">NO</option>
-                                                                <option value="YES">YES</option>
-                                                            </select>
+                                                            @if(!empty($row['already_exists']))
+                                                                <div class="form-control bg-light">{{ $row['soldout_status'] }}</div>
+                                                            @else
+                                                                <select
+                                                                    class="form-control"
+                                                                    wire:model.live="rate_rows.{{ $index }}.soldout_status"
+                                                                    name="rate_rows[{{ $index }}][soldout_status]"
+                                                                    required
+                                                                >
+                                                                    <option value="NO">NO</option>
+                                                                    <option value="YES">YES</option>
+                                                                </select>
+                                                            @endif
                                                         </td>
                                                         <td>
-                                                            <select
-                                                                class="form-control"
-                                                                wire:model.live="rate_rows.{{ $index }}.stock_dependent"
-                                                                name="rate_rows[{{ $index }}][stock_dependent]"
-                                                                required
-                                                            >
-                                                                <option value="NO">NO</option>
-                                                                <option value="YES">YES</option>
-                                                            </select>
+                                                            @if(!empty($row['already_exists']))
+                                                                <div class="form-control bg-light">{{ $row['stock_dependent'] }}</div>
+                                                            @else
+                                                                <select
+                                                                    class="form-control"
+                                                                    wire:model.live="rate_rows.{{ $index }}.stock_dependent"
+                                                                    name="rate_rows[{{ $index }}][stock_dependent]"
+                                                                    required
+                                                                >
+                                                                    <option value="NO">NO</option>
+                                                                    <option value="YES">YES</option>
+                                                                </select>
+                                                            @endif
                                                         </td>
                                                         <td>
-                                                            <select
-                                                                class="form-control"
-                                                                wire:model.live="rate_rows.{{ $index }}.is_active"
-                                                                name="rate_rows[{{ $index }}][is_active]"
-                                                                required
-                                                            >
-                                                                <option value="1">Active</option>
-                                                                <option value="0">Inactive</option>
-                                                            </select>
+                                                            @if(!empty($row['already_exists']))
+                                                                <div class="form-control bg-light">{{ (string) $row['is_active'] === '1' ? 'Active' : 'Inactive' }}</div>
+                                                            @else
+                                                                <select
+                                                                    class="form-control"
+                                                                    wire:model.live="rate_rows.{{ $index }}.is_active"
+                                                                    name="rate_rows[{{ $index }}][is_active]"
+                                                                    required
+                                                                >
+                                                                    <option value="1">Active</option>
+                                                                    <option value="0">Inactive</option>
+                                                                </select>
+                                                            @endif
                                                         </td>
                                                     </tr>
                                                 @endforeach
@@ -213,3 +258,54 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('rate-master-create-form');
+    const errorBox = document.getElementById('rate-master-client-error');
+
+    if (!form || !errorBox) {
+        return;
+    }
+
+    form.addEventListener('submit', function (event) {
+        errorBox.classList.add('d-none');
+        errorBox.textContent = '';
+
+        const rows = form.querySelectorAll('tbody tr');
+
+        for (const row of rows) {
+            const costInput = row.querySelector('input[name*="[cost_price]"]');
+            const sellingInput = row.querySelector('input[name*="[selling_price]"]');
+            const isExistingRate = row.getAttribute('data-existing-rate') === '1';
+
+            if (!costInput || !sellingInput) {
+                continue;
+            }
+
+            const costValue = costInput.value.trim();
+            const sellingValue = sellingInput.value.trim();
+
+            if (costValue === '' && sellingValue === '') {
+                continue;
+            }
+
+            if (isExistingRate) {
+                continue;
+            }
+
+            const costPrice = parseFloat(costValue || '0');
+            const sellingPrice = parseFloat(sellingValue || '0');
+
+            if (!Number.isNaN(costPrice) && !Number.isNaN(sellingPrice) && sellingPrice < costPrice) {
+                event.preventDefault();
+                errorBox.textContent = 'Selling price should be greater than or equal to cost price.';
+                errorBox.classList.remove('d-none');
+                errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                sellingInput.focus();
+                return;
+            }
+        }
+    });
+});
+</script>

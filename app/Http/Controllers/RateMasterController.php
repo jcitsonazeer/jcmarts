@@ -89,6 +89,18 @@ class RateMasterController extends Controller
 
     public function store(Request $request)
     {
+        if (!$request->filled('product_id') && $request->filled('product_search')) {
+            $resolvedProductId = $this->rateMasterService->resolveProductIdFromInput(
+                $request->input('product_search')
+            );
+
+            if ($resolvedProductId) {
+                $request->merge([
+                    'product_id' => $resolvedProductId,
+                ]);
+            }
+        }
+
         $validatedData = $request->validate([
             'product_id' => 'required|integer|exists:products,id',
             'primary_uom' => 'required|string|exists:uom_master,primary_uom',
@@ -137,19 +149,29 @@ class RateMasterController extends Controller
             }
 
             $rowValidator = Validator::make($row, [
-                'cost_price' => 'required|numeric|min:0|lte:selling_price',
-                'selling_price' => 'required|numeric|min:0',
+                'cost_price' => 'required|numeric|min:0',
+                'selling_price' => 'required|numeric|min:0|gte:cost_price',
                 'offer_percentage' => 'nullable|numeric|min:0|max:100',
                 'offer_price' => 'nullable|numeric|min:0',
                 'final_price' => 'nullable|numeric|min:0',
                 'soldout_status' => 'nullable|in:YES,NO',
                 'stock_dependent' => 'nullable|in:YES,NO',
+            ], [
+                'selling_price.gte' => 'Selling price should be greater than or equal to cost price.',
             ]);
 
             if ($rowValidator->fails()) {
                 foreach ($rowValidator->errors()->toArray() as $field => $messages) {
                     $errors["rate_rows.$index.$field"] = $messages[0];
                 }
+                continue;
+            }
+
+            $costPrice = (float) ($row['cost_price'] ?? 0);
+            $sellingPrice = (float) ($row['selling_price'] ?? 0);
+
+            if ($sellingPrice < $costPrice) {
+                $errors["rate_rows.$index.selling_price"] = 'Selling price should be greater than or equal to cost price.';
                 continue;
             }
 

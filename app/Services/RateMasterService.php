@@ -115,6 +115,35 @@ class RateMasterService
         ];
     }
 
+    public function resolveProductIdFromInput(?string $searchTerm): ?int
+    {
+        $searchTerm = trim((string) $searchTerm);
+
+        if ($searchTerm === '') {
+            return null;
+        }
+
+        $exactMatch = Product::query()
+            ->whereRaw('LOWER(product_name) = ?', [mb_strtolower($searchTerm)])
+            ->value('id');
+
+        if ($exactMatch) {
+            return (int) $exactMatch;
+        }
+
+        $matches = Product::query()
+            ->where('product_name', 'like', '%' . $searchTerm . '%')
+            ->orderBy('product_name')
+            ->limit(2)
+            ->pluck('id');
+
+        if ($matches->count() === 1) {
+            return (int) $matches->first();
+        }
+
+        return null;
+    }
+
     public function getUomsForDropdown()
     {
         return UomMaster::orderBy('primary_uom')->get();
@@ -170,6 +199,45 @@ class RateMasterService
                 return (int) $id;
             })
             ->toArray();
+    }
+
+    public function getExistingRatesForProduct($productId, array $uomIds)
+    {
+        if (empty($uomIds)) {
+            return [];
+        }
+
+        return RateMaster::query()
+            ->where('product_id', $productId)
+            ->whereIn('uom_id', $uomIds)
+            ->get([
+                'uom_id',
+                'cost_price',
+                'selling_price',
+                'offer_percentage',
+                'offer_price',
+                'final_price',
+                'soldout_status',
+                'stock_dependent',
+                'is_active',
+            ])
+            ->keyBy(function (RateMaster $rate) {
+                return (int) $rate->uom_id;
+            })
+            ->map(function (RateMaster $rate) {
+                return [
+                    'uom_id' => (int) $rate->uom_id,
+                    'cost_price' => (string) $rate->cost_price,
+                    'selling_price' => (string) $rate->selling_price,
+                    'offer_percentage' => (string) $rate->offer_percentage,
+                    'offer_price' => (string) $rate->offer_price,
+                    'final_price' => (string) $rate->final_price,
+                    'soldout_status' => (string) $rate->soldout_status,
+                    'stock_dependent' => (string) $rate->stock_dependent,
+                    'is_active' => (int) $rate->is_active,
+                ];
+            })
+            ->all();
     }
 
     public function findForShow($id)
@@ -267,14 +335,13 @@ class RateMasterService
         $sellingPrice = (float) ($data['selling_price'] ?? 0);
         $offerPercentage = (float) ($data['offer_percentage'] ?? 0);
         $offerPriceInput = $data['offer_price'] ?? null;
-        $finalPriceInput = $data['final_price'] ?? null;
+
         $offerPrice = $offerPriceInput === null || $offerPriceInput === ''
             ? round(($sellingPrice * $offerPercentage) / 100, 2)
             : (float) $offerPriceInput;
 
-        $finalPrice = $finalPriceInput === null || $finalPriceInput === ''
-            ? round($sellingPrice - $offerPrice, 2)
-            : (float) $finalPriceInput;
+        $offerPrice = max(0, min($offerPrice, $sellingPrice));
+        $finalPrice = round(max($sellingPrice - $offerPrice, 0), 2);
 
         return [
             'cost_price' => $costPrice,
