@@ -51,6 +51,7 @@ class ProductService
                 'rates' => function ($query) {
                     $query->where('is_active', 1)
                         ->with('uom')
+                        ->orderByDesc('selected_display')
                         ->orderBy('id');
                 },
             ]);

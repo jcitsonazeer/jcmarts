@@ -26,7 +26,10 @@ class SingleProductService
                 'subCategory.category',
                 'brand',
                 'rates' => function ($query) {
-                    $query->where('is_active', 1)->with('uom')->orderBy('id');
+                    $query->where('is_active', 1)
+                        ->with('uom')
+                        ->orderByDesc('selected_display')
+                        ->orderBy('id');
                 },
             ]);
 
@@ -78,7 +81,10 @@ class SingleProductService
             })
             ->with([
                 'rates' => function ($query) {
-                    $query->where('is_active', 1)->with('uom')->orderBy('id');
+                    $query->where('is_active', 1)
+                        ->with('uom')
+                        ->orderByDesc('selected_display')
+                        ->orderBy('id');
                 },
             ])
             ->orderByDesc('id')

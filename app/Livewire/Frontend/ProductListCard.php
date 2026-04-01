@@ -32,14 +32,24 @@ class ProductListCard extends Component
                 'final_price' => $rate->final_price ?? 0,
                 'offer_percentage' => $rate->offer_percentage ?? 0,
                 'soldout_status' => $rate->soldout_status ?? 'NO',
+                'selected_display' => (int) ($rate->selected_display ?? 0),
             ];
         }
 
-        if (!empty($this->rates)) {
-            $this->selectedRateId = $this->rates[0]['id'];
-        }
+        $this->selectedRateId = $this->resolveDefaultRateId();
 
         $this->syncSoldOut();
+    }
+
+    private function resolveDefaultRateId(): ?int
+    {
+        foreach ($this->rates as $rate) {
+            if ((int) ($rate['selected_display'] ?? 0) === 1) {
+                return (int) $rate['id'];
+            }
+        }
+
+        return !empty($this->rates) ? (int) $this->rates[0]['id'] : null;
     }
 
     public function getSelectedRateProperty()
