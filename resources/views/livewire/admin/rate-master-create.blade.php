@@ -13,6 +13,7 @@
 
                         <div
                             id="rate-master-client-error"
+                            wire:ignore
                             class="alert alert-danger d-none"
                             role="alert"
                         ></div>
