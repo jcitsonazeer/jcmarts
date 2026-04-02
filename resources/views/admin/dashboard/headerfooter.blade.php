@@ -14,6 +14,7 @@
     <!-- Master Stylesheet CSS -->
     <link rel="stylesheet" href="{{ asset('assets/admin/css/style.css') }}">
 
+
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     @livewireStyles
