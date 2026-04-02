@@ -12,7 +12,9 @@ class FrontendCatalogService
 {
     public function getMenuCategories()
     {
-        return Category::with('subCategories')
+        return Category::query()
+            ->has('subCategories')
+            ->with('subCategories')
             ->orderBy('category_name')
             ->get();
     }
