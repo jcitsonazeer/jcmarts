@@ -263,14 +263,67 @@
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('rate-master-create-form');
     const errorBox = document.getElementById('rate-master-client-error');
+    const errorDisplayDuration = 5000;
+    let errorHideTimeoutId = null;
+    let errorLockedUntil = 0;
 
     if (!form || !errorBox) {
         return;
     }
 
-    form.addEventListener('submit', function (event) {
+    const hideError = function (force = false) {
+        if (!force && Date.now() < errorLockedUntil) {
+            return;
+        }
+
+        window.clearTimeout(errorHideTimeoutId);
+        errorHideTimeoutId = null;
         errorBox.classList.add('d-none');
         errorBox.textContent = '';
+    };
+
+    const showError = function (message) {
+        errorLockedUntil = Date.now() + errorDisplayDuration;
+        errorBox.textContent = message;
+        errorBox.classList.remove('d-none');
+
+        if (window.jQuery) {
+            window.jQuery(errorBox).stop(true, true).show();
+        }
+
+        window.clearTimeout(errorHideTimeoutId);
+        errorHideTimeoutId = window.setTimeout(function () {
+            hideError(true);
+        }, errorDisplayDuration);
+    };
+
+    const observer = new MutationObserver(function () {
+        if (!errorBox.textContent || Date.now() >= errorLockedUntil) {
+            return;
+        }
+
+        const isHidden =
+            errorBox.classList.contains('d-none') ||
+            errorBox.style.display === 'none';
+
+        if (isHidden) {
+            errorBox.classList.remove('d-none');
+
+            if (window.jQuery) {
+                window.jQuery(errorBox).stop(true, true).show();
+            } else {
+                errorBox.style.display = '';
+            }
+        }
+    });
+
+    observer.observe(errorBox, {
+        attributes: true,
+        attributeFilter: ['class', 'style'],
+    });
+
+    form.addEventListener('submit', function (event) {
+        hideError(true);
 
         const rows = form.querySelectorAll('tbody tr');
 
@@ -299,8 +352,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!Number.isNaN(costPrice) && !Number.isNaN(sellingPrice) && sellingPrice < costPrice) {
                 event.preventDefault();
-                errorBox.textContent = 'Selling price should be greater than or equal to cost price.';
-                errorBox.classList.remove('d-none');
+                showError('Selling price should be greater than or equal to cost price.');
                 errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 sellingInput.focus();
                 return;
