@@ -5545,3 +5545,20 @@ span.title{color:#161615}
   overflow: visible;
   overflow-y:scroll
 }
+
+.brand-index{
+	height:30px;
+	position:absolute;
+	bottom:0px;
+	width:80%;
+	border:1px solid #363333;
+border-radius:0px 25px 0px 0px;
+	box-shadow:inset -2px -2px 3px 1px #00362a;
+	background: 20px 7px #198b40;
+
+}
+
+.brand-index p{
+margin:0 10px 10px;
+text-align:left;
+}

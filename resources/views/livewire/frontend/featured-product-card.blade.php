@@ -16,6 +16,9 @@
     @endif
 
     <div class="image">
+      @if($product->brand)
+        <div class="brand-index"><p>{{ $product->brand->brand_name }}</p></div>
+      @endif
       <div class="first_image">
         <a href="{{ route('frontend.single_product', ['product_id' => $product->id]) }}">
           <img src="{{ $productImage }}" alt="{{ $product->product_name }}" title="{{ $product->product_name }}" class="img-responsive" onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
