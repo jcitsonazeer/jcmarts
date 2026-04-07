@@ -39,6 +39,7 @@ Route::post('/checkout/proceed', [FrontendCheckoutController::class, 'proceedToP
 Route::get('/payment', [FrontendCheckoutController::class, 'payment'])->name('frontend.payment');
 Route::post('/payment/create-order', [FrontendCheckoutController::class, 'createRazorpayOrder'])->name('frontend.payment.create_order');
 Route::post('/payment/verify', [FrontendCheckoutController::class, 'verifyRazorpayPayment'])->name('frontend.payment.verify');
+Route::post('/payment/release', [FrontendCheckoutController::class, 'releasePendingPayment'])->name('frontend.payment.release');
 Route::get('/register', [CustomerAuthController::class, 'register'])->name('frontend.register');
 Route::post('/register', [CustomerAuthController::class, 'storeRegister'])->name('frontend.register.store');
 Route::get('/login', [CustomerAuthController::class, 'login'])->name('frontend.login');

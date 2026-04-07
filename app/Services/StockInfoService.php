@@ -74,7 +74,7 @@ class StockInfoService
         $currentStock = $this->getLatestCurrentStock($rateMasterId);
         $newStock = $currentStock + max(0, $stockInCount);
 
-        return StockInfo::create([
+        $stockInfo = StockInfo::create([
             'rate_master_id' => $rateMasterId,
             'stock_in_count' => $stockInCount,
             'sale_quantity' => 0,
@@ -84,6 +84,16 @@ class StockInfoService
             'created_by_id' => $adminId,
             'created_date' => Carbon::now(),
         ]);
+
+        RateMaster::query()
+            ->where('id', $rateMasterId)
+            ->update([
+                'soldout_status' => $newStock > 0 ? 'NO' : 'YES',
+                'updated_by_id' => $adminId,
+                'updated_date' => Carbon::now(),
+            ]);
+
+        return $stockInfo;
     }
 
     public function getHistoryByRate(int $rateMasterId)
