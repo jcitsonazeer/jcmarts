@@ -66,7 +66,7 @@ class AdminOrderService
             return;
         }
 
-        $this->orderService->releasePendingOrder($orderId, null, $adminId);
+        $this->orderService->releasePendingOrderAsAdmin($orderId, $adminId);
     }
 }
 

@@ -261,6 +261,51 @@ class OrderService
         });
     }
 
+    public function releasePendingOrderAsAdmin(int $orderId, ?int $adminId = null): void
+    {
+        DB::transaction(function () use ($orderId, $adminId) {
+            $order = Order::query()
+                ->with('items')
+                ->where('id', $orderId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$order || $order->payment_status !== 'pending') {
+                return;
+            }
+
+            foreach ($order->items as $item) {
+                $rate = RateMaster::find((int) $item->rate_master_id);
+
+                if (!$rate || $rate->stock_dependent !== 'YES') {
+                    continue;
+                }
+
+                $currentStock = $this->getLockedCurrentStock((int) $item->rate_master_id);
+                $newStock = $currentStock + (int) $item->quantity;
+
+                StockInfo::create([
+                    'rate_master_id' => (int) $item->rate_master_id,
+                    'stock_in_count' => (int) $item->quantity,
+                    'sale_quantity' => 0,
+                    'current_stock' => $newStock,
+                    'sale_order_id' => $order->id,
+                    'is_active' => 1,
+                    'created_by_id' => $adminId,
+                    'created_date' => Carbon::now(),
+                ]);
+
+                $this->syncSoldOutStatus((int) $item->rate_master_id, $newStock, $adminId);
+            }
+
+            $order->payment_status = 'failed';
+            $order->is_active = 0;
+            $order->updated_by_id = $adminId;
+            $order->updated_date = Carbon::now();
+            $order->save();
+        });
+    }
+
     public function createPaidOrderFromCart(
         int $customerId,
         int $addressId,
