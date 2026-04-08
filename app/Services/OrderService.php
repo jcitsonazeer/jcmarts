@@ -42,16 +42,25 @@ class OrderService
 
     public function cleanupExpiredPendingOrders(): void
     {
-        $expiredOrderIds = Order::query()
-            ->where('payment_status', 'pending')
-            ->where('is_active', 1)
-            ->whereNotNull('created_date')
-            ->where('created_date', '<=', Carbon::now()->subMinutes(self::PAYMENT_RESERVATION_MINUTES))
-            ->pluck('id');
+        $expiredOrderIds = $this->getExpiredPendingOrdersQuery()->pluck('id');
 
         foreach ($expiredOrderIds as $orderId) {
             $this->releasePendingOrder((int) $orderId);
         }
+    }
+
+    public function getExpiredPendingOrders(): Collection
+    {
+        return $this->getExpiredPendingOrdersQuery()
+            ->with([
+                'customer',
+                'address',
+                'items.product',
+                'items.rate.uom',
+            ])
+            ->orderBy('created_date')
+            ->orderBy('id')
+            ->get();
     }
 
     public function createPendingOrderFromCart(
@@ -382,5 +391,14 @@ class OrderService
             $cartItem->updated_date = Carbon::now();
             $cartItem->save();
         }
+    }
+
+    private function getExpiredPendingOrdersQuery()
+    {
+        return Order::query()
+            ->where('payment_status', 'pending')
+            ->where('is_active', 1)
+            ->whereNotNull('created_date')
+            ->where('created_date', '<=', Carbon::now()->subMinutes(self::PAYMENT_RESERVATION_MINUTES));
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Services\AdminOrderService;
 
 class AdminOrderController extends Controller
@@ -31,5 +32,23 @@ class AdminOrderController extends Controller
         }
 
         return view('admin.orders.show', compact('order'));
+    }
+
+    public function pendingReservations()
+    {
+        $orders = $this->adminOrderService->getExpiredPendingOrders();
+
+        return view('admin.orders.pending_reservations', compact('orders'));
+    }
+
+    public function releasePendingReservation(Request $request, int $orderId)
+    {
+        $adminId = (int) $request->session()->get('admin_id');
+
+        $this->adminOrderService->releaseExpiredPendingOrder($orderId, $adminId);
+
+        return redirect()
+            ->route('admin.orders.pending-reservations')
+            ->with('success', 'Expired pending order released successfully.');
     }
 }

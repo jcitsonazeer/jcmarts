@@ -8,11 +8,14 @@
                 <div class="col-xl-12 box-margin height-card">
                     <div class="card card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="card-title">Order Management</h4>
-                            <a href="{{ route('admin.orders.pending-reservations') }}" class="btn btn-warning">
-                                Expired Pending Reservations
-                            </a>
+                            <h4 class="card-title">Expired Pending Reservations</h4>
+                            <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">Back to Orders</a>
                         </div>
+
+                        <p class="text-muted">
+                            These orders reserved stock for payment but crossed the expiry time without being paid.
+                            Releasing them will add the reserved stock back so customers can purchase again.
+                        </p>
 
                         @if (session('success'))
                             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -36,41 +39,43 @@
                             <table class="table table-striped table-bordered">
                                 <thead class="thead-dark">
                                     <tr>
-                                        <th>ID</th>
+                                        <th>Order ID</th>
                                         <th>Customer</th>
                                         <th>Mobile</th>
-                                        <th>Total</th>
-                                        <th>Payment Status</th>
-                                        <th>Order Process</th>
+                                        <th>Reserved At</th>
                                         <th>Items</th>
-                                        <th>Created Date</th>
-                                        <th width="190">Action</th>
+                                        <th>Total</th>
+                                        <th width="180">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse($orders as $order)
-                                        @php($orderDate = $order->created_date ?: $order->paid_at)
                                         <tr>
                                             <td>{{ $order->id }}</td>
                                             <td>{{ $order->customer?->name ?? '-' }}</td>
                                             <td>{{ $order->customer?->mobile_number ?? '-' }}</td>
-                                            <td>{{ $order->currency }} {{ number_format((float) $order->total_amount, 2) }}</td>
-                                            <td>{{ $order->payment_status ?? '-' }}</td>
-                                            <td>{{ $order->current_order_status ? ucwords(str_replace('_', ' ', $order->current_order_status)) : 'Not Started' }}</td>
-                                            <td>{{ $order->items_count ?? 0 }}</td>
-                                            <td>{{ $orderDate ? date('d-m-Y H:i', strtotime($orderDate)) : '-' }}</td>
+                                            <td>{{ $order->created_date ? date('d-m-Y H:i', strtotime($order->created_date)) : '-' }}</td>
                                             <td>
-                                                <a href="{{ route('admin.orders.show', $order->id) }}" class="btn btn-info btn-sm">
-                                                    <i class="fa fa-eye"></i>
-                                                </a>
-                                                <a href="{{ route('admin.orders.process.show', $order->id) }}" class="btn btn-primary btn-sm">
-                                                    Proceed Order
-                                                </a>
+                                                @foreach($order->items as $item)
+                                                    <div>
+                                                        {{ $item->product?->product_name ?? 'Product' }}
+                                                        (Qty: {{ $item->quantity }})
+                                                    </div>
+                                                @endforeach
+                                            </td>
+                                            <td>{{ $order->currency }} {{ number_format((float) $order->total_amount, 2) }}</td>
+                                            <td>
+                                                <form method="POST" action="{{ route('admin.orders.release-reservation', $order->id) }}" onsubmit="return confirm('Release reserved stock for this expired pending order?');">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-warning btn-sm">
+                                                        Release Stock
+                                                    </button>
+                                                </form>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="9" class="text-center">No orders found</td>
+                                            <td colspan="7" class="text-center">No expired pending reservations found</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -83,4 +88,3 @@
     </div>
 </div>
 @endsection
-
