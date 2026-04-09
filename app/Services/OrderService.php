@@ -13,7 +13,10 @@ use RuntimeException;
 
 class OrderService
 {
-    private const PAYMENT_RESERVATION_MINUTES = 10;
+    private const PAYMENT_RESERVATION_MINUTES = 5;
+    private const RELEASE_REASON_EXPIRED_AUTO = 'expired_auto_release';
+    private const RELEASE_REASON_CUSTOMER_CANCELLED = 'customer_cancelled';
+    private const RELEASE_REASON_ADMIN_MANUAL = 'admin_manual_release';
 
     public function assertStockAvailable(Collection $cartItems): void
     {
@@ -45,7 +48,7 @@ class OrderService
         $expiredOrderIds = $this->getExpiredPendingOrdersQuery()->pluck('id');
 
         foreach ($expiredOrderIds as $orderId) {
-            $this->releasePendingOrder((int) $orderId);
+            $this->releasePendingOrder((int) $orderId, null, null, self::RELEASE_REASON_EXPIRED_AUTO);
         }
     }
 
@@ -60,6 +63,25 @@ class OrderService
             ])
             ->orderBy('created_date')
             ->orderBy('id')
+            ->get();
+    }
+
+    public function getReleasedReservationHistory(): Collection
+    {
+        return Order::query()
+            ->with([
+                'customer',
+                'address',
+                'items.product',
+                'items.rate.uom',
+            ])
+            ->whereNotNull('reservation_released_at')
+            ->whereIn('reservation_release_reason', [
+                self::RELEASE_REASON_EXPIRED_AUTO,
+                self::RELEASE_REASON_ADMIN_MANUAL,
+            ])
+            ->orderByDesc('reservation_released_at')
+            ->orderByDesc('id')
             ->get();
     }
 
@@ -100,6 +122,7 @@ class OrderService
                 'currency' => 'INR',
                 'payment_method' => 'razorpay',
                 'payment_status' => 'pending',
+                'reservation_expires_at' => Carbon::now()->addMinutes(self::PAYMENT_RESERVATION_MINUTES),
                 'is_active' => 1,
                 'created_by_id' => $customerId,
                 'created_date' => Carbon::now(),
@@ -192,6 +215,8 @@ class OrderService
             $order->razorpay_payment_id = (string) $razorpayPayload['razorpay_payment_id'];
             $order->razorpay_signature = (string) $razorpayPayload['razorpay_signature'];
             $order->paid_at = Carbon::now();
+            $order->reservation_released_at = null;
+            $order->reservation_release_reason = null;
             $order->updated_by_id = $customerId;
             $order->updated_date = Carbon::now();
             $order->save();
@@ -204,13 +229,18 @@ class OrderService
         });
     }
 
-    public function releasePendingOrder(?int $orderId = null, ?string $razorpayOrderId = null, ?int $customerId = null): void
+    public function releasePendingOrder(
+        ?int $orderId = null,
+        ?string $razorpayOrderId = null,
+        ?int $customerId = null,
+        string $releaseReason = self::RELEASE_REASON_CUSTOMER_CANCELLED
+    ): void
     {
         if (!$orderId && !$razorpayOrderId) {
             return;
         }
 
-        DB::transaction(function () use ($orderId, $razorpayOrderId, $customerId) {
+        DB::transaction(function () use ($orderId, $razorpayOrderId, $customerId, $releaseReason) {
             $query = Order::query()->with('items');
 
             if ($orderId) {
@@ -255,6 +285,8 @@ class OrderService
 
             $order->payment_status = 'failed';
             $order->is_active = 0;
+            $order->reservation_released_at = Carbon::now();
+            $order->reservation_release_reason = $releaseReason;
             $order->updated_by_id = $customerId ?? $order->customer_id;
             $order->updated_date = Carbon::now();
             $order->save();
@@ -300,6 +332,8 @@ class OrderService
 
             $order->payment_status = 'failed';
             $order->is_active = 0;
+            $order->reservation_released_at = Carbon::now();
+            $order->reservation_release_reason = self::RELEASE_REASON_ADMIN_MANUAL;
             $order->updated_by_id = $adminId;
             $order->updated_date = Carbon::now();
             $order->save();

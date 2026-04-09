@@ -36,9 +36,18 @@ class AdminOrderController extends Controller
 
     public function pendingReservations()
     {
-        $orders = $this->adminOrderService->getExpiredPendingOrders();
+        $this->adminOrderService->cleanupExpiredPendingOrders();
+        $orders = $this->adminOrderService->getReleasedReservationHistory();
 
         return view('admin.orders.pending_reservations', compact('orders'));
+    }
+
+    public function pendingReservationsTable()
+    {
+        $this->adminOrderService->cleanupExpiredPendingOrders();
+        $orders = $this->adminOrderService->getReleasedReservationHistory();
+
+        return view('admin.orders.partials.pending_reservations_table', compact('orders'));
     }
 
     public function releasePendingReservation(Request $request, int $orderId)

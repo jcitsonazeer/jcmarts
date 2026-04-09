@@ -57,6 +57,16 @@ class AdminOrderService
         return $this->orderService->getExpiredPendingOrders();
     }
 
+    public function cleanupExpiredPendingOrders(): void
+    {
+        $this->orderService->cleanupExpiredPendingOrders();
+    }
+
+    public function getReleasedReservationHistory(): Collection
+    {
+        return $this->orderService->getReleasedReservationHistory();
+    }
+
     public function releaseExpiredPendingOrder(int $orderId, int $adminId): void
     {
         $order = $this->orderService->getExpiredPendingOrders()

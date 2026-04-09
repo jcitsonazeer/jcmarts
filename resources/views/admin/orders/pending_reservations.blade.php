@@ -1,5 +1,35 @@
 @extends('admin.dashboard.headerfooter')
 
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var tableWrapper = document.getElementById('ordersTable');
+    var updatedAt = document.getElementById('ordersTableUpdatedAt');
+
+    function refreshOrdersTable() {
+        fetch("{{ route('admin.orders.pending-reservations.table') }}", {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(function (response) {
+                return response.text();
+            })
+            .then(function (html) {
+                tableWrapper.innerHTML = html;
+                updatedAt.textContent = new Date().toLocaleString();
+            })
+            .catch(function () {
+                updatedAt.textContent = 'Refresh failed';
+            });
+    }
+
+    updatedAt.textContent = new Date().toLocaleString();
+    setInterval(refreshOrdersTable, 60000);
+});
+</script>
+@endpush
+
 @section('content')
 <div class="main-panel">
     <div class="content-wrapper">
@@ -8,13 +38,16 @@
                 <div class="col-xl-12 box-margin height-card">
                     <div class="card card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="card-title">Expired Pending Reservations</h4>
+                            <h4 class="card-title">Expired Reservation History</h4>
                             <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">Back to Orders</a>
                         </div>
 
                         <p class="text-muted">
-                            These orders reserved stock for payment but crossed the expiry time without being paid.
-                            Releasing them will add the reserved stock back so customers can purchase again.
+                            This page refreshes the table every 1 minute. On each refresh, newly expired pending reservations
+                            are released automatically and the stock is added back before the table is shown.
+                        </p>
+                        <p class="text-muted mb-3">
+                            Last updated: <span id="ordersTableUpdatedAt">-</span>
                         </p>
 
                         @if (session('success'))
@@ -35,51 +68,8 @@
                             </div>
                         @endif
 
-                        <div class="table-responsive">
-                            <table class="table table-striped table-bordered">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>Order ID</th>
-                                        <th>Customer</th>
-                                        <th>Mobile</th>
-                                        <th>Reserved At</th>
-                                        <th>Items</th>
-                                        <th>Total</th>
-                                        <th width="180">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($orders as $order)
-                                        <tr>
-                                            <td>{{ $order->id }}</td>
-                                            <td>{{ $order->customer?->name ?? '-' }}</td>
-                                            <td>{{ $order->customer?->mobile_number ?? '-' }}</td>
-                                            <td>{{ $order->created_date ? date('d-m-Y H:i', strtotime($order->created_date)) : '-' }}</td>
-                                            <td>
-                                                @foreach($order->items as $item)
-                                                    <div>
-                                                        {{ $item->product?->product_name ?? 'Product' }}
-                                                        (Qty: {{ $item->quantity }})
-                                                    </div>
-                                                @endforeach
-                                            </td>
-                                            <td>{{ $order->currency }} {{ number_format((float) $order->total_amount, 2) }}</td>
-                                            <td>
-                                                <form method="POST" action="{{ route('admin.orders.release-reservation', $order->id) }}" onsubmit="return confirm('Release reserved stock for this expired pending order?');">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-warning btn-sm">
-                                                        Release Stock
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="7" class="text-center">No expired pending reservations found</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                        <div id="ordersTable" class="table-responsive">
+                            @include('admin.orders.partials.pending_reservations_table', ['orders' => $orders])
                         </div>
                     </div>
                 </div>

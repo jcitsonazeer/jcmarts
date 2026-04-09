@@ -94,6 +94,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('users/{id}/status', [AdminUserController::class, 'toggleStatus'])->name('users.status');
         Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
         Route::get('orders/pending-reservations', [AdminOrderController::class, 'pendingReservations'])->name('orders.pending-reservations');
+        Route::get('orders/pending-reservations/table', [AdminOrderController::class, 'pendingReservationsTable'])->name('orders.pending-reservations.table');
         Route::post('orders/{orderId}/release-reservation', [AdminOrderController::class, 'releasePendingReservation'])->name('orders.release-reservation');
         Route::get('orders/{id}', [AdminOrderController::class, 'show'])->name('orders.show');
         Route::get('orders/{orderId}/process', [OrderProcessController::class, 'adminShow'])->name('orders.process.show');
