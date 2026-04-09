@@ -210,6 +210,20 @@ class FrontendCheckoutController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        $customerId = (int) session('customer_id');
+        $addressId = (int) session('checkout_address_id');
+
+        if ($addressId < 1) {
+            return response()->json(['message' => 'Please choose a delivery address to continue.'], 422);
+        }
+
+        $this->orderService->cleanupExpiredPendingOrders();
+
+        if (session()->has('pending_order_id')) {
+            $this->orderService->releasePendingOrder((int) session('pending_order_id'), null, $customerId);
+            session()->forget(['pending_order_id', 'razorpay_order_id', 'razorpay_amount']);
+        }
+
         $orderSummary = $this->buildOrderSummary();
         $total = (float) $orderSummary['total'];
         $amountInPaise = (int) round($total * 100);
@@ -221,18 +235,36 @@ class FrontendCheckoutController extends Controller
         $cartItems = $this->cartService->getActiveItems();
 
         try {
-            $this->orderService->assertStockAvailable($cartItems);
+            $pendingOrder = $this->orderService->createPendingOrderFromCart(
+                $customerId,
+                $addressId,
+                $orderSummary,
+                $cartItems
+            );
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        $order = $this->razorpayService->createOrder(
-            $amountInPaise,
-            'jcmart_' . now()->format('YmdHis'),
-            (string) config('razorpay.currency', 'INR')
-        );
+        try {
+            $order = $this->razorpayService->createOrder(
+                $amountInPaise,
+                'jcmart_' . $pendingOrder->id . '_' . now()->format('YmdHis'),
+                (string) config('razorpay.currency', 'INR')
+            );
+
+            $this->orderService->attachRazorpayOrder(
+                (int) $pendingOrder->id,
+                (string) $order['id'],
+                $customerId
+            );
+        } catch (Throwable $e) {
+            $this->orderService->releasePendingOrder((int) $pendingOrder->id, null, $customerId);
+
+            return response()->json(['message' => 'Payment could not be started. Please try again.'], 422);
+        }
 
         session([
+            'pending_order_id' => $pendingOrder->id,
             'razorpay_order_id' => $order['id'],
             'razorpay_amount' => $amountInPaise,
         ]);
@@ -269,28 +301,61 @@ class FrontendCheckoutController extends Controller
             );
 
             $cartItems = $this->cartService->getActiveItems();
-            $orderSummary = $this->buildOrderSummary();
             $customerId = (int) session('customer_id');
-            $addressId = (int) session('checkout_address_id');
 
-            $this->orderService->createPaidOrderFromCart(
+            $this->orderService->markPendingOrderAsPaid(
+                $validated['razorpay_order_id'],
                 $customerId,
-                $addressId,
-                $orderSummary,
-                $cartItems,
-                $validated
+                $validated,
+                $cartItems
             );
 
-            session()->forget(['razorpay_order_id', 'razorpay_amount', 'checkout_address_id']);
+            session()->forget(['pending_order_id', 'razorpay_order_id', 'razorpay_amount', 'checkout_address_id']);
 
             return response()->json([
                 'message' => 'Payment successful.',
             ]);
         } catch (Throwable $e) {
+            $this->orderService->releasePendingOrder(
+                (int) session('pending_order_id', 0) ?: null,
+                (string) session('razorpay_order_id', '') ?: null,
+                (int) session('customer_id')
+            );
+
+            session()->forget(['pending_order_id', 'razorpay_order_id', 'razorpay_amount']);
+
             return response()->json([
                 'message' => 'Payment verification failed.',
             ], 422);
         }
+    }
+
+    public function releasePendingPayment(Request $request): JsonResponse
+    {
+        $guardRedirect = $this->ensureCheckoutAccess();
+        if ($guardRedirect) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'razorpay_order_id' => ['nullable', 'string'],
+        ]);
+
+        $customerId = (int) session('customer_id');
+        $pendingOrderId = (int) session('pending_order_id', 0);
+        $razorpayOrderId = (string) ($validated['razorpay_order_id'] ?? session('razorpay_order_id', ''));
+
+        $this->orderService->releasePendingOrder(
+            $pendingOrderId > 0 ? $pendingOrderId : null,
+            $razorpayOrderId !== '' ? $razorpayOrderId : null,
+            $customerId
+        );
+
+        session()->forget(['pending_order_id', 'razorpay_order_id', 'razorpay_amount']);
+
+        return response()->json([
+            'message' => 'Reserved stock released.',
+        ]);
     }
     private function ensureCheckoutAccess(): ?RedirectResponse
     {

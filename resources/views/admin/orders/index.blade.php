@@ -9,6 +9,9 @@
                     <div class="card card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h4 class="card-title">Order Management</h4>
+                            <a href="{{ route('admin.orders.pending-reservations') }}" class="btn btn-warning">
+                                Expired Pending Reservations
+                            </a>
                         </div>
 
                         @if (session('success'))
@@ -80,3 +83,4 @@
     </div>
 </div>
 @endsection
+

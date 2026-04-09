@@ -65,11 +65,34 @@
   (function () {
     var payBtn = document.getElementById('continue-payment');
     var statusEl = document.getElementById('payment-status');
+    var releasedOrderIds = {};
 
     function setStatus(message, isError) {
       statusEl.style.display = 'block';
       statusEl.className = isError ? 'text-danger text-center' : 'text-success text-center';
       statusEl.textContent = message;
+    }
+
+    function releaseReservedOrder(orderId) {
+      if (!orderId || releasedOrderIds[orderId]) {
+        return Promise.resolve();
+      }
+
+      releasedOrderIds[orderId] = true;
+
+      return fetch("{{ route('frontend.payment.release') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': "{{ csrf_token() }}",
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          razorpay_order_id: orderId
+        })
+      }).catch(function () {
+        return null;
+      });
     }
 
     payBtn.addEventListener('click', function () {
@@ -96,6 +119,13 @@
           name: 'JC Mart',
           description: 'Order Payment',
           order_id: data.order_id,
+          modal: {
+            ondismiss: function () {
+              releaseReservedOrder(data.order_id);
+              setStatus('Payment cancelled. Item reservation released.', true);
+              payBtn.disabled = false;
+            }
+          },
           handler: function (response) {
             fetch("{{ route('frontend.payment.verify') }}", {
               method: 'POST',
@@ -126,8 +156,10 @@
 
         var rzp = new Razorpay(options);
         rzp.on('payment.failed', function () {
-          setStatus('Payment failed. Please try again.', true);
-          payBtn.disabled = false;
+          releaseReservedOrder(data.order_id).finally(function () {
+            setStatus('Payment failed. Please try again.', true);
+            payBtn.disabled = false;
+          });
         });
         rzp.open();
       })

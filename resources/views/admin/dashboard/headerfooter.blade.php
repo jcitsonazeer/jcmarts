@@ -163,10 +163,25 @@
 
                     <!-- Orders (Future) -->
                     <li class="nav-item">
-                        <a href="{{ route('admin.orders.index') }}" class="nav-link">
+                        <a href="#" class="nav-link">
                             <i class="ti-shopping-cart menu-icon"></i>
                             <span class="menu-title">Orders</span>
+                            <i class="menu-arrow"></i>
                         </a>
+                        <div class="submenu">
+                            <ul class="submenu-item">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.orders.index') }}">
+                                        All Orders
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.orders.pending-reservations') }}">
+                                        Pending Reservations
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
 
                     <!-- Customers (Future) -->
@@ -247,3 +262,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
 </body>
 </html>
+

@@ -3,14 +3,17 @@
 namespace App\Services;
 
 use App\Models\Order;
+use Illuminate\Support\Collection;
 
 class AdminOrderService
 {
     protected OrderStatusService $orderStatusService;
+    protected OrderService $orderService;
 
-    public function __construct(OrderStatusService $orderStatusService)
+    public function __construct(OrderStatusService $orderStatusService, OrderService $orderService)
     {
         $this->orderStatusService = $orderStatusService;
+        $this->orderService = $orderService;
     }
 
     public function getAllOrders()
@@ -48,4 +51,32 @@ class AdminOrderService
 
         return $order;
     }
+
+    public function getExpiredPendingOrders(): Collection
+    {
+        return $this->orderService->getExpiredPendingOrders();
+    }
+
+    public function cleanupExpiredPendingOrders(): void
+    {
+        $this->orderService->cleanupExpiredPendingOrders();
+    }
+
+    public function getReleasedReservationHistory(): Collection
+    {
+        return $this->orderService->getReleasedReservationHistory();
+    }
+
+    public function releaseExpiredPendingOrder(int $orderId, int $adminId): void
+    {
+        $order = $this->orderService->getExpiredPendingOrders()
+            ->firstWhere('id', $orderId);
+
+        if (!$order) {
+            return;
+        }
+
+        $this->orderService->releasePendingOrderAsAdmin($orderId, $adminId);
+    }
 }
+
