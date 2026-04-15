@@ -11,9 +11,20 @@ class OfferDetailService
 {
     public function getAll()
     {
-        return OfferDetail::with(['createdBy', 'updatedBy'])
+        return OfferDetail::query()
+            ->select([
+                'id',
+                'offer_name',
+                'is_active',
+                'created_by_id',
+                'created_date',
+                'updated_by_id',
+                'updated_date',
+            ])
+            ->with(['createdBy', 'updatedBy'])
             ->orderByDesc('id')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function getActiveForDropdown()

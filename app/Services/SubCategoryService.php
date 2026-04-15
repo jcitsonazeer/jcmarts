@@ -12,7 +12,18 @@ class SubCategoryService
 {
     public function getAll(?string $searchTerm = null)
     {
-        return SubCategory::with(['category', 'createdBy', 'updatedBy'])
+        return SubCategory::query()
+            ->select([
+                'id',
+                'category_id',
+                'sub_category_name',
+                'sub_category_image',
+                'created_by_id',
+                'created_date',
+                'updated_by_id',
+                'updated_date',
+            ])
+            ->with(['category', 'createdBy', 'updatedBy'])
             ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
                 $term = trim((string) $searchTerm);
 
@@ -24,7 +35,8 @@ class SubCategoryService
                 });
             })
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 	
 	// For Mobile API

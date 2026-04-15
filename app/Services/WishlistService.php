@@ -31,16 +31,41 @@ class WishlistService
     public function getActiveItems(int $customerId): Collection
     {
         return Wishlist::query()
+            ->select([
+                'id',
+                'customer_id',
+                'product_id',
+                'is_active',
+            ])
             ->where('customer_id', $customerId)
             ->where('is_active', 1)
             ->with([
                 'product' => function ($query) {
-                    $query->with([
-                        'subCategory.category',
-                        'brand',
+                    $query->select([
+                        'id',
+                        'sub_category_id',
+                        'brand_id',
+                        'product_name',
+                        'product_image',
+                        'is_active',
+                    ])->with([
+                        'subCategory:id,category_id,sub_category_name',
+                        'subCategory.category:id,category_name',
+                        'brand:id,brand_name',
                         'rates' => function ($rateQuery) {
-                            $rateQuery->where('is_active', 1)
-                                ->with('uom')
+                            $rateQuery->select([
+                                'id',
+                                'product_id',
+                                'uom_id',
+                                'selling_price',
+                                'offer_percentage',
+                                'offer_price',
+                                'final_price',
+                                'soldout_status',
+                                'selected_display',
+                                'is_active',
+                            ])->where('is_active', 1)
+                                ->with(['uom:id,primary_uom,secondary_uom'])
                                 ->orderBy('id');
                         },
                     ]);

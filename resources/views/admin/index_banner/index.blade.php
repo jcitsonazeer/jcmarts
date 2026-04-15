@@ -108,6 +108,11 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                @if($banners->hasPages())
+                                    <div class="mt-3 d-flex justify-content-center">
+                                        {{ $banners->links('pagination::bootstrap-4') }}
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>

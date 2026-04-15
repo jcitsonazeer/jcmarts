@@ -11,9 +11,20 @@ class UomMasterService
 {
     public function getAll()
     {
-        return UomMaster::with(['createdBy', 'updatedBy'])
+        return UomMaster::query()
+            ->select([
+                'id',
+                'primary_uom',
+                'secondary_uom',
+                'created_by_id',
+                'created_date',
+                'updated_by_id',
+                'updated_date',
+            ])
+            ->with(['createdBy', 'updatedBy'])
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function getPrimaryUomOptions()

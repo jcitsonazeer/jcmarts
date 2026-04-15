@@ -85,6 +85,11 @@
                                 </tbody>
                             </table>
                         </div>
+                        @if($offers->hasPages())
+                            <div class="mt-3 d-flex justify-content-center">
+                                {{ $offers->links('pagination::bootstrap-4') }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

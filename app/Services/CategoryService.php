@@ -10,9 +10,19 @@ class CategoryService
 {
     public function getAll()
     {
-        return Category::with(['createdBy', 'updatedBy'])
+        return Category::query()
+            ->select([
+                'id',
+                'category_name',
+                'created_by_id',
+                'created_date',
+                'updated_by_id',
+                'updated_date',
+            ])
+            ->with(['createdBy', 'updatedBy'])
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function findForEdit($id)

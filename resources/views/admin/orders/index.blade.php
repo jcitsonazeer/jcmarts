@@ -44,7 +44,7 @@
                                         <th>Order Process</th>
                                         <th>Items</th>
                                         <th>Created Date</th>
-                                        <th width="190">Action</th>
+                                        <th width="250">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -76,6 +76,11 @@
                                 </tbody>
                             </table>
                         </div>
+                        @if($orders->hasPages())
+                            <div class="mt-3 d-flex justify-content-center">
+                                {{ $orders->links('pagination::bootstrap-4') }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -83,4 +88,3 @@
     </div>
 </div>
 @endsection
-

@@ -9,6 +9,9 @@
     $selectedOffer = $selectedOffer ?? null;
     $selectedSubCategory = $selectedSubCategory ?? null;
     $selectedBrandIds = collect($selectedBrandIds ?? [])->map(fn($id) => (int) $id)->all();
+    $productsList = $products ?? collect();
+    $isPaginatedProducts = $productsList instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator
+      || $productsList instanceof \Illuminate\Contracts\Pagination\Paginator;
   @endphp
   <ul class="breadcrumb">
     <li><a href="{{ route('frontend.home') }}"><i class="fa fa-home"></i></a></li>
@@ -142,7 +145,7 @@
 
       <div class="products-collection">
         <div class="row product-layoutrow">
-          @forelse(($products ?? collect()) as $product)
+          @forelse($productsList as $product)
             <livewire:frontend.product-list-card
               :product="$product"
               :key="'product-list-card-' . $product->id" />
@@ -161,9 +164,16 @@
 
 <div class="row">
     <div class="col-sm-12 text-center">
-        Showing {{ ($products ?? collect())->count() }} products
+        Showing {{ $productsList->count() }} of {{ $isPaginatedProducts && method_exists($productsList, 'total') ? $productsList->total() : $productsList->count() }} products
     </div>
 </div>
+@if($isPaginatedProducts && $productsList->hasPages())
+  <div class="row">
+    <div class="col-sm-12 text-center" style="margin-top: 20px;">
+      {{ $productsList->links('pagination::bootstrap-4') }}
+    </div>
+  </div>
+@endif
     </div>
   </div>
 </div>

@@ -79,6 +79,11 @@
                                 </tbody>
                             </table>
                         </div>
+                        @if($uoms->hasPages())
+                            <div class="mt-3 d-flex justify-content-center">
+                                {{ $uoms->links('pagination::bootstrap-4') }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

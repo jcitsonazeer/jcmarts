@@ -4,15 +4,18 @@ namespace App\Livewire\Admin;
 
 use App\Services\StockInfoService;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class StockInfoIndex extends Component
 {
+    use WithPagination;
+
     public array $rate_results = [];
     public $rate_master_id = '';
-    public $history = [];
     public string $rate_search = '';
     public bool $rate_dropdown_open = false;
     public bool $rate_ignore_search = false;
+    protected string $paginationTheme = 'bootstrap';
 
     public function mount()
     {
@@ -21,13 +24,12 @@ class StockInfoIndex extends Component
 
         if (!empty($this->rate_master_id)) {
             $this->syncSelectedRate();
-            $this->loadHistory();
         }
     }
 
     public function updatedRateMasterId()
     {
-        $this->loadHistory();
+        $this->resetPage();
     }
 
     public function updatedRateSearch()
@@ -59,7 +61,7 @@ class StockInfoIndex extends Component
         $this->rate_search = $label;
         $this->rate_results = [];
         $this->rate_dropdown_open = false;
-        $this->loadHistory();
+        $this->resetPage();
     }
 
     public function clearRateSelection()
@@ -69,19 +71,7 @@ class StockInfoIndex extends Component
         }
 
         $this->rate_master_id = '';
-        $this->history = [];
-    }
-
-    private function loadHistory()
-    {
-        $this->history = [];
-
-        if (empty($this->rate_master_id)) {
-            return;
-        }
-
-        $service = app(StockInfoService::class);
-        $this->history = $service->getHistoryByRate((int) $this->rate_master_id)->toArray();
+        $this->resetPage();
     }
 
     private function loadRateResults()
@@ -102,6 +92,12 @@ class StockInfoIndex extends Component
 
     public function render()
     {
-        return view('livewire.admin.stock-info-index');
+        $history = null;
+
+        if (!empty($this->rate_master_id)) {
+            $history = app(StockInfoService::class)->getHistoryByRate((int) $this->rate_master_id);
+        }
+
+        return view('livewire.admin.stock-info-index', compact('history'));
     }
 }

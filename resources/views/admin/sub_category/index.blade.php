@@ -123,6 +123,11 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                @if($subCategories->hasPages())
+                                    <div class="mt-3 d-flex justify-content-center">
+                                        {{ $subCategories->links('pagination::bootstrap-4') }}
+                                    </div>
+                                @endif
                             </div>
                         </div>
 

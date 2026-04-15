@@ -18,7 +18,17 @@ class ProductImageService
 
     public function getAllProducts(?string $searchTerm = null)
     {
-        return Product::with(['subCategory'])
+        return Product::query()
+            ->select([
+                'id',
+                'sub_category_id',
+                'product_name',
+                'single_image_1',
+                'single_image_2',
+                'single_image_3',
+                'single_image_4',
+            ])
+            ->with(['subCategory'])
             ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
                 $term = trim((string) $searchTerm);
 
@@ -30,7 +40,8 @@ class ProductImageService
                 });
             })
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function getProductsForDropdown()

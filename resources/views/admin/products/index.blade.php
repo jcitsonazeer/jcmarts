@@ -111,6 +111,11 @@
                                 </tbody>
                             </table>
                         </div>
+                        @if($products->hasPages())
+                            <div class="mt-3 d-flex justify-content-center">
+                                {{ $products->links('pagination::bootstrap-4') }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

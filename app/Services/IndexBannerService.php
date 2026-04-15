@@ -13,9 +13,21 @@ class IndexBannerService
 {
     public function getAll()
     {
-        return IndexBanner::with(['createdBy', 'updatedBy', 'subCategory', 'offerDetail'])
+        return IndexBanner::query()
+            ->select([
+                'id',
+                'banner_image',
+                'sub_category_id',
+                'offer_details_id',
+                'created_by_id',
+                'created_date',
+                'updated_by_id',
+                'updated_date',
+            ])
+            ->with(['createdBy', 'updatedBy', 'subCategory', 'offerDetail'])
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function findForShow($id)

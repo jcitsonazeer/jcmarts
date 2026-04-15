@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
-use Illuminate\Support\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class AdminOrderService
 {
@@ -19,16 +19,30 @@ class AdminOrderService
     public function getAllOrders()
     {
         $orders = Order::query()
+            ->select([
+                'id',
+                'customer_id',
+                'total_amount',
+                'currency',
+                'payment_status',
+                'created_date',
+                'paid_at',
+            ])
             ->with(['customer'])
             ->with(['statuses'])
             ->withCount('items')
             ->orderByDesc('created_date')
             ->orderByDesc('id')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
 
-        return $orders->each(function (Order $order) {
+        $orders->getCollection()->transform(function (Order $order) {
             $order->current_order_status = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
+
+            return $order;
         });
+
+        return $orders;
     }
 
     public function getOrderById(int $orderId): ?Order
@@ -62,7 +76,7 @@ class AdminOrderService
         $this->orderService->cleanupExpiredPendingOrders();
     }
 
-    public function getReleasedReservationHistory(): Collection
+    public function getReleasedReservationHistory(): LengthAwarePaginator
     {
         return $this->orderService->getReleasedReservationHistory();
     }
@@ -79,4 +93,3 @@ class AdminOrderService
         $this->orderService->releasePendingOrderAsAdmin($orderId, $adminId);
     }
 }
-

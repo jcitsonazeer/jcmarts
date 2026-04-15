@@ -12,7 +12,20 @@ class RateMasterService
 {
     public function getAll(?string $searchTerm = null)
     {
-        return RateMaster::with(['product', 'uom', 'createdBy', 'updatedBy', 'latestStockInfo'])
+        return RateMaster::query()
+            ->select([
+                'id',
+                'product_id',
+                'uom_id',
+                'cost_price',
+                'selling_price',
+                'offer_percentage',
+                'final_price',
+                'soldout_status',
+                'stock_dependent',
+                'is_active',
+            ])
+            ->with(['product', 'uom', 'createdBy', 'updatedBy', 'latestStockInfo'])
             ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
                 $term = trim((string) $searchTerm);
 
@@ -26,12 +39,14 @@ class RateMasterService
                 });
             })
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function getProductsForSelectedDisplay(?string $searchTerm = null)
     {
-        return Product::select('id', 'product_name', 'product_image')
+        return Product::query()
+            ->select('id', 'product_name', 'product_image')
             ->whereHas('rates', function ($query) {
                 $query->where('is_active', 1);
             })
@@ -44,7 +59,8 @@ class RateMasterService
                 },
             ])
             ->orderBy('product_name')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function getRatesForSelectedDisplayByProduct($productId)

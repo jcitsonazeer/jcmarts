@@ -10,12 +10,23 @@ class BrandService
 {
     public function getAll(?string $searchTerm = null)
     {
-        return Brand::with(['createdBy', 'updatedBy'])
+        return Brand::query()
+            ->select([
+                'id',
+                'brand_name',
+                'is_active',
+                'created_by_id',
+                'created_date',
+                'updated_by_id',
+                'updated_date',
+            ])
+            ->with(['createdBy', 'updatedBy'])
             ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
                 $query->where('brand_name', 'like', '%' . trim((string) $searchTerm) . '%');
             })
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function getActiveForDropdown()

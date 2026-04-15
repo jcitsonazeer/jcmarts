@@ -99,10 +99,19 @@ class StockInfoService
     public function getHistoryByRate(int $rateMasterId)
     {
         return StockInfo::query()
+            ->select([
+                'id',
+                'rate_master_id',
+                'stock_in_count',
+                'sale_quantity',
+                'current_stock',
+                'sale_order_id',
+                'created_date',
+            ])
             ->with(['rate.product', 'rate.uom'])
             ->where('rate_master_id', $rateMasterId)
             ->orderByDesc('id')
-            ->get();
+            ->paginate(20);
     }
 
     private function formatRateOption(RateMaster $rate): array

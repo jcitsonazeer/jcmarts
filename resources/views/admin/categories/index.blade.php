@@ -94,6 +94,11 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                @if($categories->hasPages())
+                                    <div class="mt-3 d-flex justify-content-center">
+                                        {{ $categories->links('pagination::bootstrap-4') }}
+                                    </div>
+                                @endif
                             </div>
                         </div>
 

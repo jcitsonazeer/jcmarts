@@ -12,7 +12,18 @@ class OfferProductService
 {
     public function getAll(?string $searchTerm = null)
     {
-        return OfferProduct::with(['offer', 'product', 'createdBy', 'updatedBy'])
+        return OfferProduct::query()
+            ->select([
+                'id',
+                'offer_id',
+                'products_id',
+                'is_active',
+                'created_by_id',
+                'created_date',
+                'updated_by_id',
+                'updated_date',
+            ])
+            ->with(['offer', 'product', 'createdBy', 'updatedBy'])
             ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
                 $term = trim((string) $searchTerm);
 
@@ -25,7 +36,8 @@ class OfferProductService
                 });
             })
             ->orderByDesc('id')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function getOffersForDropdown()

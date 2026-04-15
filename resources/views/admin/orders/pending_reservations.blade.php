@@ -5,9 +5,10 @@
 document.addEventListener('DOMContentLoaded', function () {
     var tableWrapper = document.getElementById('ordersTable');
     var updatedAt = document.getElementById('ordersTableUpdatedAt');
+    var refreshUrl = @json(route('admin.orders.pending-reservations.table', request()->only('page')));
 
     function refreshOrdersTable() {
-        fetch("{{ route('admin.orders.pending-reservations.table') }}", {
+        fetch(refreshUrl, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
@@ -68,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                         @endif
 
-                        <div id="ordersTable" class="table-responsive">
+                        <div id="ordersTable">
                             @include('admin.orders.partials.pending_reservations_table', ['orders' => $orders])
                         </div>
                     </div>

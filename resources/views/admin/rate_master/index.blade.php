@@ -103,6 +103,11 @@
                                 </tbody>
                             </table>
                         </div>
+                        @if($rates->hasPages())
+                            <div class="mt-3 d-flex justify-content-center">
+                                {{ $rates->links('pagination::bootstrap-4') }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

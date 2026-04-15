@@ -75,11 +75,19 @@ class CartService
         $sessionId = $this->getCurrentSessionId();
 
         return Cart::query()
+            ->select([
+                'id',
+                'product_id',
+                'rate_master_id',
+                'quantity',
+                'unit_price',
+            ])
             ->where('session_id', $sessionId)
             ->where('is_active', 1)
             ->with([
-                'product',
-                'rate.uom',
+                'product:id,product_name,product_image',
+                'rate:id,uom_id',
+                'rate.uom:id,primary_uom,secondary_uom',
             ])
             ->orderByDesc('id')
             ->get();

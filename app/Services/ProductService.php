@@ -14,7 +14,18 @@ class ProductService
 {
     public function getAll(?string $searchTerm = null)
     {
-        return Product::with(['subCategory', 'brand', 'createdBy', 'updatedBy'])
+        return Product::query()
+            ->select([
+                'id',
+                'sub_category_id',
+                'brand_id',
+                'product_name',
+                'product_image',
+                'is_active',
+                'created_by_id',
+                'updated_by_id',
+            ])
+            ->with(['subCategory', 'brand', 'createdBy', 'updatedBy'])
             ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
                 $term = trim((string) $searchTerm);
 
@@ -29,7 +40,8 @@ class ProductService
                 });
             })
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 	
     // For Mobile API

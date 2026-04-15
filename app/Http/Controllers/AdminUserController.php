@@ -12,7 +12,17 @@ class AdminUserController extends Controller
 {
     public function index()
     {
-        $users = AdminLogin::orderBy('id', 'desc')->get();
+        $users = AdminLogin::query()
+            ->select([
+                'id',
+                'admin_username',
+                'user_type',
+                'cur_status',
+                'created_date',
+            ])
+            ->orderBy('id', 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         return view('admin.dashboard.users.index', compact('users'));
     }

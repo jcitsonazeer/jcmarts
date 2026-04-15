@@ -104,6 +104,11 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                @if($users->hasPages())
+                                    <div class="mt-3 d-flex justify-content-center">
+                                        {{ $users->links('pagination::bootstrap-4') }}
+                                    </div>
+                                @endif
                             </div>
                         </div>
 

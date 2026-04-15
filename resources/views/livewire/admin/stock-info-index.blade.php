@@ -62,7 +62,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($history as $row)
+                                    @forelse(($history ?? collect()) as $row)
                                         <tr>
                                             <td>{{ $row['id'] }}</td>
                                             <td>{{ $row['rate']['product']['product_name'] ?? '-' }}</td>
@@ -87,6 +87,11 @@
                                 </tbody>
                             </table>
                         </div>
+                        @if($history && $history->hasPages())
+                            <div class="mt-3 d-flex justify-content-center">
+                                {{ $history->links('pagination::bootstrap-4') }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

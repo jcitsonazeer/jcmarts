@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\RateMaster;
 use App\Models\StockInfo;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -66,9 +67,20 @@ class OrderService
             ->get();
     }
 
-    public function getReleasedReservationHistory(): Collection
+    public function getReleasedReservationHistory(): LengthAwarePaginator
     {
         return Order::query()
+            ->select([
+                'id',
+                'customer_id',
+                'payment_status',
+                'created_date',
+                'reservation_expires_at',
+                'reservation_released_at',
+                'reservation_release_reason',
+                'currency',
+                'total_amount',
+            ])
             ->with([
                 'customer',
                 'address',
@@ -82,7 +94,8 @@ class OrderService
             ])
             ->orderByDesc('reservation_released_at')
             ->orderByDesc('id')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
     }
 
     public function createPendingOrderFromCart(
