@@ -5562,3 +5562,10 @@ border-radius:0px 25px 0px 0px;
 margin:0 10px 10px;
 text-align:left;
 }
+.pagination>li>a{
+	background-color:#198b40 !important;
+}
+.pagination>.active>span{
+	background-color: #eeb720 !important;
+	color:#123a31 !important;
+}
