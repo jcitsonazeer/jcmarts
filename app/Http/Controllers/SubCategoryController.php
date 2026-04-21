@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\SubCategoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class SubCategoryController extends Controller
 {
@@ -39,7 +40,7 @@ class SubCategoryController extends Controller
         $validatedData = $request->validate([
             'category_id' => 'required|integer|exists:category,id',
             'sub_category_name' => 'required|string|max:100|unique:sub_category,sub_category_name',
-            'sub_category_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'sub_category_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $adminId = session('admin_id');
@@ -48,7 +49,13 @@ class SubCategoryController extends Controller
                 ->with('error', 'Please login to continue.');
         }
 
-        $this->subCategoryService->create($validatedData, $adminId);
+        try {
+            $this->subCategoryService->create($validatedData, $adminId);
+        } catch (RuntimeException $exception) {
+            return back()
+                ->withErrors(['sub_category_image' => $exception->getMessage()])
+                ->withInput();
+        }
 
         return redirect()->route('admin.sub-categories.index')
             ->with('success', 'Sub category created successfully');
@@ -78,7 +85,7 @@ class SubCategoryController extends Controller
         $validatedData = $request->validate([
             'category_id' => 'required|integer|exists:category,id',
             'sub_category_name' => 'required|string|max:100|unique:sub_category,sub_category_name,' . $id,
-            'sub_category_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'sub_category_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $adminId = session('admin_id');
@@ -87,7 +94,13 @@ class SubCategoryController extends Controller
                 ->with('error', 'Please login to continue.');
         }
 
-        $this->subCategoryService->update($id, $validatedData, $adminId);
+        try {
+            $this->subCategoryService->update($id, $validatedData, $adminId);
+        } catch (RuntimeException $exception) {
+            return back()
+                ->withErrors(['sub_category_image' => $exception->getMessage()])
+                ->withInput();
+        }
 
         return redirect()->route('admin.sub-categories.edit', $id)
             ->with('success', 'Sub category updated successfully');

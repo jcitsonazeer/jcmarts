@@ -70,8 +70,9 @@
                                                    id="sub_category_image_input"
                                                    name="sub_category_image"
                                                    class="form-control {{ $errors->has('sub_category_image') ? 'is-invalid' : '' }}"
-                                                   accept=".jpg,.jpeg,.png,.webp,image/*">
-                                            <small class="text-muted">Allowed: JPG, JPEG, PNG, WEBP (max 2MB)</small>
+                                                   accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                                            <small class="text-muted d-block">Allowed: JPG, JPEG, PNG (max 2MB)</small>
+                                            <small class="text-muted">Preview and upload size: 180 x 135 px</small>
                                             @error('sub_category_image')
                                                 <span class="text-danger d-block">{{ $message }}</span>
                                             @enderror
@@ -88,7 +89,7 @@
                                                 <img id="sub_category_current_image"
                                                      src="{{ $subCategoryImage }}"
                                                      alt="Current Sub Category Image"
-                                                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
+                                                     style="width: 180px; height: 135px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd;"
                                                      onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
                                             </div>
                                             <label class="mt-2 mb-1 d-block">Selected Image</label>
@@ -96,7 +97,7 @@
                                                 <img id="sub_category_selected_image"
                                                      src="{{ $defaultImage }}"
                                                      alt="Selected Sub Category Image"
-                                                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; display: none;"
+                                                     style="width: 180px; height: 135px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;"
                                                      onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
                                             </div>
                                         </div>
@@ -166,14 +167,94 @@
         $('.alert').fadeOut('slow');
     }, 5000);
 
-    document.getElementById('sub_category_image_input')?.addEventListener('change', function (event) {
+    const subCategoryImageInput = document.getElementById('sub_category_image_input');
+    const selectedSubCategoryImage = document.getElementById('sub_category_selected_image');
+    const previewWidth = 180;
+    const previewHeight = 135;
+    const defaultPreviewImage = @json($defaultImage);
+
+    subCategoryImageInput?.addEventListener('change', function (event) {
         const file = event.target.files && event.target.files[0];
         if (!file) {
             return;
         }
-        const selectedImage = document.getElementById('sub_category_selected_image');
-        selectedImage.src = URL.createObjectURL(file);
-        selectedImage.style.display = 'block';
+
+        const allowedTypes = ['image/jpeg', 'image/png'];
+        const fileName = (file.name || '').toLowerCase();
+        const isAllowedExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png');
+
+        if (!allowedTypes.includes(file.type) || !isAllowedExtension) {
+            alert('Please select only JPG, JPEG, or PNG image.');
+            subCategoryImageInput.value = '';
+            selectedSubCategoryImage.src = defaultPreviewImage;
+            selectedSubCategoryImage.style.display = 'none';
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (loadEvent) {
+            const image = new Image();
+
+            image.onload = function () {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+
+                canvas.width = previewWidth;
+                canvas.height = previewHeight;
+
+                const sourceRatio = image.width / image.height;
+                const targetRatio = previewWidth / previewHeight;
+
+                let sourceX = 0;
+                let sourceY = 0;
+                let sourceWidth = image.width;
+                let sourceHeight = image.height;
+
+                if (sourceRatio > targetRatio) {
+                    sourceWidth = image.height * targetRatio;
+                    sourceX = (image.width - sourceWidth) / 2;
+                } else {
+                    sourceHeight = image.width / targetRatio;
+                    sourceY = (image.height - sourceHeight) / 2;
+                }
+
+                context.drawImage(
+                    image,
+                    sourceX,
+                    sourceY,
+                    sourceWidth,
+                    sourceHeight,
+                    0,
+                    0,
+                    previewWidth,
+                    previewHeight
+                );
+
+                selectedSubCategoryImage.src = canvas.toDataURL('image/jpeg', 0.9);
+                selectedSubCategoryImage.style.display = 'block';
+
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        return;
+                    }
+
+                    const resizedFile = new File(
+                        [blob],
+                        file.name.replace(/\.[^.]+$/, '') + '.jpg',
+                        { type: 'image/jpeg' }
+                    );
+
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(resizedFile);
+                    subCategoryImageInput.files = dataTransfer.files;
+                }, 'image/jpeg', 0.9);
+            };
+
+            image.src = loadEvent.target.result;
+        };
+
+        reader.readAsDataURL(file);
     });
 </script>
 @endpush
