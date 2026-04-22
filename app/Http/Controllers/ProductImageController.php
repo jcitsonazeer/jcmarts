@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ProductImageService;
 use Illuminate\Http\Request;
+use RuntimeException;
 
 class ProductImageController extends Controller
 {
@@ -44,10 +45,10 @@ class ProductImageController extends Controller
 
         $validatedData = $request->validate([
             'product_name' => 'required|string|max:150',
-            'single_image_1' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|required_without_all:single_image_2,single_image_3,single_image_4',
-            'single_image_2' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|required_without_all:single_image_1,single_image_3,single_image_4',
-            'single_image_3' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|required_without_all:single_image_1,single_image_2,single_image_4',
-            'single_image_4' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|required_without_all:single_image_1,single_image_2,single_image_3',
+            'single_image_1' => 'nullable|image|mimes:jpg,jpeg,png|max:2048|required_without_all:single_image_2,single_image_3,single_image_4',
+            'single_image_2' => 'nullable|image|mimes:jpg,jpeg,png|max:2048|required_without_all:single_image_1,single_image_3,single_image_4',
+            'single_image_3' => 'nullable|image|mimes:jpg,jpeg,png|max:2048|required_without_all:single_image_1,single_image_2,single_image_4',
+            'single_image_4' => 'nullable|image|mimes:jpg,jpeg,png|max:2048|required_without_all:single_image_1,single_image_2,single_image_3',
         ]);
 
         $validatedData['product_id'] = $this->productImageService->findProductIdByName($validatedData['product_name']);
@@ -64,7 +65,13 @@ class ProductImageController extends Controller
                 ->with('error', 'Please login to continue.');
         }
 
-        $this->productImageService->storeForProduct($validatedData, (int) $adminId);
+        try {
+            $this->productImageService->storeForProduct($validatedData, (int) $adminId);
+        } catch (RuntimeException $exception) {
+            return back()
+                ->withErrors(['single_image_1' => $exception->getMessage()])
+                ->withInput();
+        }
 
         return redirect()->route('admin.product-images.index')
             ->with('success', 'Product images saved successfully');
@@ -80,10 +87,10 @@ class ProductImageController extends Controller
     public function update(Request $request, $productId)
     {
         $validatedData = $request->validate([
-            'single_image_1' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'single_image_2' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'single_image_3' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'single_image_4' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'single_image_1' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'single_image_2' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'single_image_3' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'single_image_4' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $adminId = session('admin_id');
@@ -92,7 +99,13 @@ class ProductImageController extends Controller
                 ->with('error', 'Please login to continue.');
         }
 
-        $this->productImageService->updateForProduct((int) $productId, $validatedData, (int) $adminId);
+        try {
+            $this->productImageService->updateForProduct((int) $productId, $validatedData, (int) $adminId);
+        } catch (RuntimeException $exception) {
+            return back()
+                ->withErrors(['single_image_1' => $exception->getMessage()])
+                ->withInput();
+        }
 
         return redirect()->route('admin.product-images.edit', $productId)
             ->with('success', 'Product images updated successfully');

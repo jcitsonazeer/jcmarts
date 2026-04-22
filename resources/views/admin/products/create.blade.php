@@ -81,14 +81,18 @@
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label>Product Image</label>
-                                    <input type="file" id="product_image_input" name="product_image" class="form-control" accept=".jpg,.jpeg,.png,.webp,image/*">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG, WEBP (max 2MB)</small>
+                                    <input type="file" id="product_image_input" name="product_image" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                                    <small class="text-muted d-block">Allowed: JPG, JPEG, PNG (max 2MB)</small>
+                                    <small class="text-muted">Preview and upload size: 233 x 215 px</small>
+                                    @error('product_image')
+                                        <small class="text-danger d-block">{{ $message }}</small>
+                                    @enderror
                                     @php($defaultImage = asset('assets/admin/images/no_image.png'))
                                     <div class="mt-2">
                                         <img id="product_image_preview"
                                              src="{{ $defaultImage }}"
                                              alt="Product Preview"
-                                             style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
+                                             style="width: 233px; height: 215px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd;"
                                              onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
                                     </div>
                                 </div>
@@ -128,12 +132,92 @@
 </div>
 @push('scripts')
 <script>
-document.getElementById('product_image_input')?.addEventListener('change', function (event) {
+const productImageInput = document.getElementById('product_image_input');
+const productImagePreview = document.getElementById('product_image_preview');
+const productPreviewWidth = 233;
+const productPreviewHeight = 215;
+const defaultProductImage = @json($defaultImage);
+
+productImageInput?.addEventListener('change', function (event) {
     const file = event.target.files && event.target.files[0];
     if (!file) {
         return;
     }
-    document.getElementById('product_image_preview').src = URL.createObjectURL(file);
+
+    const allowedTypes = ['image/jpeg', 'image/png'];
+    const fileName = (file.name || '').toLowerCase();
+    const isAllowedExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png');
+
+    if (!allowedTypes.includes(file.type) || !isAllowedExtension) {
+        alert('Please select only JPG, JPEG, or PNG image.');
+        productImageInput.value = '';
+        productImagePreview.src = defaultProductImage;
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function (loadEvent) {
+        const image = new Image();
+
+        image.onload = function () {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = productPreviewWidth;
+            canvas.height = productPreviewHeight;
+
+            const sourceRatio = image.width / image.height;
+            const targetRatio = productPreviewWidth / productPreviewHeight;
+
+            let sourceX = 0;
+            let sourceY = 0;
+            let sourceWidth = image.width;
+            let sourceHeight = image.height;
+
+            if (sourceRatio > targetRatio) {
+                sourceWidth = image.height * targetRatio;
+                sourceX = (image.width - sourceWidth) / 2;
+            } else {
+                sourceHeight = image.width / targetRatio;
+                sourceY = (image.height - sourceHeight) / 2;
+            }
+
+            context.drawImage(
+                image,
+                sourceX,
+                sourceY,
+                sourceWidth,
+                sourceHeight,
+                0,
+                0,
+                productPreviewWidth,
+                productPreviewHeight
+            );
+
+            productImagePreview.src = canvas.toDataURL('image/jpeg', 0.9);
+
+            canvas.toBlob(function (blob) {
+                if (!blob) {
+                    return;
+                }
+
+                const resizedFile = new File(
+                    [blob],
+                    file.name.replace(/\.[^.]+$/, '') + '.jpg',
+                    { type: 'image/jpeg' }
+                );
+
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(resizedFile);
+                productImageInput.files = dataTransfer.files;
+            }, 'image/jpeg', 0.9);
+        };
+
+        image.src = loadEvent.target.result;
+    };
+
+    reader.readAsDataURL(file);
 });
 </script>
 @endpush

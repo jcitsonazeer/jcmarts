@@ -57,8 +57,8 @@
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label>Single Image 1</label>
-                                    <input type="file" id="single_image_1_input" name="single_image_1" class="form-control" accept=".jpg,.jpeg,.png,.webp,image/*">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG, WEBP (max 2MB)</small>
+                                    <input type="file" id="single_image_1_input" name="single_image_1" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 2MB). Stored size: 500 x 500 px</small>
                                     <div class="mt-2">
                                         <img id="single_image_1_preview" src="{{ $defaultImage }}" alt="Single Image 1"
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
@@ -67,8 +67,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label>Single Image 2</label>
-                                    <input type="file" id="single_image_2_input" name="single_image_2" class="form-control" accept=".jpg,.jpeg,.png,.webp,image/*">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG, WEBP (max 2MB)</small>
+                                    <input type="file" id="single_image_2_input" name="single_image_2" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 2MB). Stored size: 500 x 500 px</small>
                                     <div class="mt-2">
                                         <img id="single_image_2_preview" src="{{ $defaultImage }}" alt="Single Image 2"
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
@@ -80,8 +80,8 @@
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label>Single Image 3</label>
-                                    <input type="file" id="single_image_3_input" name="single_image_3" class="form-control" accept=".jpg,.jpeg,.png,.webp,image/*">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG, WEBP (max 2MB)</small>
+                                    <input type="file" id="single_image_3_input" name="single_image_3" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 2MB). Stored size: 500 x 500 px</small>
                                     <div class="mt-2">
                                         <img id="single_image_3_preview" src="{{ $defaultImage }}" alt="Single Image 3"
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
@@ -90,8 +90,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label>Single Image 4</label>
-                                    <input type="file" id="single_image_4_input" name="single_image_4" class="form-control" accept=".jpg,.jpeg,.png,.webp,image/*">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG, WEBP (max 2MB)</small>
+                                    <input type="file" id="single_image_4_input" name="single_image_4" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 2MB). Stored size: 500 x 500 px</small>
                                     <div class="mt-2">
                                         <img id="single_image_4_preview" src="{{ $defaultImage }}" alt="Single Image 4"
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
@@ -120,13 +120,89 @@
 ['1', '2', '3', '4'].forEach(function (key) {
     const input = document.getElementById('single_image_' + key + '_input');
     const preview = document.getElementById('single_image_' + key + '_preview');
+    const resizeWidth = 500;
+    const resizeHeight = 500;
 
     input?.addEventListener('change', function (event) {
         const file = event.target.files && event.target.files[0];
         if (!file) {
             return;
         }
-        preview.src = URL.createObjectURL(file);
+
+        const allowedTypes = ['image/jpeg', 'image/png'];
+        const fileName = (file.name || '').toLowerCase();
+        const isAllowedExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png');
+
+        if (!allowedTypes.includes(file.type) || !isAllowedExtension) {
+            alert('Please select only JPG, JPEG, or PNG image.');
+            input.value = '';
+            preview.src = @json($defaultImage);
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (loadEvent) {
+            const image = new Image();
+
+            image.onload = function () {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+
+                canvas.width = resizeWidth;
+                canvas.height = resizeHeight;
+
+                const sourceRatio = image.width / image.height;
+                const targetRatio = resizeWidth / resizeHeight;
+
+                let sourceX = 0;
+                let sourceY = 0;
+                let sourceWidth = image.width;
+                let sourceHeight = image.height;
+
+                if (sourceRatio > targetRatio) {
+                    sourceWidth = image.height * targetRatio;
+                    sourceX = (image.width - sourceWidth) / 2;
+                } else {
+                    sourceHeight = image.width / targetRatio;
+                    sourceY = (image.height - sourceHeight) / 2;
+                }
+
+                context.drawImage(
+                    image,
+                    sourceX,
+                    sourceY,
+                    sourceWidth,
+                    sourceHeight,
+                    0,
+                    0,
+                    resizeWidth,
+                    resizeHeight
+                );
+
+                preview.src = canvas.toDataURL('image/jpeg', 0.9);
+
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        return;
+                    }
+
+                    const resizedFile = new File(
+                        [blob],
+                        file.name.replace(/\.[^.]+$/, '') + '.jpg',
+                        { type: 'image/jpeg' }
+                    );
+
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(resizedFile);
+                    input.files = dataTransfer.files;
+                }, 'image/jpeg', 0.9);
+            };
+
+            image.src = loadEvent.target.result;
+        };
+
+        reader.readAsDataURL(file);
     });
 });
 </script>

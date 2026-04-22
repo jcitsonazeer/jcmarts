@@ -6,6 +6,7 @@ use App\Services\ProductService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class ProductController extends Controller
 {
@@ -44,7 +45,7 @@ class ProductController extends Controller
             'sub_category_name' => 'required|string|max:100',
             'brand_name' => 'nullable|string|max:120',
             'product_name' => 'required|string|max:150|unique:products,product_name',
-            'product_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'product_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'description' => 'nullable|string|max:1000',
             'warranty_info' => 'nullable|string|max:500',
             'is_active' => 'required|boolean',
@@ -72,7 +73,13 @@ class ProductController extends Controller
                 ->with('error', 'Please login to continue.');
         }
 
-        $this->productService->create($validatedData, $adminId);
+        try {
+            $this->productService->create($validatedData, $adminId);
+        } catch (RuntimeException $exception) {
+            return back()
+                ->withErrors(['product_image' => $exception->getMessage()])
+                ->withInput();
+        }
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Product created successfully');
@@ -108,7 +115,7 @@ class ProductController extends Controller
             'sub_category_name' => 'nullable|string|max:100',
             'brand_name' => 'nullable|string|max:120',
             'product_name' => 'required|string|max:150|unique:products,product_name,' . $id,
-            'product_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'product_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'description' => 'nullable|string|max:1000',
             'warranty_info' => 'nullable|string|max:500',
             'is_active' => 'required|boolean',
@@ -140,7 +147,13 @@ class ProductController extends Controller
                 ->with('error', 'Please login to continue.');
         }
 
-        $this->productService->update($id, $validatedData, $adminId);
+        try {
+            $this->productService->update($id, $validatedData, $adminId);
+        } catch (RuntimeException $exception) {
+            return back()
+                ->withErrors(['product_image' => $exception->getMessage()])
+                ->withInput();
+        }
 
         return redirect()->route('admin.products.edit', $id)
             ->with('success', 'Product updated successfully');
