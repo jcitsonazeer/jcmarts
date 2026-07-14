@@ -143,38 +143,29 @@ productImageInput?.addEventListener('change', function (event) {
     if (!file) {
         return;
     }
-
     const allowedTypes = ['image/jpeg', 'image/png'];
     const fileName = (file.name || '').toLowerCase();
     const isAllowedExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png');
-
     if (!allowedTypes.includes(file.type) || !isAllowedExtension) {
         alert('Please select only JPG, JPEG, or PNG image.');
         productImageInput.value = '';
         productImagePreview.src = defaultProductImage;
         return;
     }
-
     const reader = new FileReader();
-
     reader.onload = function (loadEvent) {
         const image = new Image();
-
         image.onload = function () {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-
             canvas.width = productPreviewWidth;
             canvas.height = productPreviewHeight;
-
             const sourceRatio = image.width / image.height;
             const targetRatio = productPreviewWidth / productPreviewHeight;
-
             let sourceX = 0;
             let sourceY = 0;
             let sourceWidth = image.width;
             let sourceHeight = image.height;
-
             if (sourceRatio > targetRatio) {
                 sourceWidth = image.height * targetRatio;
                 sourceX = (image.width - sourceWidth) / 2;
@@ -182,7 +173,6 @@ productImageInput?.addEventListener('change', function (event) {
                 sourceHeight = image.width / targetRatio;
                 sourceY = (image.height - sourceHeight) / 2;
             }
-
             context.drawImage(
                 image,
                 sourceX,
@@ -195,28 +185,29 @@ productImageInput?.addEventListener('change', function (event) {
                 productPreviewHeight
             );
 
-            productImagePreview.src = canvas.toDataURL('image/jpeg', 0.9);
+            // Preserve original format instead of hardcoding jpeg
+            const isPng = file.type === 'image/png';
+            const outputType = isPng ? 'image/png' : 'image/jpeg';
+            const outputExt = isPng ? '.png' : '.jpg';
+            const quality = isPng ? undefined : 0.9;
 
+            productImagePreview.src = canvas.toDataURL(outputType, quality);
             canvas.toBlob(function (blob) {
                 if (!blob) {
                     return;
                 }
-
                 const resizedFile = new File(
                     [blob],
-                    file.name.replace(/\.[^.]+$/, '') + '.jpg',
-                    { type: 'image/jpeg' }
+                    file.name.replace(/\.[^.]+$/, '') + outputExt,
+                    { type: outputType }
                 );
-
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(resizedFile);
                 productImageInput.files = dataTransfer.files;
-            }, 'image/jpeg', 0.9);
+            }, outputType, quality);
         };
-
         image.src = loadEvent.target.result;
     };
-
     reader.readAsDataURL(file);
 });
 </script>

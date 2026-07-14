@@ -56,7 +56,7 @@
                                 <tbody>
                                     @forelse($brands as $brand)
                                         <tr>
-                                            <td>{{ $brand->id }}</td>
+											<td>{{ $brands->firstItem() + $loop->index }}</td>
                                             <td>{{ $brand->brand_name }}</td>
                                             <td>
                                                 @if($brand->is_active)

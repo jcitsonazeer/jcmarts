@@ -53,7 +53,8 @@
                                         <tbody>
                                             @forelse($categories as $cat)
                                                 <tr>
-                                                    <td>{{ $cat->id }}</td>
+                                          
+													<td>{{ $categories->firstItem() + $loop->index }}</td>
                                                     <td>{{ $cat->category_name }}</td>
                                                     <td>{{ $cat->createdBy ? $cat->createdBy->admin_username : '-' }}</td>
                                                     <td>{{ date('d-m-Y', strtotime($cat->created_date)) }}</td>

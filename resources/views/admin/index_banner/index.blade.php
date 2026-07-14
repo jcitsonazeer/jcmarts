@@ -58,7 +58,8 @@
                                                         : $defaultImage;
                                                 @endphp
                                                 <tr>
-                                                    <td>{{ $banner->id }}</td>
+
+													    <td>{{ $banners->firstItem() + $loop->index }}</td>
                                                     <td>
                                                         <img src="{{ $bannerImage }}"
                                                              alt="Banner Image"

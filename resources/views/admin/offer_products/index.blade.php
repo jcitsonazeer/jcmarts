@@ -56,7 +56,7 @@
                                 <tbody>
                                     @forelse($offerProducts as $row)
                                         <tr>
-                                            <td>{{ $row->id }}</td>
+										    <td>{{ $offerProducts->firstItem() + $loop->index }}</td>
                                             <td>{{ $row->offer ? $row->offer->offer_name : '-' }}</td>
                                             <td>{{ $row->product ? $row->product->product_name : '-' }}</td>
                                             <td>

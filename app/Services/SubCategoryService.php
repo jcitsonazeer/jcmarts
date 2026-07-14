@@ -123,22 +123,29 @@ class SubCategoryService
         return Product::where('sub_category_id', $id)->exists();
     }
 
-    private function storeSubCategoryImage(UploadedFile $image): string
-    {
-        $originalName = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME);
-        $sanitizedName = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $originalName);
-        $sanitizedName = trim((string) $sanitizedName, '_');
-        $sanitizedName = $sanitizedName !== '' ? $sanitizedName : 'sub_category';
+private function storeSubCategoryImage(UploadedFile $image): string
+{
+    $originalName = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME);
+    $sanitizedName = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $originalName);
+    $sanitizedName = trim((string) $sanitizedName, '_');
+    $sanitizedName = $sanitizedName !== '' ? $sanitizedName : 'sub_category';
 
-        $extension = strtolower((string) $image->getClientOriginalExtension());
-        $extension = in_array($extension, ['jpg', 'jpeg', 'png'], true) ? $extension : 'jpg';
-
-        $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
-        $resizedImage = $this->resizeImage($image, self::IMAGE_WIDTH, self::IMAGE_HEIGHT, $extension);
-        Storage::disk('public')->put('sub_category/' . $fileName, $resizedImage);
-
-        return $fileName;
+    $imageInformation = getimagesize($image->getRealPath());
+    if ($imageInformation === false) {
+        throw new RuntimeException('Unable to read image size.');
     }
+
+    $extension = match ($imageInformation[2]) {
+        IMAGETYPE_PNG => 'png',
+        IMAGETYPE_JPEG => 'jpg',
+        default => throw new RuntimeException('Only JPG, JPEG, and PNG images are allowed.'),
+    };
+
+    $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
+    $resizedImage = $this->resizeImage($image, self::IMAGE_WIDTH, self::IMAGE_HEIGHT, $extension);
+    Storage::disk('public')->put('sub_category/' . $fileName, $resizedImage);
+    return $fileName;
+}
 
     private function resizeImage(UploadedFile $image, int $targetWidth, int $targetHeight, string $extension): string
     {

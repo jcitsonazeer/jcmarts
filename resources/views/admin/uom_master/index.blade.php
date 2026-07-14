@@ -47,7 +47,7 @@
                                 <tbody>
                                     @forelse($uoms as $uom)
                                         <tr>
-                                            <td>{{ $uom->id }}</td>
+                                            <td>{{ $uoms->firstItem() + $loop->index }}</td>
                                             <td>{{ $uom->primary_uom }}</td>
                                             <td>{{ $uom->secondary_uom ?: '-' }}</td>
                                             <td>{{ $uom->createdBy ? $uom->createdBy->admin_username : '-' }}</td>

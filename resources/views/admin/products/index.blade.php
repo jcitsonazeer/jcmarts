@@ -65,7 +65,7 @@
                                                 : $defaultImage;
                                         @endphp
                                         <tr>
-                                            <td>{{ $product->id }}</td>
+                                            <td>{{ $products->firstItem() + $loop->index }}</td>
                                             <td>{{ $product->subCategory ? $product->subCategory->sub_category_name : '-' }}</td>
                                             <td>{{ $product->brand ? $product->brand->brand_name : '-' }}</td>
                                             <td>{{ $product->product_name }}</td>

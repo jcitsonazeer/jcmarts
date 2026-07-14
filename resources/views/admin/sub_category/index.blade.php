@@ -68,7 +68,7 @@
                                         <tbody>
                                             @forelse($subCategories as $sub)
                                                 <tr>
-                                                    <td>{{ $sub->id }}</td>
+													<td>{{ $subCategories->firstItem() + $loop->index }}</td>
                                                     <td>{{ $sub->category ? $sub->category->category_name : '-' }}</td>
                                                     <td>{{ $sub->sub_category_name }}</td>
                                                     @php

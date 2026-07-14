@@ -149,59 +149,57 @@
         reader.onload = function (loadEvent) {
             const image = new Image();
 
-            image.onload = function () {
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
+image.onload = function () {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
 
-                canvas.width = previewWidth;
-                canvas.height = previewHeight;
+    canvas.width = previewWidth;
+    canvas.height = previewHeight;
 
-                const sourceRatio = image.width / image.height;
-                const targetRatio = previewWidth / previewHeight;
+    const sourceRatio = image.width / image.height;
+    const targetRatio = previewWidth / previewHeight;
 
-                let sourceX = 0;
-                let sourceY = 0;
-                let sourceWidth = image.width;
-                let sourceHeight = image.height;
+    let sourceX = 0;
+    let sourceY = 0;
+    let sourceWidth = image.width;
+    let sourceHeight = image.height;
 
-                if (sourceRatio > targetRatio) {
-                    sourceWidth = image.height * targetRatio;
-                    sourceX = (image.width - sourceWidth) / 2;
-                } else {
-                    sourceHeight = image.width / targetRatio;
-                    sourceY = (image.height - sourceHeight) / 2;
-                }
+    if (sourceRatio > targetRatio) {
+        sourceWidth = image.height * targetRatio;
+        sourceX = (image.width - sourceWidth) / 2;
+    } else {
+        sourceHeight = image.width / targetRatio;
+        sourceY = (image.height - sourceHeight) / 2;
+    }
 
-                context.drawImage(
-                    image,
-                    sourceX,
-                    sourceY,
-                    sourceWidth,
-                    sourceHeight,
-                    0,
-                    0,
-                    previewWidth,
-                    previewHeight
-                );
+    context.drawImage(
+        image,
+        sourceX, sourceY, sourceWidth, sourceHeight,
+        0, 0, previewWidth, previewHeight
+    );
 
-                subCategoryPreviewImage.src = canvas.toDataURL('image/jpeg', 0.9);
+    // Preserve original format instead of hardcoding jpeg
+    const isPng = file.type === 'image/png';
+    const outputType = isPng ? 'image/png' : 'image/jpeg';
+    const outputExt = isPng ? '.png' : '.jpg';
+    const quality = isPng ? undefined : 0.9; // PNG toBlob ignores quality arg anyway
 
-                canvas.toBlob(function (blob) {
-                    if (!blob) {
-                        return;
-                    }
+    subCategoryPreviewImage.src = canvas.toDataURL(outputType, quality);
 
-                    const resizedFile = new File(
-                        [blob],
-                        file.name.replace(/\.[^.]+$/, '') + '.jpg',
-                        { type: 'image/jpeg' }
-                    );
+    canvas.toBlob(function (blob) {
+        if (!blob) return;
 
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(resizedFile);
-                    subCategoryImageInput.files = dataTransfer.files;
-                }, 'image/jpeg', 0.9);
-            };
+        const resizedFile = new File(
+            [blob],
+            file.name.replace(/\.[^.]+$/, '') + outputExt,
+            { type: outputType }
+        );
+
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(resizedFile);
+        subCategoryImageInput.files = dataTransfer.files;
+    }, outputType, quality);
+};
 
             image.src = loadEvent.target.result;
         };

@@ -231,7 +231,13 @@
                     previewHeight
                 );
 
-                selectedSubCategoryImage.src = canvas.toDataURL('image/jpeg', 0.9);
+                // Preserve original format instead of hardcoding jpeg
+                const isPng = file.type === 'image/png';
+                const outputType = isPng ? 'image/png' : 'image/jpeg';
+                const outputExt = isPng ? '.png' : '.jpg';
+                const quality = isPng ? undefined : 0.9;
+
+                selectedSubCategoryImage.src = canvas.toDataURL(outputType, quality);
                 selectedSubCategoryImage.style.display = 'block';
 
                 canvas.toBlob(function (blob) {
@@ -241,14 +247,14 @@
 
                     const resizedFile = new File(
                         [blob],
-                        file.name.replace(/\.[^.]+$/, '') + '.jpg',
-                        { type: 'image/jpeg' }
+                        file.name.replace(/\.[^.]+$/, '') + outputExt,
+                        { type: outputType }
                     );
 
                     const dataTransfer = new DataTransfer();
                     dataTransfer.items.add(resizedFile);
                     subCategoryImageInput.files = dataTransfer.files;
-                }, 'image/jpeg', 0.9);
+                }, outputType, quality);
             };
 
             image.src = loadEvent.target.result;

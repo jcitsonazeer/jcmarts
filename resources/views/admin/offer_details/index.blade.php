@@ -47,7 +47,7 @@
                                 <tbody>
                                     @forelse($offers as $offer)
                                         <tr>
-                                            <td>{{ $offer->id }}</td>
+											 <td>{{ $offers->firstItem() + $loop->index }}</td>
                                             <td>{{ $offer->offer_name }}</td>
                                             <td>
                                                 @if($offer->is_active)

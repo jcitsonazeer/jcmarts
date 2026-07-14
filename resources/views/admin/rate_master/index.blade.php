@@ -53,7 +53,7 @@
                                 <tbody>
                                     @forelse($rates as $rate)
                                         <tr>
-                                            <td>{{ $rate->id }}</td>
+											   <td>{{ $rates->firstItem() + $loop->index }}</td>
                                             <td>{{ $rate->product ? $rate->product->product_name : '-' }}</td>
                                             <td>
                                                 @if($rate->uom)

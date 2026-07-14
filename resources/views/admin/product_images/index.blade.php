@@ -66,7 +66,7 @@
                                             $hasImages = $product->single_image_1 || $product->single_image_2 || $product->single_image_3 || $product->single_image_4;
                                         @endphp
                                         <tr>
-                                            <td>{{ $product->id }}</td>
+                                            <td>{{ $products->firstItem() + $loop->index }}</td>
                                             <td>{{ $product->product_name }}</td>
                                             <td>{{ $product->subCategory ? $product->subCategory->sub_category_name : '-' }}</td>
                                             <td>
