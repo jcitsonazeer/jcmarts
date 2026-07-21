@@ -31,7 +31,19 @@
 
     <div class="product-details">
       <div class="caption">
-        <h4><a href="{{ route('frontend.single_product', ['product_id' => $product->id]) }}">{{ $product->product_name }}</a></h4>
+<h4 class="product-title">
+    <a href="{{ route('frontend.single_product', ['product_id' => $product->id]) }}">
+
+        @if(mb_strlen($product->product_name) > 25)
+            <span class="scroll-text">
+                {{ $product->product_name }}
+            </span>
+        @else
+            {{ $product->product_name }}
+        @endif
+
+    </a>
+</h4>
         <div class="model">Product {{ $product->id }}</div>
 
         <p class="price">
@@ -66,3 +78,5 @@
     </div>
   </div>
 </div>
+
+

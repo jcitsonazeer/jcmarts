@@ -120,8 +120,21 @@
           <div class="saleback"><span class="sale">sale</span></div>
         </div>
         <div class="mt-3">
+		<div class="product-details" style="min-height:40px;">
           <div class="caption">
-            <h4><a href="{{ route('frontend.single_product', ['product_id' => $offer->product_id]) }}">{{ $offer->product_name }}</a></h4>
+      <h4 class="product-title">
+    <a href="{{ route('frontend.single_product', ['product_id' => $offer->product_id]) }}">
+
+        @if(mb_strlen($offer->product_name) > 25)
+            <span class="scroll-text">
+                {{ $offer->product_name }}
+            </span>
+        @else
+            {{ $offer->product_name }}
+        @endif
+
+    </a>
+</h4>
             <p class="price">
               @if($sellingPrice > $finalPrice && $finalPrice > 0)
                 <span class="price-new">&#8377;{{ number_format($finalPrice, 2) }}</span>
@@ -134,6 +147,7 @@
               <span class="price-tax">Ex Tax: &#8377;{{ number_format(($finalPrice > 0 ? $finalPrice : $sellingPrice), 2) }}</span>
             </p>
           </div>
+		  </div>
         </div>
       </div>
     </div>

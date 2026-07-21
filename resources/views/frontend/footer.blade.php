@@ -34,7 +34,7 @@
     <ul class="clearfix collapse" id="dropdown-contact" data-aos="flip-down">
       <li class="item">15-62/10, Chengamoolai, <br>Kuzhithurai P.O, Vilavancode Taluk, <br>Kanyakumari District, Pin : 629163</li>
       <li class="item email"><a href="">info@jcmarts.com</a></li>
-      <li class="item call">(+91) 9514486111</li>
+      <li class="item call">(+91) 8925880110</li>
     </ul>
   </div>
 </div>
