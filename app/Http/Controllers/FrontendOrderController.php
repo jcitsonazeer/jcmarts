@@ -5,22 +5,27 @@ namespace App\Http\Controllers;
 use App\Services\CustomerAuthService;
 use App\Services\FrontendCatalogService;
 use App\Services\FrontendOrderService;
+use App\Services\OrderCancellationService;
 use Illuminate\Http\Request;
+use RuntimeException;
 
 class FrontendOrderController extends Controller
 {
     protected FrontendCatalogService $frontendCatalogService;
     protected CustomerAuthService $customerAuthService;
     protected FrontendOrderService $frontendOrderService;
+    protected OrderCancellationService $orderCancellationService;
 
     public function __construct(
         FrontendCatalogService $frontendCatalogService,
         CustomerAuthService $customerAuthService,
-        FrontendOrderService $frontendOrderService
+        FrontendOrderService $frontendOrderService,
+        OrderCancellationService $orderCancellationService
     ) {
         $this->frontendCatalogService = $frontendCatalogService;
         $this->customerAuthService = $customerAuthService;
         $this->frontendOrderService = $frontendOrderService;
+        $this->orderCancellationService = $orderCancellationService;
     }
 
     public function index(Request $request)
@@ -54,5 +59,29 @@ class FrontendOrderController extends Controller
         return redirect()->route('frontend.orders.index', [
             'order_id' => (int) $orderId,
         ]);
+    }
+
+    public function cancel(int $orderId)
+    {
+        if (!$this->customerAuthService->isCustomerLoggedIn()) {
+            return redirect()
+                ->route('frontend.login')
+                ->with('error', 'Please login to cancel your order.');
+        }
+
+        try {
+            $this->orderCancellationService->cancelByCustomer(
+                $orderId,
+                (int) session('customer_id')
+            );
+        } catch (RuntimeException $exception) {
+            return redirect()
+                ->route('frontend.orders.index', ['order_id' => $orderId])
+                ->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('frontend.orders.index', ['order_id' => $orderId])
+            ->with('success', 'Order cancelled successfully.');
     }
 }

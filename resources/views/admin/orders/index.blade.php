@@ -49,13 +49,13 @@
                                 </thead>
                                 <tbody>
                                     @forelse($orders as $order)
-                                        @php($orderDate = $order->created_date ?: $order->paid_at)
+                                        @php($orderDate = $order->created_date ?: $order->current_payment_paid_at)
                                         <tr>
                                             <td>{{ $order->id }}</td>
                                             <td>{{ $order->customer?->name ?? '-' }}</td>
                                             <td>{{ $order->customer?->mobile_number ?? '-' }}</td>
                                             <td>{{ $order->currency }} {{ number_format((float) $order->total_amount, 2) }}</td>
-                                            <td>{{ $order->payment_status ?? '-' }}</td>
+                                            <td>{{ $order->current_payment_status ?? '-' }}</td>
                                             <td>{{ $order->current_order_status ? ucwords(str_replace('_', ' ', $order->current_order_status)) : 'Not Started' }}</td>
                                             <td>{{ $order->items_count ?? 0 }}</td>
                                             <td>{{ $orderDate ? date('d-m-Y H:i', strtotime($orderDate)) : '-' }}</td>

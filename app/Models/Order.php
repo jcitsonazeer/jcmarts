@@ -22,12 +22,6 @@ class Order extends Model
         'other_charge',
         'total_amount',
         'currency',
-        'payment_method',
-        'payment_status',
-        'razorpay_order_id',
-        'razorpay_payment_id',
-        'razorpay_signature',
-        'paid_at',
         'reservation_expires_at',
         'reservation_released_at',
         'reservation_release_reason',
@@ -44,7 +38,6 @@ class Order extends Model
         'packing_charge' => 'decimal:2',
         'other_charge' => 'decimal:2',
         'total_amount' => 'decimal:2',
-        'paid_at' => 'datetime',
         'reservation_expires_at' => 'datetime',
         'reservation_released_at' => 'datetime',
         'is_active' => 'boolean',
@@ -70,5 +63,15 @@ class Order extends Model
     public function statuses(): HasMany
     {
         return $this->hasMany(OrderStatus::class, 'order_id')->orderBy('action_time')->orderBy('id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'order_id');
+    }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class, 'order_id');
     }
 }

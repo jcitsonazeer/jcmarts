@@ -13,12 +13,16 @@ use InvalidArgumentException;
 
 class OrderStatusService
 {
+    public const STATUS_CANCELLATION_REQUESTED = 'cancellation_requested';
+    public const STATUS_CANCELLED_BY_CUSTOMER = 'cancelled_by_customer';
+    public const STATUS_DELIVERY_PERSON_ACCEPTS = 'delivery_person_accepts';
+
     public const STATUS_FLOW = [
         'order_accept',
         'order_under_packing',
         'ready_for_delivery',
         'assigned_for_delivery',
-        'delivery_person_accepts',
+        self::STATUS_DELIVERY_PERSON_ACCEPTS,
         'reached_doorstep',
         'order_delivered',
     ];
@@ -37,7 +41,35 @@ class OrderStatusService
 
     public function formatStatusLabel(string $status): string
     {
+        if ($status === self::STATUS_CANCELLATION_REQUESTED) {
+            return 'Cancellation Requested';
+        }
+
+        if ($status === self::STATUS_CANCELLED_BY_CUSTOMER) {
+            return 'Cancelled by Customer';
+        }
+
         return ucwords(str_replace('_', ' ', $status));
+    }
+
+    public function canCustomerCancel(?string $currentStatus): bool
+    {
+        if ($currentStatus === null) {
+            return true;
+        }
+
+        if ($currentStatus === self::STATUS_CANCELLATION_REQUESTED) {
+            return false;
+        }
+
+        if ($currentStatus === self::STATUS_CANCELLED_BY_CUSTOMER) {
+            return false;
+        }
+
+        $currentIndex = array_search($currentStatus, self::STATUS_FLOW, true);
+        $deliveryAcceptIndex = array_search(self::STATUS_DELIVERY_PERSON_ACCEPTS, self::STATUS_FLOW, true);
+
+        return $currentIndex !== false && $currentIndex < $deliveryAcceptIndex;
     }
 
     public function getLatestStatusForOrder(Order $order): ?OrderStatus
@@ -58,9 +90,17 @@ class OrderStatusService
             return [self::STATUS_FLOW[0]];
         }
 
+        if ($currentStatus === self::STATUS_CANCELLED_BY_CUSTOMER) {
+            return [];
+        }
+
+        if ($currentStatus === self::STATUS_CANCELLATION_REQUESTED) {
+            return [];
+        }
+
         $currentIndex = array_search($currentStatus, self::STATUS_FLOW, true);
         if ($currentIndex === false) {
-            return [self::STATUS_FLOW[0]];
+            return [];
         }
 
         if ($currentIndex === count(self::STATUS_FLOW) - 1) {
@@ -102,6 +142,38 @@ class OrderStatusService
         });
     }
 
+    public function addCustomerCancelledStatus(Order $order, int $customerId): OrderStatus
+    {
+        return DB::transaction(function () use ($order, $customerId) {
+            $status = OrderStatus::create([
+                'order_id' => $order->id,
+                'order_status' => self::STATUS_CANCELLED_BY_CUSTOMER,
+                'action_time' => Carbon::now(),
+                'action_done_by_id' => $customerId,
+            ]);
+
+            $order->unsetRelation('statuses');
+
+            return $status;
+        });
+    }
+
+    public function addCancellationRequestedStatus(Order $order, int $customerId): OrderStatus
+    {
+        return DB::transaction(function () use ($order, $customerId) {
+            $status = OrderStatus::create([
+                'order_id' => $order->id,
+                'order_status' => self::STATUS_CANCELLATION_REQUESTED,
+                'action_time' => Carbon::now(),
+                'action_done_by_id' => $customerId,
+            ]);
+
+            $order->unsetRelation('statuses');
+
+            return $status;
+        });
+    }
+
     public function buildTimeline(Collection $statuses, ?Order $order = null): array
     {
         $historyByStatus = $statuses->keyBy('order_status');
@@ -127,6 +199,42 @@ class OrderStatusService
                     ? $index === 0
                     : $index <= ((int) $latestIndex + 1),
                 'action_time' => $history?->action_time,
+                'action_done_by_id' => $actorId,
+                'actor_name' => $actorId !== null ? ($actorNames[$actorId] ?? ('User ' . $actorId)) : null,
+            ];
+        }
+
+        $requestedHistory = $historyByStatus->get(self::STATUS_CANCELLATION_REQUESTED);
+
+        if ($requestedHistory) {
+            $actorId = $requestedHistory->action_done_by_id;
+
+            $timeline[] = [
+                'key' => self::STATUS_CANCELLATION_REQUESTED,
+                'label' => $this->formatStatusLabel(self::STATUS_CANCELLATION_REQUESTED),
+                'is_completed' => true,
+                'is_current' => $latestStatus === self::STATUS_CANCELLATION_REQUESTED,
+                'is_pending' => false,
+                'is_reachable' => true,
+                'action_time' => $requestedHistory->action_time,
+                'action_done_by_id' => $actorId,
+                'actor_name' => $actorId !== null ? ($actorNames[$actorId] ?? ('User ' . $actorId)) : null,
+            ];
+        }
+
+        $cancelledHistory = $historyByStatus->get(self::STATUS_CANCELLED_BY_CUSTOMER);
+
+        if ($cancelledHistory) {
+            $actorId = $cancelledHistory->action_done_by_id;
+
+            $timeline[] = [
+                'key' => self::STATUS_CANCELLED_BY_CUSTOMER,
+                'label' => $this->formatStatusLabel(self::STATUS_CANCELLED_BY_CUSTOMER),
+                'is_completed' => true,
+                'is_current' => $latestStatus === self::STATUS_CANCELLED_BY_CUSTOMER,
+                'is_pending' => false,
+                'is_reachable' => true,
+                'action_time' => $cancelledHistory->action_time,
                 'action_done_by_id' => $actorId,
                 'actor_name' => $actorId !== null ? ($actorNames[$actorId] ?? ('User ' . $actorId)) : null,
             ];

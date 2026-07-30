@@ -21,7 +21,7 @@
         </div>
     @endif
 
-    @php($orderDate = $order->created_date ?: $order->paid_at)
+    @php($orderDate = $order->created_date ?: $order->current_payment_paid_at)
 
     <div class="process-grid">
         <div class="process-card">
@@ -50,7 +50,7 @@
                 </div>
                 <div class="info-row">
                     <div class="label">Payment Status</div>
-                    <div class="value">{{ $order->payment_status ?? '-' }}</div>
+                    <div class="value">{{ $order->current_payment_status ?? '-' }}</div>
                 </div>
                 <div class="info-row">
                     <div class="label">Current Process Status</div>

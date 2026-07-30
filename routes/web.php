@@ -35,6 +35,7 @@ Route::get('/checkout', [FrontendCheckoutController::class, 'index'])->name('fro
 Route::get('/wishlist', [FrontendWishlistController::class, 'index'])->name('frontend.wishlist');
 Route::get('/my-orders', [FrontendOrderController::class, 'index'])->name('frontend.orders.index');
 Route::get('/my-orders/{orderId}', [FrontendOrderController::class, 'show'])->name('frontend.orders.show');
+Route::post('/my-orders/{orderId}/cancel', [FrontendOrderController::class, 'cancel'])->name('frontend.orders.cancel');
 Route::post('/checkout/proceed', [FrontendCheckoutController::class, 'proceedToPayment'])->name('frontend.checkout.proceed');
 Route::get('/payment', [FrontendCheckoutController::class, 'payment'])->name('frontend.payment');
 Route::post('/payment/create-order', [FrontendCheckoutController::class, 'createRazorpayOrder'])->name('frontend.payment.create_order');
@@ -96,6 +97,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('orders/pending-reservations', [AdminOrderController::class, 'pendingReservations'])->name('orders.pending-reservations');
         Route::get('orders/pending-reservations/table', [AdminOrderController::class, 'pendingReservationsTable'])->name('orders.pending-reservations.table');
         Route::post('orders/{orderId}/release-reservation', [AdminOrderController::class, 'releasePendingReservation'])->name('orders.release-reservation');
+        Route::post('orders/{orderId}/approve-cancellation', [AdminOrderController::class, 'approveCancellation'])->name('orders.approve-cancellation');
         Route::get('orders/{id}', [AdminOrderController::class, 'show'])->name('orders.show');
         Route::get('orders/{orderId}/process', [OrderProcessController::class, 'adminShow'])->name('orders.process.show');
         Route::post('orders/{orderId}/process', [OrderProcessController::class, 'adminUpdate'])->name('orders.process.update');

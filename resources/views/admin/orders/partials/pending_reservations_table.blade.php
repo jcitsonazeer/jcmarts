@@ -20,7 +20,7 @@
                     <td>{{ $order->id }}</td>
                     <td>{{ $order->customer?->name ?? '-' }}</td>
                     <td>{{ $order->customer?->mobile_number ?? '-' }}</td>
-                    <td>{{ ucfirst($order->payment_status ?? '-') }}</td>
+                    <td>{{ ucfirst($order->current_payment_status ?? 'pending') }}</td>
                     <td>{{ $order->created_date ? date('d-m-Y H:i:s', strtotime($order->created_date)) : '-' }}</td>
                     <td>{{ $order->reservation_expires_at ? date('d-m-Y H:i:s', strtotime($order->reservation_expires_at)) : '-' }}</td>
                     <td>{{ $order->reservation_released_at ? date('d-m-Y H:i:s', strtotime($order->reservation_released_at)) : '-' }}</td>

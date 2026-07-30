@@ -4,14 +4,18 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\AdminOrderService;
+use App\Services\OrderCancellationService;
+use RuntimeException;
 
 class AdminOrderController extends Controller
 {
     protected AdminOrderService $adminOrderService;
+    protected OrderCancellationService $orderCancellationService;
 
-    public function __construct(AdminOrderService $adminOrderService)
+    public function __construct(AdminOrderService $adminOrderService, OrderCancellationService $orderCancellationService)
     {
         $this->adminOrderService = $adminOrderService;
+        $this->orderCancellationService = $orderCancellationService;
     }
 
     public function index()
@@ -59,5 +63,22 @@ class AdminOrderController extends Controller
         return redirect()
             ->route('admin.orders.pending-reservations')
             ->with('success', 'Expired pending order released successfully.');
+    }
+
+    public function approveCancellation(Request $request, int $orderId)
+    {
+        $adminId = (int) $request->session()->get('admin_id');
+
+        try {
+            $this->orderCancellationService->approveByAdmin($orderId, $adminId);
+        } catch (RuntimeException $exception) {
+            return redirect()
+                ->route('admin.orders.show', $orderId)
+                ->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.orders.show', $orderId)
+            ->with('success', 'Cancellation approved and Razorpay refund started.');
     }
 }

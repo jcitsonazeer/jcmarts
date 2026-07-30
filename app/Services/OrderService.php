@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\RateMaster;
 use App\Models\StockInfo;
 use Carbon\Carbon;
@@ -55,25 +56,29 @@ class OrderService
 
     public function getExpiredPendingOrders(): Collection
     {
-        return $this->getExpiredPendingOrdersQuery()
+        $orders = $this->getExpiredPendingOrdersQuery()
             ->with([
                 'customer',
                 'address',
                 'items.product',
                 'items.rate.uom',
+                'payments',
             ])
             ->orderBy('created_date')
             ->orderBy('id')
             ->get();
+
+        return $orders->each(function (Order $order) {
+            $this->attachCurrentPaymentDetails($order);
+        });
     }
 
     public function getReleasedReservationHistory(): LengthAwarePaginator
     {
-        return Order::query()
+        $orders = Order::query()
             ->select([
                 'id',
                 'customer_id',
-                'payment_status',
                 'created_date',
                 'reservation_expires_at',
                 'reservation_released_at',
@@ -86,6 +91,7 @@ class OrderService
                 'address',
                 'items.product',
                 'items.rate.uom',
+                'payments',
             ])
             ->whereNotNull('reservation_released_at')
             ->whereIn('reservation_release_reason', [
@@ -96,6 +102,14 @@ class OrderService
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
+
+        $orders->getCollection()->transform(function (Order $order) {
+            $this->attachCurrentPaymentDetails($order);
+
+            return $order;
+        });
+
+        return $orders;
     }
 
     public function createPendingOrderFromCart(
@@ -133,8 +147,6 @@ class OrderService
                 'other_charge' => (float) $orderSummary['other_charge'],
                 'total_amount' => (float) $orderSummary['total'],
                 'currency' => 'INR',
-                'payment_method' => 'razorpay',
-                'payment_status' => 'pending',
                 'reservation_expires_at' => Carbon::now()->addMinutes(self::PAYMENT_RESERVATION_MINUTES),
                 'is_active' => 1,
                 'created_by_id' => $customerId,
@@ -190,10 +202,28 @@ class OrderService
     {
         $order = Order::query()->findOrFail($orderId);
 
-        $order->razorpay_order_id = $razorpayOrderId;
         $order->updated_by_id = $customerId;
         $order->updated_date = Carbon::now();
         $order->save();
+
+        Payment::updateOrCreate(
+            [
+                'order_id' => $order->id,
+                'gateway' => 'razorpay',
+                'gateway_order_id' => $razorpayOrderId,
+            ],
+            [
+                'customer_id' => $order->customer_id,
+                'amount' => (float) $order->total_amount,
+                'currency' => (string) ($order->currency ?? 'INR'),
+                'status' => 'pending',
+                'is_active' => 1,
+                'created_by_id' => $customerId ?? $order->customer_id,
+                'created_date' => Carbon::now(),
+                'updated_by_id' => $customerId,
+                'updated_date' => Carbon::now(),
+            ]
+        );
 
         return $order;
     }
@@ -205,8 +235,19 @@ class OrderService
         ?Collection $cartItems = null
     ): Order {
         return DB::transaction(function () use ($razorpayOrderId, $customerId, $razorpayPayload, $cartItems) {
+            $payment = Payment::query()
+                ->where('gateway', 'razorpay')
+                ->where('gateway_order_id', $razorpayOrderId)
+                ->where('customer_id', $customerId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$payment) {
+                throw new RuntimeException('Reserved payment not found.');
+            }
+
             $order = Order::query()
-                ->where('razorpay_order_id', $razorpayOrderId)
+                ->where('id', $payment->order_id)
                 ->where('customer_id', $customerId)
                 ->lockForUpdate()
                 ->first();
@@ -215,24 +256,30 @@ class OrderService
                 throw new RuntimeException('Reserved order not found.');
             }
 
-            if ($order->payment_status === 'paid') {
+            if ($payment->status === 'paid') {
                 return $order->load('items');
             }
 
-            if ($order->payment_status !== 'pending') {
+            if ($payment->status !== 'pending') {
                 throw new RuntimeException('Order is no longer available for payment.');
             }
 
             $order->currency = (string) ($razorpayPayload['currency'] ?? $order->currency ?? 'INR');
-            $order->payment_status = 'paid';
-            $order->razorpay_payment_id = (string) $razorpayPayload['razorpay_payment_id'];
-            $order->razorpay_signature = (string) $razorpayPayload['razorpay_signature'];
-            $order->paid_at = Carbon::now();
             $order->reservation_released_at = null;
             $order->reservation_release_reason = null;
             $order->updated_by_id = $customerId;
             $order->updated_date = Carbon::now();
             $order->save();
+
+            $payment->gateway_payment_id = (string) $razorpayPayload['razorpay_payment_id'];
+            $payment->gateway_signature = (string) $razorpayPayload['razorpay_signature'];
+            $payment->amount = (float) $order->total_amount;
+            $payment->currency = (string) ($order->currency ?? 'INR');
+            $payment->status = 'paid';
+            $payment->paid_at = Carbon::now();
+            $payment->updated_by_id = $customerId;
+            $payment->updated_date = Carbon::now();
+            $payment->save();
 
             if ($cartItems) {
                 $this->deactivatePurchasedCartItems($cartItems, $order->items, $customerId);
@@ -259,7 +306,11 @@ class OrderService
             if ($orderId) {
                 $query->where('id', $orderId);
             } else {
-                $query->where('razorpay_order_id', $razorpayOrderId);
+                $query->whereHas('payments', function ($paymentQuery) use ($razorpayOrderId) {
+                    $paymentQuery
+                        ->where('gateway', 'razorpay')
+                        ->where('gateway_order_id', $razorpayOrderId);
+                });
             }
 
             if ($customerId) {
@@ -268,7 +319,7 @@ class OrderService
 
             $order = $query->lockForUpdate()->first();
 
-            if (!$order || $order->payment_status !== 'pending') {
+            if (!$order || $this->hasSuccessfulPayment($order)) {
                 return;
             }
 
@@ -296,13 +347,14 @@ class OrderService
                 $this->syncSoldOutStatus((int) $item->rate_master_id, $newStock, $customerId ?? $order->customer_id);
             }
 
-            $order->payment_status = 'failed';
             $order->is_active = 0;
             $order->reservation_released_at = Carbon::now();
             $order->reservation_release_reason = $releaseReason;
             $order->updated_by_id = $customerId ?? $order->customer_id;
             $order->updated_date = Carbon::now();
             $order->save();
+
+            $this->markPaymentsAsFailed($order, $customerId ?? $order->customer_id);
         });
     }
 
@@ -315,7 +367,7 @@ class OrderService
                 ->lockForUpdate()
                 ->first();
 
-            if (!$order || $order->payment_status !== 'pending') {
+            if (!$order || $this->hasSuccessfulPayment($order)) {
                 return;
             }
 
@@ -343,13 +395,14 @@ class OrderService
                 $this->syncSoldOutStatus((int) $item->rate_master_id, $newStock, $adminId);
             }
 
-            $order->payment_status = 'failed';
             $order->is_active = 0;
             $order->reservation_released_at = Carbon::now();
             $order->reservation_release_reason = self::RELEASE_REASON_ADMIN_MANUAL;
             $order->updated_by_id = $adminId;
             $order->updated_date = Carbon::now();
             $order->save();
+
+            $this->markPaymentsAsFailed($order, $adminId);
         });
     }
 
@@ -370,12 +423,6 @@ class OrderService
                 'other_charge' => (float) $orderSummary['other_charge'],
                 'total_amount' => (float) $orderSummary['total'],
                 'currency' => (string) ($razorpayPayload['currency'] ?? 'INR'),
-                'payment_method' => 'razorpay',
-                'payment_status' => 'paid',
-                'razorpay_order_id' => (string) $razorpayPayload['razorpay_order_id'],
-                'razorpay_payment_id' => (string) $razorpayPayload['razorpay_payment_id'],
-                'razorpay_signature' => (string) $razorpayPayload['razorpay_signature'],
-                'paid_at' => Carbon::now(),
                 'is_active' => 1,
                 'created_by_id' => $customerId,
                 'created_date' => Carbon::now(),
@@ -433,6 +480,22 @@ class OrderService
                 $item->save();
             }
 
+            Payment::create([
+                'order_id' => $order->id,
+                'customer_id' => $customerId,
+                'gateway' => 'razorpay',
+                'gateway_order_id' => (string) $razorpayPayload['razorpay_order_id'],
+                'gateway_payment_id' => (string) $razorpayPayload['razorpay_payment_id'],
+                'gateway_signature' => (string) $razorpayPayload['razorpay_signature'],
+                'amount' => (float) $order->total_amount,
+                'currency' => (string) ($order->currency ?? 'INR'),
+                'status' => 'paid',
+                'paid_at' => Carbon::now(),
+                'is_active' => 1,
+                'created_by_id' => $customerId,
+                'created_date' => Carbon::now(),
+            ]);
+
             return $order;
         });
     }
@@ -485,11 +548,43 @@ class OrderService
         }
     }
 
+    private function hasSuccessfulPayment(Order $order): bool
+    {
+        return $order->payments()
+            ->whereIn('status', ['paid', 'refund_requested', 'refund_pending', 'refunded'])
+            ->exists();
+    }
+
+    private function attachCurrentPaymentDetails(Order $order): void
+    {
+        $latestPayment = $order->payments->sortByDesc('id')->first();
+
+        $order->current_payment_method = $latestPayment?->gateway;
+        $order->current_payment_status = $latestPayment?->status;
+        $order->current_payment_paid_at = $latestPayment?->paid_at;
+    }
+
+    private function markPaymentsAsFailed(Order $order, ?int $userId = null): void
+    {
+        $order->payments()
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'failed',
+                'updated_by_id' => $userId,
+                'updated_date' => Carbon::now(),
+            ]);
+    }
+
     private function getExpiredPendingOrdersQuery()
     {
         return Order::query()
-            ->where('payment_status', 'pending')
             ->where('is_active', 1)
+            ->where(function ($query) {
+                $query->whereDoesntHave('payments')
+                    ->orWhereHas('payments', function ($paymentQuery) {
+                        $paymentQuery->where('status', 'pending');
+                    });
+            })
             ->whereNotNull('created_date')
             ->where('created_date', '<=', Carbon::now()->subMinutes(self::PAYMENT_RESERVATION_MINUTES));
     }

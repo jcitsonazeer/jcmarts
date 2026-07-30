@@ -27,7 +27,7 @@
 
                 <div class="order-list">
                     @forelse($orders as $order)
-                        @php($orderDate = $order->created_date ?: $order->paid_at)
+                        @php($orderDate = $order->created_date ?: $order->current_payment_paid_at)
                         <a href="{{ route('frontend.orders.index', ['order_id' => $order->id, 'q' => $search]) }}" class="order-link">
                             <div class="order-card {{ ($selectedOrderId ?? 0) === (int) $order->id ? 'active' : '' }}">
                                 <div class="order-row">
@@ -52,7 +52,7 @@
         <div class="col-md-9">
             <div class="order-details order-fixed">
                 @if($selectedOrder)
-                    @php($orderDate = $selectedOrder->created_date ?: $selectedOrder->paid_at)
+                    @php($orderDate = $selectedOrder->created_date ?: $selectedOrder->current_payment_paid_at)
                     <div class="top-row">
                         <h3>Order - {{ $selectedOrder->id }}</h3>
                         <span class="order-date">Order date: {{ $orderDate ? date('d-m-Y H:i', strtotime($orderDate)) : '-' }}</span>
@@ -62,7 +62,22 @@
                         </span>
                     </div>
 
-                    
+                    <div class="order-cancel-box">
+                        @if($selectedOrder->can_customer_cancel ?? false)
+                            <form method="POST"
+                                  action="{{ route('frontend.orders.cancel', $selectedOrder->id) }}"
+                                  onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                                @csrf
+                                <button type="submit" class="btn btn-danger">
+                                    Request Cancellation
+                                </button>
+                            </form>
+                        @else
+                            <button type="button" class="btn btn-default" disabled>
+                                Cancellation Disabled
+                            </button>
+                        @endif
+                    </div>
 
                     <div class="section-title">Order Progress</div>
                     <div class="order-worm-graph horizontal-worm-graph">
@@ -99,12 +114,27 @@
                         </div>
                         <div class="info-row">
                             <div class="label">Payment Method</div>
-                            <div class="value">{{ $selectedOrder->payment_method ?? '-' }}</div>
+                            <div class="value">{{ $selectedOrder->current_payment_method ?? '-' }}</div>
                         </div>
                         <div class="info-row">
                             <div class="label">Payment Status</div>
-                            <div class="value">{{ $selectedOrder->payment_status ?? '-' }}</div>
+                            <div class="value">{{ $selectedOrder->current_payment_status ?? '-' }}</div>
                         </div>
+                        @php($latestRefund = $selectedOrder->refunds->sortByDesc('id')->first())
+                        @if($latestRefund)
+                            <div class="info-row">
+                                <div class="label">Refund Status</div>
+                                <div class="value">{{ $latestRefund->status }}</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="label">Refund ID</div>
+                                <div class="value">{{ $latestRefund->gateway_refund_id ?? 'Pending admin approval' }}</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="label">Refund Amount</div>
+                                <div class="value">{{ $latestRefund->currency }} {{ number_format((float) $latestRefund->amount, 2) }}</div>
+                            </div>
+                        @endif
                         <div class="info-row">
                             <div class="label">Order Process Status</div>
                             <div class="value">{{ $selectedOrder->current_order_status ? ucwords(str_replace('_', ' ', $selectedOrder->current_order_status)) : 'Not Started' }}</div>

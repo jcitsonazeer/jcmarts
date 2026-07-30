@@ -80,7 +80,7 @@
                             <div class="alert alert-danger">{{ $errors->first() }}</div>
                         @endif
 
-                        @php($orderDate = $order->created_date ?: $order->paid_at)
+                        @php($orderDate = $order->created_date ?: $order->current_payment_paid_at)
 
                         <div class="row">
                             <div class="col-md-12">

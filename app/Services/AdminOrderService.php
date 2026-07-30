@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class AdminOrderService
 {
@@ -24,12 +25,9 @@ class AdminOrderService
                 'customer_id',
                 'total_amount',
                 'currency',
-                'payment_status',
                 'created_date',
-                'paid_at',
             ])
-            ->with(['customer'])
-            ->with(['statuses'])
+            ->with(['customer', 'payments', 'statuses'])
             ->withCount('items')
             ->orderByDesc('created_date')
             ->orderByDesc('id')
@@ -38,6 +36,7 @@ class AdminOrderService
 
         $orders->getCollection()->transform(function (Order $order) {
             $order->current_order_status = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
+            $this->attachCurrentPaymentDetails($order);
 
             return $order;
         });
@@ -54,6 +53,8 @@ class AdminOrderService
                 'items.product',
                 'items.rate',
                 'statuses',
+                'payments',
+                'refunds',
             ])
             ->where('id', $orderId)
             ->first();
@@ -61,6 +62,7 @@ class AdminOrderService
         if ($order) {
             $order->current_order_status = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
             $order->order_status_timeline = $this->orderStatusService->buildTimeline($order->statuses, $order);
+            $this->attachCurrentPaymentDetails($order);
         }
 
         return $order;
@@ -91,5 +93,14 @@ class AdminOrderService
         }
 
         $this->orderService->releasePendingOrderAsAdmin($orderId, $adminId);
+    }
+
+    private function attachCurrentPaymentDetails(Order $order): void
+    {
+        $latestPayment = $order->payments->sortByDesc('id')->first();
+
+        $order->current_payment_method = $latestPayment?->gateway;
+        $order->current_payment_status = $latestPayment?->status;
+        $order->current_payment_paid_at = $latestPayment?->paid_at;
     }
 }

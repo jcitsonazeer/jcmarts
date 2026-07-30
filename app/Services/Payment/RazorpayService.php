@@ -33,4 +33,23 @@ class RazorpayService
             'razorpay_signature' => $signature,
         ]);
     }
+
+    public function refundPayment(string $paymentId, int $amountInPaise, string $receipt): array
+    {
+        $api = new Api(config('razorpay.key'), config('razorpay.secret'));
+
+        $refund = $api->payment->fetch($paymentId)->refund([
+            'amount' => $amountInPaise,
+            'speed' => 'normal',
+            'notes' => [
+                'receipt' => $receipt,
+            ],
+        ]);
+
+        return [
+            'id' => (string) $refund['id'],
+            'status' => (string) $refund['status'],
+            'amount' => (int) $refund['amount'],
+        ];
+    }
 }

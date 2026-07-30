@@ -342,12 +342,6 @@ CREATE TABLE `orders` (
   `other_charge` decimal(12,2) NOT NULL DEFAULT 0.00,
   `total_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
   `currency` varchar(10) NOT NULL DEFAULT 'INR',
-  `payment_method` varchar(30) NOT NULL DEFAULT 'razorpay',
-  `payment_status` varchar(20) NOT NULL DEFAULT 'paid',
-  `razorpay_order_id` varchar(100) DEFAULT NULL,
-  `razorpay_payment_id` varchar(100) DEFAULT NULL,
-  `razorpay_signature` varchar(255) DEFAULT NULL,
-  `paid_at` datetime DEFAULT NULL,
   `reservation_expires_at` datetime DEFAULT NULL,
   `reservation_released_at` datetime DEFAULT NULL,
   `reservation_release_reason` varchar(50) DEFAULT NULL,
@@ -358,13 +352,39 @@ CREATE TABLE `orders` (
   `updated_date` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_orders_customer` (`customer_id`),
-  KEY `idx_orders_payment_status` (`payment_status`),
-  KEY `idx_orders_rzp_order` (`razorpay_order_id`),
-  KEY `idx_orders_rzp_payment` (`razorpay_payment_id`),
   KEY `idx_orders_is_active` (`is_active`),
   KEY `idx_orders_reservation_expires` (`reservation_expires_at`),
   KEY `idx_orders_reservation_released` (`reservation_released_at`),
   KEY `idx_orders_reservation_reason` (`reservation_release_reason`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `payments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `payments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `order_id` bigint(20) unsigned NOT NULL,
+  `customer_id` bigint(20) unsigned NOT NULL,
+  `gateway` varchar(30) NOT NULL DEFAULT 'razorpay',
+  `gateway_order_id` varchar(100) DEFAULT NULL,
+  `gateway_payment_id` varchar(100) DEFAULT NULL,
+  `gateway_signature` varchar(255) DEFAULT NULL,
+  `amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `currency` varchar(10) NOT NULL DEFAULT 'INR',
+  `status` varchar(30) NOT NULL DEFAULT 'paid',
+  `paid_at` datetime DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by_id` bigint(20) unsigned DEFAULT NULL,
+  `created_date` datetime DEFAULT NULL,
+  `updated_by_id` bigint(20) unsigned DEFAULT NULL,
+  `updated_date` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_payments_order` (`order_id`),
+  KEY `idx_payments_customer` (`customer_id`),
+  KEY `idx_payments_gateway_order` (`gateway_order_id`),
+  KEY `idx_payments_gateway_payment` (`gateway_payment_id`),
+  KEY `idx_payments_status` (`status`),
+  KEY `idx_payments_is_active` (`is_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `password_reset_tokens`;
@@ -590,4 +610,3 @@ CREATE TABLE `wishlist` (
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-

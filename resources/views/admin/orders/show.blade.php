@@ -12,7 +12,32 @@
                             <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">Back</a>
                         </div>
 
-                        @php($orderDate = $order->created_date ?: $order->paid_at)
+                        @if (session('success'))
+                            <div class="alert alert-success">{{ session('success') }}</div>
+                        @endif
+
+                        @if (session('error'))
+                            <div class="alert alert-danger">{{ session('error') }}</div>
+                        @endif
+
+                        @php($orderDate = $order->created_date ?: $order->current_payment_paid_at)
+                        @php($latestRefund = $order->refunds->sortByDesc('id')->first())
+                        @php($hasCancellationRequest = $order->current_order_status === \App\Services\OrderStatusService::STATUS_CANCELLATION_REQUESTED)
+
+                        @if($hasCancellationRequest && $latestRefund && in_array($latestRefund->status, ['requested', 'failed'], true))
+                            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                                <div>
+                                    Customer requested cancellation. Refund amount:
+                                    <strong>{{ $latestRefund->currency }} {{ number_format((float) $latestRefund->amount, 2) }}</strong>
+                                </div>
+                                <form method="POST"
+                                      action="{{ route('admin.orders.approve-cancellation', $order->id) }}"
+                                      onsubmit="return confirm('Approve cancellation and start Razorpay refund?');">
+                                    @csrf
+                                    <button type="submit" class="btn btn-danger">Approve & Refund</button>
+                                </form>
+                            </div>
+                        @endif
 
                         <div class="row">
                             <div class="col-md-6">
@@ -28,12 +53,22 @@
                                     </tr>
                                     <tr>
                                         <th>Payment Method</th>
-                                        <td>{{ $order->payment_method ?? '-' }}</td>
+                                        <td>{{ $order->current_payment_method ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Payment Status</th>
-                                        <td>{{ $order->payment_status ?? '-' }}</td>
+                                        <td>{{ $order->current_payment_status ?? '-' }}</td>
                                     </tr>
+                                    @if($latestRefund)
+                                        <tr>
+                                            <th>Refund Status</th>
+                                            <td>{{ $latestRefund->status }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Razorpay Refund ID</th>
+                                            <td>{{ $latestRefund->gateway_refund_id ?? '-' }}</td>
+                                        </tr>
+                                    @endif
                                     <tr>
                                         <th>Active</th>
                                         <td>{{ $order->is_active ? 'Yes' : 'No' }}</td>
