@@ -27,7 +27,7 @@ class AdminOrderService
                 'currency',
                 'created_date',
             ])
-            ->with(['customer', 'payments', 'statuses'])
+            ->with(['customer', 'payments', 'statuses', 'returnRequests.items'])
             ->withCount('items')
             ->orderByDesc('created_date')
             ->orderByDesc('id')
@@ -55,6 +55,8 @@ class AdminOrderService
                 'statuses',
                 'payments',
                 'refunds',
+                'returnRequests.items.product',
+                'returnRequests.refunds',
             ])
             ->where('id', $orderId)
             ->first();

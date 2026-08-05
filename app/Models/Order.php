@@ -25,6 +25,7 @@ class Order extends Model
         'reservation_expires_at',
         'reservation_released_at',
         'reservation_release_reason',
+        'delivered_at',
         'is_active',
         'created_by_id',
         'created_date',
@@ -40,6 +41,7 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'reservation_expires_at' => 'datetime',
         'reservation_released_at' => 'datetime',
+        'delivered_at' => 'datetime',
         'is_active' => 'boolean',
         'created_date' => 'datetime',
         'updated_date' => 'datetime',
@@ -73,5 +75,10 @@ class Order extends Model
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class, 'order_id');
+    }
+
+    public function returnRequests(): HasMany
+    {
+        return $this->hasMany(ReturnRequest::class, 'order_id');
     }
 }

@@ -180,6 +180,21 @@
                                         Pending Reservations
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.returns.index') }}">
+                                        Returns
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.payments.index') }}">
+                                        Payments
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.refunds.index') }}">
+                                        Refunds
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     </li>
@@ -262,4 +277,3 @@ document.addEventListener('DOMContentLoaded', function () {
 
 </body>
 </html>
-

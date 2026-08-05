@@ -38,10 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="row">
                 <div class="col-xl-12 box-margin height-card">
                     <div class="card card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="card-title">Expired Reservation History</h4>
-                            <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">Back to Orders</a>
-                        </div>
+                        <h4 class="card-title">Expired Reservation History</h4>
 
                         <p class="text-muted">
                             This page refreshes the table every 1 minute. On each refresh, newly expired pending reservations

@@ -23,6 +23,9 @@ use App\Http\Controllers\StockInfoController;
 use App\Http\Controllers\FrontendWishlistController;
 use App\Http\Controllers\FrontendOrderController;
 use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\AdminPaymentController;
+use App\Http\Controllers\AdminRefundController;
+use App\Http\Controllers\AdminReturnController;
 use App\Http\Controllers\OrderProcessController;
 
 Route::get('/', [FrontendController::class, 'index'])->name('frontend.home');
@@ -36,6 +39,8 @@ Route::get('/wishlist', [FrontendWishlistController::class, 'index'])->name('fro
 Route::get('/my-orders', [FrontendOrderController::class, 'index'])->name('frontend.orders.index');
 Route::get('/my-orders/{orderId}', [FrontendOrderController::class, 'show'])->name('frontend.orders.show');
 Route::post('/my-orders/{orderId}/cancel', [FrontendOrderController::class, 'cancel'])->name('frontend.orders.cancel');
+Route::get('/my-orders/{orderId}/return', [FrontendOrderController::class, 'showReturnForm'])->name('frontend.orders.return');
+Route::post('/my-orders/{orderId}/return', [FrontendOrderController::class, 'requestReturn'])->name('frontend.orders.return.store');
 Route::post('/checkout/proceed', [FrontendCheckoutController::class, 'proceedToPayment'])->name('frontend.checkout.proceed');
 Route::get('/payment', [FrontendCheckoutController::class, 'payment'])->name('frontend.payment');
 Route::post('/payment/create-order', [FrontendCheckoutController::class, 'createRazorpayOrder'])->name('frontend.payment.create_order');
@@ -98,6 +103,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('orders/pending-reservations/table', [AdminOrderController::class, 'pendingReservationsTable'])->name('orders.pending-reservations.table');
         Route::post('orders/{orderId}/release-reservation', [AdminOrderController::class, 'releasePendingReservation'])->name('orders.release-reservation');
         Route::post('orders/{orderId}/approve-cancellation', [AdminOrderController::class, 'approveCancellation'])->name('orders.approve-cancellation');
+        Route::get('returns', [AdminReturnController::class, 'index'])->name('returns.index');
+        Route::get('returns/{returnId}', [AdminReturnController::class, 'show'])->name('returns.show');
+        Route::get('returns/{returnId}/process', [AdminReturnController::class, 'process'])->name('returns.process');
+        Route::post('returns/{returnId}/process', [AdminReturnController::class, 'update'])->name('returns.update');
+        Route::get('payments', [AdminPaymentController::class, 'index'])->name('payments.index');
+        Route::get('payments/{paymentId}', [AdminPaymentController::class, 'show'])->name('payments.show');
+        Route::get('refunds', [AdminRefundController::class, 'index'])->name('refunds.index');
+        Route::get('refunds/{refundId}', [AdminRefundController::class, 'show'])->name('refunds.show');
         Route::get('orders/{id}', [AdminOrderController::class, 'show'])->name('orders.show');
         Route::get('orders/{orderId}/process', [OrderProcessController::class, 'adminShow'])->name('orders.process.show');
         Route::post('orders/{orderId}/process', [OrderProcessController::class, 'adminUpdate'])->name('orders.process.update');

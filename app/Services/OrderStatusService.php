@@ -16,6 +16,17 @@ class OrderStatusService
     public const STATUS_CANCELLATION_REQUESTED = 'cancellation_requested';
     public const STATUS_CANCELLED_BY_CUSTOMER = 'cancelled_by_customer';
     public const STATUS_DELIVERY_PERSON_ACCEPTS = 'delivery_person_accepts';
+    public const STATUS_ORDER_DELIVERED = 'order_delivered';
+    public const STATUS_RETURN_REQUESTED = 'return_requested';
+    public const STATUS_RETURN_APPROVED = 'return_approved';
+    public const STATUS_RETURN_REJECTED = 'return_rejected';
+    public const STATUS_PICKUP_SCHEDULED = 'pickup_scheduled';
+    public const STATUS_PRODUCT_RECEIVED = 'product_received';
+    public const STATUS_INSPECTION_PASSED = 'inspection_passed';
+    public const STATUS_INSPECTION_FAILED = 'inspection_failed';
+    public const STATUS_REFUND_INITIATED = 'refund_initiated';
+    public const STATUS_REFUND_COMPLETED = 'refund_completed';
+    public const STATUS_RETURN_CLOSED = 'return_closed';
 
     public const STATUS_FLOW = [
         'order_accept',
@@ -24,7 +35,23 @@ class OrderStatusService
         'assigned_for_delivery',
         self::STATUS_DELIVERY_PERSON_ACCEPTS,
         'reached_doorstep',
-        'order_delivered',
+        self::STATUS_ORDER_DELIVERED,
+    ];
+
+    public const RETURN_STATUS_FLOW = [
+        self::STATUS_RETURN_REQUESTED,
+        self::STATUS_RETURN_APPROVED,
+        self::STATUS_PICKUP_SCHEDULED,
+        self::STATUS_PRODUCT_RECEIVED,
+        self::STATUS_INSPECTION_PASSED,
+        self::STATUS_REFUND_INITIATED,
+        self::STATUS_REFUND_COMPLETED,
+        self::STATUS_RETURN_CLOSED,
+    ];
+
+    public const RETURN_TERMINAL_STATUSES = [
+        self::STATUS_RETURN_REJECTED,
+        self::STATUS_INSPECTION_FAILED,
     ];
 
     public function getStatusFlow(): array
@@ -49,6 +76,10 @@ class OrderStatusService
             return 'Cancelled by Customer';
         }
 
+        if (in_array($status, array_merge(self::RETURN_STATUS_FLOW, self::RETURN_TERMINAL_STATUSES), true)) {
+            return ucwords(str_replace('_', ' ', $status));
+        }
+
         return ucwords(str_replace('_', ' ', $status));
     }
 
@@ -63,6 +94,10 @@ class OrderStatusService
         }
 
         if ($currentStatus === self::STATUS_CANCELLED_BY_CUSTOMER) {
+            return false;
+        }
+
+        if (in_array($currentStatus, array_merge(self::RETURN_STATUS_FLOW, self::RETURN_TERMINAL_STATUSES), true)) {
             return false;
         }
 
@@ -95,6 +130,10 @@ class OrderStatusService
         }
 
         if ($currentStatus === self::STATUS_CANCELLATION_REQUESTED) {
+            return [];
+        }
+
+        if (in_array($currentStatus, array_merge(self::RETURN_STATUS_FLOW, self::RETURN_TERMINAL_STATUSES), true)) {
             return [];
         }
 
@@ -136,6 +175,18 @@ class OrderStatusService
                 'action_done_by_id' => $actionDoneById,
             ]);
 
+            if ($newStatus === self::STATUS_ORDER_DELIVERED && empty($order->delivered_at)) {
+                Order::query()
+                    ->where('id', $order->id)
+                    ->update([
+                        'delivered_at' => $status->action_time,
+                        'updated_by_id' => $actionDoneById,
+                        'updated_date' => Carbon::now(),
+                    ]);
+
+                $order->delivered_at = $status->action_time;
+            }
+
             $order->unsetRelation('statuses');
 
             return $status;
@@ -171,6 +222,22 @@ class OrderStatusService
             $order->unsetRelation('statuses');
 
             return $status;
+        });
+    }
+
+    public function addSystemStatus(Order $order, string $status, ?int $actionDoneById): OrderStatus
+    {
+        return DB::transaction(function () use ($order, $status, $actionDoneById) {
+            $orderStatus = OrderStatus::create([
+                'order_id' => $order->id,
+                'order_status' => $status,
+                'action_time' => Carbon::now(),
+                'action_done_by_id' => $actionDoneById,
+            ]);
+
+            $order->unsetRelation('statuses');
+
+            return $orderStatus;
         });
     }
 
@@ -235,6 +302,28 @@ class OrderStatusService
                 'is_pending' => false,
                 'is_reachable' => true,
                 'action_time' => $cancelledHistory->action_time,
+                'action_done_by_id' => $actorId,
+                'actor_name' => $actorId !== null ? ($actorNames[$actorId] ?? ('User ' . $actorId)) : null,
+            ];
+        }
+
+        foreach (array_merge(self::RETURN_STATUS_FLOW, self::RETURN_TERMINAL_STATUSES) as $returnStatus) {
+            $history = $historyByStatus->get($returnStatus);
+
+            if (!$history) {
+                continue;
+            }
+
+            $actorId = $history->action_done_by_id;
+
+            $timeline[] = [
+                'key' => $returnStatus,
+                'label' => $this->formatStatusLabel($returnStatus),
+                'is_completed' => true,
+                'is_current' => $latestStatus === $returnStatus,
+                'is_pending' => false,
+                'is_reachable' => true,
+                'action_time' => $history->action_time,
                 'action_done_by_id' => $actorId,
                 'actor_name' => $actorId !== null ? ($actorNames[$actorId] ?? ('User ' . $actorId)) : null,
             ];

@@ -40,4 +40,9 @@ class Payment extends Model
     {
         return $this->belongsTo(Order::class, 'order_id');
     }
+
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class, 'payment_id');
+    }
 }

@@ -62,7 +62,8 @@
                         </span>
                     </div>
 
-                    <div class="order-cancel-box">
+                    @php($latestReturn = $selectedOrder->returnRequests->sortByDesc('id')->first())
+                    <div class="order-cancel-box" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                         @if($selectedOrder->can_customer_cancel ?? false)
                             <form method="POST"
                                   action="{{ route('frontend.orders.cancel', $selectedOrder->id) }}"
@@ -75,6 +76,20 @@
                         @else
                             <button type="button" class="btn btn-default" disabled>
                                 Cancellation Disabled
+                            </button>
+                        @endif
+
+                        @if($selectedOrder->can_customer_return ?? false)
+                            <a href="{{ route('frontend.orders.return', $selectedOrder->id) }}" class="btn btn-warning">
+                                Return Order
+                            </a>
+                        @elseif($latestReturn)
+                            <button type="button" class="btn btn-default" disabled>
+                                Return: {{ ucwords(str_replace('_', ' ', $latestReturn->status)) }}
+                            </button>
+                        @elseif(($selectedOrder->current_order_status ?? null) === \App\Services\OrderStatusService::STATUS_ORDER_DELIVERED && ($selectedOrder->return_period_expired ?? false))
+                            <button type="button" class="btn btn-default" disabled>
+                                Return Period Expired
                             </button>
                         @endif
                     </div>
@@ -133,6 +148,37 @@
                             <div class="info-row">
                                 <div class="label">Refund Amount</div>
                                 <div class="value">{{ $latestRefund->currency }} {{ number_format((float) $latestRefund->amount, 2) }}</div>
+                            </div>
+                        @endif
+                        @if($latestReturn)
+                            <div class="info-row">
+                                <div class="label">Return Status</div>
+                                <div class="value">{{ ucwords(str_replace('_', ' ', $latestReturn->status)) }}</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="label">Return Reason</div>
+                                <div class="value">{{ $latestReturn->reason }}</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="label">Return Items</div>
+                                <div class="value">
+                                    @foreach($latestReturn->items as $returnItem)
+                                        <div>
+                                            {{ $returnItem->product?->product_name ?? 'Product' }}
+                                            x {{ $returnItem->quantity }}
+                                            - {{ $selectedOrder->currency }} {{ number_format((float) $returnItem->line_total, 2) }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <div class="label">Requested On</div>
+                                <div class="value">{{ $latestReturn->requested_at ? $latestReturn->requested_at->format('d-m-Y H:i') : '-' }}</div>
+                            </div>
+                        @elseif($selectedOrder->return_allowed_until)
+                            <div class="info-row">
+                                <div class="label">Return Allowed Until</div>
+                                <div class="value">{{ $selectedOrder->return_allowed_until->format('d-m-Y') }}</div>
                             </div>
                         @endif
                         <div class="info-row">

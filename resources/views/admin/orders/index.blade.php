@@ -7,12 +7,7 @@
             <div class="row">
                 <div class="col-xl-12 box-margin height-card">
                     <div class="card card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="card-title">Order Management</h4>
-                            <a href="{{ route('admin.orders.pending-reservations') }}" class="btn btn-warning">
-                                Expired Pending Reservations
-                            </a>
-                        </div>
+                        <h4 class="card-title">Order Management</h4>
 
                         @if (session('success'))
                             <div class="alert alert-success alert-dismissible fade show" role="alert">
