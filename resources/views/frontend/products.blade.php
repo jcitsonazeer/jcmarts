@@ -128,20 +128,6 @@
         @endif
       </h1>
 
-      <div class="subcateory">
-        <h3>Refine Search</h3>
-        <div class="row">
-          <div class="col-sm-3">
-            <ul>
-              <li><a href="#">Daal & Pulses</a></li>
-              <li><a href="#">Dry Fruits & Nuts</a></li>
-              <li><a href="#">Edible Oils</a></li>
-              <li><a href="#">Riced cauliflower</a></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
 
       <div class="products-collection">
         <div class="row product-layoutrow">
