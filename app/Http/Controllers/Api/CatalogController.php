@@ -11,6 +11,47 @@ class CatalogController extends Controller
     {
     }
 
+    public function home()
+    {
+        $productCategories = $this->frontendCatalogService->getTopSubCategories();
+        $productOffers = $this->frontendCatalogService->getProductOffers();
+        $featuredProducts = $this->frontendCatalogService->getFeaturedProducts();
+
+        $productCategories->transform(function ($category) {
+            $category->sub_category_image = $category->sub_category_image
+                ? asset('storage/sub_category/' . $category->sub_category_image)
+                : null;
+
+            return $category;
+        });
+
+        $productOffers->transform(function ($offer) {
+            $offer->product_image = $offer->product_image
+                ? asset('storage/product/' . $offer->product_image)
+                : null;
+
+            return $offer;
+        });
+
+        $featuredProducts->transform(function ($product) {
+            $product->product_image = $product->product_image
+                ? asset('storage/product/' . $product->product_image)
+                : null;
+
+            return $product;
+        });
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Home page data fetched successfully',
+            'data' => [
+                'product_categories' => $productCategories,
+                'product_offers' => $productOffers,
+                'featured_products' => $featuredProducts,
+            ],
+        ]);
+    }
+
     public function banners()
     {
         $banners = $this->frontendCatalogService->getIndexBanners();
