@@ -31,10 +31,18 @@
 
     <div class="product-details">
       <div class="caption">
-        <h4><a href="{{ route('frontend.single_product', ['product_id' => $product->id]) }}">{{ $product->product_name }}</a></h4>
+        <h4><a href="{{ route('frontend.single_product', ['product_id' => $product->id]) }}">
+		        @if(mb_strlen($product->product_name) > 20)
+            <span class="scroll-text">
+                {{ $product->product_name }}
+            </span>
+        @else
+            {{ $product->product_name }}
+        @endif
+		</a></h4>
         <div class="model">Product {{ $product->id }}</div>
 
-        <p class="price">
+        <center><p class="price">
           <span class="price-new">&#8377;{{ number_format($shown, 2) }}</span>
           @if($sellingPrice > $finalPrice && $finalPrice > 0)
             <span class="price-old">&#8377;{{ number_format($sellingPrice, 2) }}</span>
@@ -44,7 +52,7 @@
           @else
             <span class="price-tax">Ex Tax: &#8377;{{ number_format($shown, 2) }}</span>
           @endif
-        </p>
+        </p></center>
 
         <div id="product-{{ $product->id }}" class="product_option">
           <div class="form-group required">
