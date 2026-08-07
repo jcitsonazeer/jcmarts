@@ -68,7 +68,7 @@
 <div class="header-top-block col-sm-12">
   
 <div class="header-top-right pull-right">
-    <div class="telephone"><a href="#"><i class="fa fa-phone"></i>9514486111</a></div>
+    <div class="telephone"><a href="#"><i class="fa fa-phone"></i>8925880110</a></div>
     @if(session()->has('customer_id'))
       <div class="login"><span><i class="fa fa-user" ></i>Hello {{ session('customer_name') }}</span></div>
       <div class="login"><a href="{{ route('frontend.orders.index') }}"><i class="fa fa-shopping-bag"></i>My Orders</a></div>
