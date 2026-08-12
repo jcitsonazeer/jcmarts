@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\SubCategoryController;
 Route::prefix('v1')->group(function () {
     Route::post('/otp/send', [AuthController::class, 'sendOtp']);
     Route::post('/otp/verify', [AuthController::class, 'verifyOtp']);
+    Route::post('/register/otp/send', [AuthController::class, 'sendRegisterOtp']);
+    Route::post('/register/otp/verify', [AuthController::class, 'verifyRegisterOtp']);
 
     Route::get('/home', [CatalogController::class, 'home']);
     Route::get('/categories', [CategoryController::class, 'index']);
