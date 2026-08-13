@@ -35,7 +35,9 @@ class AdminOrderService
             ->withQueryString();
 
         $orders->getCollection()->transform(function (Order $order) {
-            $order->current_order_status = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
+            $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
+            $order->current_order_status = $latestStatus ? $latestStatus->order_status : null;
+
             $this->attachCurrentPaymentDetails($order);
 
             return $order;
@@ -62,7 +64,8 @@ class AdminOrderService
             ->first();
 
         if ($order) {
-            $order->current_order_status = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
+            $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
+            $order->current_order_status = $latestStatus ? $latestStatus->order_status : null;
             $order->order_status_timeline = $this->orderStatusService->buildTimeline($order->statuses, $order);
             $this->attachCurrentPaymentDetails($order);
         }
@@ -101,8 +104,14 @@ class AdminOrderService
     {
         $latestPayment = $order->payments->sortByDesc('id')->first();
 
-        $order->current_payment_method = $latestPayment?->gateway;
-        $order->current_payment_status = $latestPayment?->status;
-        $order->current_payment_paid_at = $latestPayment?->paid_at;
+        $order->current_payment_method = null;
+        $order->current_payment_status = null;
+        $order->current_payment_paid_at = null;
+
+        if ($latestPayment) {
+            $order->current_payment_method = $latestPayment->gateway;
+            $order->current_payment_status = $latestPayment->status;
+            $order->current_payment_paid_at = $latestPayment->paid_at;
+        }
     }
 }

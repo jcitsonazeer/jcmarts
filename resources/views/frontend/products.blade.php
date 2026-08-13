@@ -8,7 +8,10 @@
     $isSearching = !empty($searchTerm);
     $selectedOffer = $selectedOffer ?? null;
     $selectedSubCategory = $selectedSubCategory ?? null;
-    $selectedBrandIds = collect($selectedBrandIds ?? [])->map(fn($id) => (int) $id)->all();
+    $selectedBrandIds = $selectedBrandIds ?? [];
+    $selectedBrandIds = collect($selectedBrandIds)->map(function ($id) {
+      return (int) $id;
+    })->all();
     $productsList = $products ?? collect();
     $isPaginatedProducts = $productsList instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator
       || $productsList instanceof \Illuminate\Contracts\Pagination\Paginator;
@@ -20,11 +23,29 @@
       <li><a href="{{ route('frontend.products', ['offer' => $selectedOffer->id]) }}">{{ $selectedOffer->offer_name }}</a></li>
     @endif
     @if($selectedSubCategory)
-      <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategory->id, 'offer' => $selectedOffer?->id]) }}">{{ $selectedSubCategory->sub_category_name }}</a></li>
+      @php
+        $selectedOfferId = null;
+        if ($selectedOffer) {
+          $selectedOfferId = $selectedOffer->id;
+        }
+      @endphp
+      <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategory->id, 'offer' => $selectedOfferId]) }}">{{ $selectedSubCategory->sub_category_name }}</a></li>
     @endif
     @if($isSearching)
       @if($selectedSubCategory || $selectedOffer)
-        <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategory?->id, 'offer' => $selectedOffer?->id, 'search' => $searchTerm]) }}">Search: "{{ $searchTerm }}"</a></li>
+        @php
+          $selectedSubCategoryId = null;
+          $selectedOfferId = null;
+
+          if ($selectedSubCategory) {
+            $selectedSubCategoryId = $selectedSubCategory->id;
+          }
+
+          if ($selectedOffer) {
+            $selectedOfferId = $selectedOffer->id;
+          }
+        @endphp
+        <li><a href="{{ route('frontend.products', ['sub_category' => $selectedSubCategoryId, 'offer' => $selectedOfferId, 'search' => $searchTerm]) }}">Search: "{{ $searchTerm }}"</a></li>
       @else
         <li><a href="{{ route('frontend.products', ['search' => $searchTerm]) }}">Search: "{{ $searchTerm }}"</a></li>
       @endif
@@ -173,15 +194,20 @@
       }
 
       var checkboxes = form.querySelectorAll('input[type="checkbox"][name="brands[]"]');
-      checkboxes.forEach(function (checkbox) {
+
+      for (var index = 0; index < checkboxes.length; index++) {
+        var checkbox = checkboxes[index];
+
         if (checkbox.dataset.brandFilterBound === '1') {
-          return;
+          continue;
         }
+
         checkbox.dataset.brandFilterBound = '1';
+
         checkbox.addEventListener('change', function () {
           form.submit();
         });
-      });
+      }
     }
 
     function applyCurrentDisplayMode() {

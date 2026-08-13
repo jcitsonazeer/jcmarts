@@ -66,6 +66,7 @@
     var payBtn = document.getElementById('continue-payment');
     var statusEl = document.getElementById('payment-status');
     var releasedOrderIds = {};
+    var csrfToken = "{{ csrf_token() }}";
 
     function setStatus(message, isError) {
       statusEl.style.display = 'block';
@@ -73,26 +74,91 @@
       statusEl.textContent = message;
     }
 
+    function postJson(url, data) {
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+    }
+
     function releaseReservedOrder(orderId) {
-      if (!orderId || releasedOrderIds[orderId]) {
+      if (!orderId) {
+        return Promise.resolve();
+      }
+
+      if (releasedOrderIds[orderId]) {
         return Promise.resolve();
       }
 
       releasedOrderIds[orderId] = true;
 
-      return fetch("{{ route('frontend.payment.release') }}", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': "{{ csrf_token() }}",
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          razorpay_order_id: orderId
-        })
+      return postJson("{{ route('frontend.payment.release') }}", {
+        razorpay_order_id: orderId
       }).catch(function () {
         return null;
       });
+    }
+
+    function verifyPayment(response) {
+      postJson("{{ route('frontend.payment.verify') }}", response)
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return {
+              ok: res.ok,
+              data: data
+            };
+          });
+        })
+        .then(function (payload) {
+          var message = 'Payment updated.';
+
+          if (payload.data && payload.data.message) {
+            message = payload.data.message;
+          }
+
+          setStatus(message, !payload.ok);
+        })
+        .catch(function () {
+          setStatus('Payment verification failed. Please contact support.', true);
+        })
+        .finally(function () {
+          payBtn.disabled = false;
+        });
+    }
+
+    function openRazorpay(data) {
+      var options = {
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'JC Mart',
+        description: 'Order Payment',
+        order_id: data.order_id,
+        modal: {
+          ondismiss: function () {
+            releaseReservedOrder(data.order_id);
+            setStatus('Payment cancelled. Item reservation released.', true);
+            payBtn.disabled = false;
+          }
+        },
+        handler: verifyPayment
+      };
+
+      var rzp = new Razorpay(options);
+
+      rzp.on('payment.failed', function () {
+        releaseReservedOrder(data.order_id).finally(function () {
+          setStatus('Payment failed. Please try again.', true);
+          payBtn.disabled = false;
+        });
+      });
+
+      rzp.open();
     }
 
     payBtn.addEventListener('click', function () {
@@ -102,7 +168,7 @@
       fetch("{{ route('frontend.payment.create_order') }}", {
         method: 'POST',
         headers: {
-          'X-CSRF-TOKEN': "{{ csrf_token() }}",
+          'X-CSRF-TOKEN': csrfToken,
           'Accept': 'application/json'
         }
       })
@@ -112,56 +178,7 @@
           throw new Error(data.message || 'Unable to create payment order.');
         }
 
-        var options = {
-          key: data.key,
-          amount: data.amount,
-          currency: data.currency,
-          name: 'JC Mart',
-          description: 'Order Payment',
-          order_id: data.order_id,
-          modal: {
-            ondismiss: function () {
-              releaseReservedOrder(data.order_id);
-              setStatus('Payment cancelled. Item reservation released.', true);
-              payBtn.disabled = false;
-            }
-          },
-          handler: function (response) {
-            fetch("{{ route('frontend.payment.verify') }}", {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify(response)
-            })
-            .then(function (res) {
-              return res.json().then(function (data) {
-                return { ok: res.ok, data: data };
-              });
-            })
-            .then(function (payload) {
-              var message = payload.data && payload.data.message ? payload.data.message : 'Payment updated.';
-              setStatus(message, !payload.ok);
-            })
-            .catch(function () {
-              setStatus('Payment verification failed. Please contact support.', true);
-            })
-            .finally(function () {
-              payBtn.disabled = false;
-            });
-          }
-        };
-
-        var rzp = new Razorpay(options);
-        rzp.on('payment.failed', function () {
-          releaseReservedOrder(data.order_id).finally(function () {
-            setStatus('Payment failed. Please try again.', true);
-            payBtn.disabled = false;
-          });
-        });
-        rzp.open();
+        openRazorpay(data);
       })
       .catch(function (err) {
         setStatus(err.message || 'Payment could not be started.', true);

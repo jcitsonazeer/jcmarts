@@ -83,11 +83,13 @@ class FrontendProductService
 
     public function getProductsByBrands($subCategoryId = null, $searchTerm = null, $offerId = null, array $brandIds = [])
     {
-        $query = $this->buildBaseProductsQuery($subCategoryId, $searchTerm, $offerId)
-            ->when(!empty($brandIds), function (Builder $query) use ($brandIds) {
-                $query->whereIn('brand_id', $brandIds);
-            })
-            ->with([
+        $query = $this->buildBaseProductsQuery($subCategoryId, $searchTerm, $offerId);
+
+        if (!empty($brandIds)) {
+            $query->whereIn('brand_id', $brandIds);
+        }
+
+        $query->with([
                 'subCategory:id,category_id,sub_category_name',
                 'subCategory.category:id,category_name',
                 'brand:id,brand_name',
@@ -118,28 +120,33 @@ class FrontendProductService
 
     public function getAvailableBrands($subCategoryId = null, $searchTerm = null, $offerId = null): Collection
     {
-        $brandProductCounts = Product::query()
+        $query = Product::query()
             ->where('is_active', 1)
             ->whereHas('rates', function ($query) {
                 $query->where('is_active', 1);
             })
-            ->when(!empty($offerId), function ($query) use ($offerId) {
-                $query->whereHas('offerProducts', function ($offerProductQuery) use ($offerId) {
-                    $offerProductQuery
-                        ->where('offer_id', $offerId)
-                        ->where('is_active', 1);
-                });
-            })
-            ->when(!empty($subCategoryId), function ($query) use ($subCategoryId) {
-                $query->where('sub_category_id', $subCategoryId);
-            })
-            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
-                $query->where('product_name', 'like', trim((string) $searchTerm) . '%');
-            })
             ->whereNotNull('brand_id')
             ->selectRaw('brand_id, COUNT(*) as product_count')
-            ->groupBy('brand_id')
-            ->pluck('product_count', 'brand_id');
+            ->groupBy('brand_id');
+
+        if (!empty($offerId)) {
+            $query->whereHas('offerProducts', function ($offerProductQuery) use ($offerId) {
+                $offerProductQuery
+                    ->where('offer_id', $offerId)
+                    ->where('is_active', 1);
+            });
+        }
+
+        if (!empty($subCategoryId)) {
+            $query->where('sub_category_id', $subCategoryId);
+        }
+
+        $term = trim((string) $searchTerm);
+        if ($term !== '') {
+            $query->where('product_name', 'like', $term . '%');
+        }
+
+        $brandProductCounts = $query->pluck('product_count', 'brand_id');
 
         if ($brandProductCounts->isEmpty()) {
             return collect();
@@ -165,7 +172,7 @@ class FrontendProductService
     {
         $normalizedSearchTerm = trim((string) $searchTerm);
 
-        return Product::query()
+        $query = Product::query()
             ->select([
                 'id',
                 'sub_category_id',
@@ -179,19 +186,24 @@ class FrontendProductService
             ->where('is_active', 1)
             ->whereHas('rates', function ($query) {
                 $query->where('is_active', 1);
-            })
-            ->when(!empty($offerId), function ($query) use ($offerId) {
-                $query->whereHas('offerProducts', function ($offerProductQuery) use ($offerId) {
-                    $offerProductQuery
-                        ->where('offer_id', $offerId)
-                        ->where('is_active', 1);
-                });
-            })
-            ->when(!empty($subCategoryId), function ($query) use ($subCategoryId) {
-                $query->where('sub_category_id', $subCategoryId);
-            })
-            ->when($normalizedSearchTerm !== '', function ($query) use ($normalizedSearchTerm) {
-                $query->where('product_name', 'like', $normalizedSearchTerm . '%');
             });
+
+        if (!empty($offerId)) {
+            $query->whereHas('offerProducts', function ($offerProductQuery) use ($offerId) {
+                $offerProductQuery
+                    ->where('offer_id', $offerId)
+                    ->where('is_active', 1);
+            });
+        }
+
+        if (!empty($subCategoryId)) {
+            $query->where('sub_category_id', $subCategoryId);
+        }
+
+        if ($normalizedSearchTerm !== '') {
+            $query->where('product_name', 'like', $normalizedSearchTerm . '%');
+        }
+
+        return $query;
     }
 }

@@ -17,7 +17,7 @@ class SubCategoryService
 
     public function getAll(?string $searchTerm = null)
     {
-        return SubCategory::query()
+        $query = SubCategory::query()
             ->select([
                 'id',
                 'category_id',
@@ -28,29 +28,32 @@ class SubCategoryService
                 'updated_by_id',
                 'updated_date',
             ])
-            ->with(['category', 'createdBy', 'updatedBy'])
-            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
-                $term = trim((string) $searchTerm);
+            ->with(['category', 'createdBy', 'updatedBy']);
 
-                $query->where(function ($innerQuery) use ($term) {
-                    $innerQuery->where('sub_category_name', 'like', '%' . $term . '%')
-                        ->orWhereHas('category', function ($categoryQuery) use ($term) {
-                            $categoryQuery->where('category_name', 'like', '%' . $term . '%');
-                        });
+        $term = trim((string) $searchTerm);
+
+        if ($term !== '') {
+            $query->where(function ($innerQuery) use ($term) {
+                $innerQuery->where('sub_category_name', 'like', '%' . $term . '%');
+
+                $innerQuery->orWhereHas('category', function ($categoryQuery) use ($term) {
+                    $categoryQuery->where('category_name', 'like', '%' . $term . '%');
                 });
-            })
-            ->orderBy('id', 'desc')
+            });
+        }
+
+        return $query->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
     }
 	
 	// For Mobile API
-	public function getActiveForApi()
-{
-    return SubCategory::with('category') // optional if app needs category
-        ->orderBy('id', 'desc')
-        ->get();
-}
+    public function getActiveForApi()
+    {
+        return SubCategory::with('category') // optional if app needs category
+            ->orderBy('id', 'desc')
+            ->get();
+    }
 
     public function getCategoriesForDropdown()
     {
@@ -123,29 +126,40 @@ class SubCategoryService
         return Product::where('sub_category_id', $id)->exists();
     }
 
-private function storeSubCategoryImage(UploadedFile $image): string
-{
-    $originalName = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME);
-    $sanitizedName = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $originalName);
-    $sanitizedName = trim((string) $sanitizedName, '_');
-    $sanitizedName = $sanitizedName !== '' ? $sanitizedName : 'sub_category';
+    private function storeSubCategoryImage(UploadedFile $image): string
+    {
+        $originalName = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME);
+        $sanitizedName = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $originalName);
+        $sanitizedName = trim((string) $sanitizedName, '_');
 
-    $imageInformation = getimagesize($image->getRealPath());
-    if ($imageInformation === false) {
-        throw new RuntimeException('Unable to read image size.');
+        if ($sanitizedName === '') {
+            $sanitizedName = 'sub_category';
+        }
+
+        $imageInformation = getimagesize($image->getRealPath());
+        if ($imageInformation === false) {
+            throw new RuntimeException('Unable to read image size.');
+        }
+
+        $extension = null;
+        if ($imageInformation[2] === IMAGETYPE_PNG) {
+            $extension = 'png';
+        }
+
+        if ($imageInformation[2] === IMAGETYPE_JPEG) {
+            $extension = 'jpg';
+        }
+
+        if ($extension === null) {
+            throw new RuntimeException('Only JPG, JPEG, and PNG images are allowed.');
+        }
+
+        $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
+        $resizedImage = $this->resizeImage($image, self::IMAGE_WIDTH, self::IMAGE_HEIGHT, $extension);
+        Storage::disk('public')->put('sub_category/' . $fileName, $resizedImage);
+
+        return $fileName;
     }
-
-    $extension = match ($imageInformation[2]) {
-        IMAGETYPE_PNG => 'png',
-        IMAGETYPE_JPEG => 'jpg',
-        default => throw new RuntimeException('Only JPG, JPEG, and PNG images are allowed.'),
-    };
-
-    $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
-    $resizedImage = $this->resizeImage($image, self::IMAGE_WIDTH, self::IMAGE_HEIGHT, $extension);
-    Storage::disk('public')->put('sub_category/' . $fileName, $resizedImage);
-    return $fileName;
-}
 
     private function resizeImage(UploadedFile $image, int $targetWidth, int $targetHeight, string $extension): string
     {
@@ -169,11 +183,15 @@ private function storeSubCategoryImage(UploadedFile $image): string
 
         [$sourceWidth, $sourceHeight, $imageType] = $imageInformation;
 
-        $sourceImage = match ($imageType) {
-            IMAGETYPE_JPEG => \function_exists('imagecreatefromjpeg') ? \imagecreatefromjpeg($sourcePath) : null,
-            IMAGETYPE_PNG => \function_exists('imagecreatefrompng') ? \imagecreatefrompng($sourcePath) : null,
-            default => null,
-        };
+        $sourceImage = null;
+
+        if ($imageType === IMAGETYPE_JPEG && \function_exists('imagecreatefromjpeg')) {
+            $sourceImage = \imagecreatefromjpeg($sourcePath);
+        }
+
+        if ($imageType === IMAGETYPE_PNG && \function_exists('imagecreatefrompng')) {
+            $sourceImage = \imagecreatefrompng($sourcePath);
+        }
 
         if (!$sourceImage) {
             throw new RuntimeException('Only JPG, JPEG, and PNG images are allowed.');
@@ -218,10 +236,11 @@ private function storeSubCategoryImage(UploadedFile $image): string
 
         ob_start();
 
-        match ($extension) {
-            'png' => \imagepng($destinationImage),
-            default => \imagejpeg($destinationImage, null, 85),
-        };
+        if ($extension === 'png') {
+            \imagepng($destinationImage);
+        } else {
+            \imagejpeg($destinationImage, null, 85);
+        }
 
         $imageContents = (string) ob_get_clean();
 

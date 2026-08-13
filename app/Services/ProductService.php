@@ -19,7 +19,7 @@ class ProductService
 
     public function getAll(?string $searchTerm = null)
     {
-        return Product::query()
+        $query = Product::query()
             ->select([
                 'id',
                 'sub_category_id',
@@ -30,21 +30,25 @@ class ProductService
                 'created_by_id',
                 'updated_by_id',
             ])
-            ->with(['subCategory', 'brand', 'createdBy', 'updatedBy'])
-            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
-                $term = trim((string) $searchTerm);
+            ->with(['subCategory', 'brand', 'createdBy', 'updatedBy']);
 
-                $query->where(function ($innerQuery) use ($term) {
-                    $innerQuery->where('product_name', 'like', '%' . $term . '%')
-                        ->orWhereHas('subCategory', function ($subCategoryQuery) use ($term) {
-                            $subCategoryQuery->where('sub_category_name', 'like', '%' . $term . '%');
-                        })
-                        ->orWhereHas('brand', function ($brandQuery) use ($term) {
-                            $brandQuery->where('brand_name', 'like', '%' . $term . '%');
-                        });
+        $term = trim((string) $searchTerm);
+
+        if ($term !== '') {
+            $query->where(function ($innerQuery) use ($term) {
+                $innerQuery->where('product_name', 'like', '%' . $term . '%');
+
+                $innerQuery->orWhereHas('subCategory', function ($subCategoryQuery) use ($term) {
+                    $subCategoryQuery->where('sub_category_name', 'like', '%' . $term . '%');
                 });
-            })
-            ->orderBy('id', 'desc')
+
+                $innerQuery->orWhereHas('brand', function ($brandQuery) use ($term) {
+                    $brandQuery->where('brand_name', 'like', '%' . $term . '%');
+                });
+            });
+        }
+
+        return $query->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
     }
@@ -57,12 +61,6 @@ class ProductService
             ->whereHas('rates', function ($query) {
                 $query->where('is_active', 1);
             })
-            ->when(!empty($subCategoryId), function ($query) use ($subCategoryId) {
-                $query->where('sub_category_id', $subCategoryId);
-            })
-            ->when(!empty($search), function ($query) use ($search) {
-                $query->where('product_name', 'like', '%' . $search . '%');
-            })
             ->with([
                 'subCategory',
                 'rates' => function ($query) {
@@ -72,6 +70,14 @@ class ProductService
                         ->orderBy('id');
                 },
             ]);
+
+        if (!empty($subCategoryId)) {
+            $query->where('sub_category_id', $subCategoryId);
+        }
+
+        if (!empty($search)) {
+            $query->where('product_name', 'like', '%' . $search . '%');
+        }
 
         return $query->orderByDesc('id')
             ->paginate($perPage);
@@ -120,11 +126,12 @@ class ProductService
 
     public function findForShow($id)
     {
-    return Product::with([
-    'subCategory.category',
-    'brand',
-    'createdBy',
-    'updatedBy'])->findOrFail($id);
+        return Product::with([
+            'subCategory.category',
+            'brand',
+            'createdBy',
+            'updatedBy',
+        ])->findOrFail($id);
     }
 
     public function findForEdit($id)
@@ -199,29 +206,40 @@ class ProductService
         return RateMaster::where('product_id', $id)->exists();
     }
 
-private function storeProductImage(UploadedFile $image): string
-{
-    $originalName = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME);
-    $sanitizedName = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $originalName);
-    $sanitizedName = trim((string) $sanitizedName, '_');
-    $sanitizedName = $sanitizedName !== '' ? $sanitizedName : 'product';
+    private function storeProductImage(UploadedFile $image): string
+    {
+        $originalName = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME);
+        $sanitizedName = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $originalName);
+        $sanitizedName = trim((string) $sanitizedName, '_');
 
-    $imageInformation = getimagesize($image->getRealPath());
-    if ($imageInformation === false) {
-        throw new RuntimeException('Unable to read image size.');
+        if ($sanitizedName === '') {
+            $sanitizedName = 'product';
+        }
+
+        $imageInformation = getimagesize($image->getRealPath());
+        if ($imageInformation === false) {
+            throw new RuntimeException('Unable to read image size.');
+        }
+
+        $extension = null;
+        if ($imageInformation[2] === IMAGETYPE_PNG) {
+            $extension = 'png';
+        }
+
+        if ($imageInformation[2] === IMAGETYPE_JPEG) {
+            $extension = 'jpg';
+        }
+
+        if ($extension === null) {
+            throw new RuntimeException('Only JPG, JPEG, and PNG images are allowed.');
+        }
+
+        $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
+        $resizedImage = $this->resizeImage($image, self::IMAGE_WIDTH, self::IMAGE_HEIGHT, $extension);
+        Storage::disk('public')->put('product/' . $fileName, $resizedImage);
+
+        return $fileName;
     }
-
-    $extension = match ($imageInformation[2]) {
-        IMAGETYPE_PNG => 'png',
-        IMAGETYPE_JPEG => 'jpg',
-        default => throw new RuntimeException('Only JPG, JPEG, and PNG images are allowed.'),
-    };
-
-    $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
-    $resizedImage = $this->resizeImage($image, self::IMAGE_WIDTH, self::IMAGE_HEIGHT, $extension);
-    Storage::disk('public')->put('product/' . $fileName, $resizedImage);
-    return $fileName;
-}
 
     private function resizeImage(UploadedFile $image, int $targetWidth, int $targetHeight, string $extension): string
     {
@@ -245,11 +263,15 @@ private function storeProductImage(UploadedFile $image): string
 
         [$sourceWidth, $sourceHeight, $imageType] = $imageInformation;
 
-        $sourceImage = match ($imageType) {
-            IMAGETYPE_JPEG => \function_exists('imagecreatefromjpeg') ? \imagecreatefromjpeg($sourcePath) : null,
-            IMAGETYPE_PNG => \function_exists('imagecreatefrompng') ? \imagecreatefrompng($sourcePath) : null,
-            default => null,
-        };
+        $sourceImage = null;
+
+        if ($imageType === IMAGETYPE_JPEG && \function_exists('imagecreatefromjpeg')) {
+            $sourceImage = \imagecreatefromjpeg($sourcePath);
+        }
+
+        if ($imageType === IMAGETYPE_PNG && \function_exists('imagecreatefrompng')) {
+            $sourceImage = \imagecreatefrompng($sourcePath);
+        }
 
         if (!$sourceImage) {
             throw new RuntimeException('Only JPG, JPEG, and PNG images are allowed.');
@@ -294,10 +316,11 @@ private function storeProductImage(UploadedFile $image): string
 
         \ob_start();
 
-        match ($extension) {
-            'png' => \imagepng($destinationImage),
-            default => \imagejpeg($destinationImage, null, 85),
-        };
+        if ($extension === 'png') {
+            \imagepng($destinationImage);
+        } else {
+            \imagejpeg($destinationImage, null, 85);
+        }
 
         $imageContents = (string) \ob_get_clean();
 

@@ -508,7 +508,11 @@ class OrderService
             ->lockForUpdate()
             ->first();
 
-        return (int) ($latestStock?->current_stock ?? 0);
+        if (!$latestStock) {
+            return 0;
+        }
+
+        return (int) $latestStock->current_stock;
     }
 
     private function syncSoldOutStatus(int $rateMasterId, int $currentStock, ?int $userId = null): void
@@ -524,7 +528,9 @@ class OrderService
 
     private function deactivatePurchasedCartItems(Collection $cartItems, Collection $orderItems, int $customerId): void
     {
-        $orderItemsByRate = $orderItems->keyBy(fn (OrderItem $item) => (int) $item->rate_master_id);
+        $orderItemsByRate = $orderItems->keyBy(function (OrderItem $item) {
+            return (int) $item->rate_master_id;
+        });
 
         foreach ($cartItems as $cartItem) {
             $reservedItem = $orderItemsByRate->get((int) $cartItem->rate_master_id);
@@ -559,9 +565,15 @@ class OrderService
     {
         $latestPayment = $order->payments->sortByDesc('id')->first();
 
-        $order->current_payment_method = $latestPayment?->gateway;
-        $order->current_payment_status = $latestPayment?->status;
-        $order->current_payment_paid_at = $latestPayment?->paid_at;
+        $order->current_payment_method = null;
+        $order->current_payment_status = null;
+        $order->current_payment_paid_at = null;
+
+        if ($latestPayment) {
+            $order->current_payment_method = $latestPayment->gateway;
+            $order->current_payment_status = $latestPayment->status;
+            $order->current_payment_paid_at = $latestPayment->paid_at;
+        }
     }
 
     private function markPaymentsAsFailed(Order $order, ?int $userId = null): void

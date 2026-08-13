@@ -14,7 +14,9 @@ class StockInfoService
             ->where('stock_dependent', 'YES')
             ->orderByDesc('id')
             ->get()
-            ->map(fn ($rate) => $this->formatRateOption($rate));
+            ->map(function ($rate) {
+                return $this->formatRateOption($rate);
+            });
     }
 
     public function searchRateOptions(string $term, int $limit = 10)
@@ -40,7 +42,9 @@ class StockInfoService
         return $query->orderByDesc('id')
             ->limit($limit)
             ->get()
-            ->map(fn ($rate) => $this->formatRateOption($rate));
+            ->map(function ($rate) {
+                return $this->formatRateOption($rate);
+            });
     }
 
     public function getRateOption(int $rateMasterId): ?array

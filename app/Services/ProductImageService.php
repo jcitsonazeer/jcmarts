@@ -23,7 +23,7 @@ class ProductImageService
 
     public function getAllProducts(?string $searchTerm = null)
     {
-        return Product::query()
+        $query = Product::query()
             ->select([
                 'id',
                 'sub_category_id',
@@ -33,18 +33,21 @@ class ProductImageService
                 'single_image_3',
                 'single_image_4',
             ])
-            ->with(['subCategory'])
-            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
-                $term = trim((string) $searchTerm);
+            ->with(['subCategory']);
 
-                $query->where(function ($innerQuery) use ($term) {
-                    $innerQuery->where('product_name', 'like', '%' . $term . '%')
-                        ->orWhereHas('subCategory', function ($subCategoryQuery) use ($term) {
-                            $subCategoryQuery->where('sub_category_name', 'like', '%' . $term . '%');
-                        });
+        $term = trim((string) $searchTerm);
+
+        if ($term !== '') {
+            $query->where(function ($innerQuery) use ($term) {
+                $innerQuery->where('product_name', 'like', '%' . $term . '%');
+
+                $innerQuery->orWhereHas('subCategory', function ($subCategoryQuery) use ($term) {
+                    $subCategoryQuery->where('sub_category_name', 'like', '%' . $term . '%');
                 });
-            })
-            ->orderBy('id', 'desc')
+            });
+        }
+
+        return $query->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
     }
@@ -194,11 +197,15 @@ class ProductImageService
 
         [$sourceWidth, $sourceHeight, $imageType] = $imageInformation;
 
-        $sourceImage = match ($imageType) {
-            IMAGETYPE_JPEG => \function_exists('imagecreatefromjpeg') ? \imagecreatefromjpeg($sourcePath) : null,
-            IMAGETYPE_PNG => \function_exists('imagecreatefrompng') ? \imagecreatefrompng($sourcePath) : null,
-            default => null,
-        };
+        $sourceImage = null;
+
+        if ($imageType === IMAGETYPE_JPEG && \function_exists('imagecreatefromjpeg')) {
+            $sourceImage = \imagecreatefromjpeg($sourcePath);
+        }
+
+        if ($imageType === IMAGETYPE_PNG && \function_exists('imagecreatefrompng')) {
+            $sourceImage = \imagecreatefrompng($sourcePath);
+        }
 
         if (!$sourceImage) {
             throw new RuntimeException('Only JPG, JPEG, and PNG images are allowed.');
@@ -243,10 +250,11 @@ class ProductImageService
 
         \ob_start();
 
-        match ($extension) {
-            'png' => \imagepng($destinationImage),
-            default => \imagejpeg($destinationImage, null, 85),
-        };
+        if ($extension === 'png') {
+            \imagepng($destinationImage);
+        } else {
+            \imagejpeg($destinationImage, null, 85);
+        }
 
         $imageContents = (string) \ob_get_clean();
 

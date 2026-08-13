@@ -33,13 +33,23 @@ class FrontendProductController extends Controller
 
         $selectedSubCategory = $this->frontendProductService->getSelectedSubCategory($subCategoryId);
         $selectedOffer = $this->frontendProductService->getSelectedOffer($offerId);
+        $selectedSubCategoryId = null;
+        $selectedOfferId = null;
+
+        if ($selectedSubCategory) {
+            $selectedSubCategoryId = $selectedSubCategory->id;
+        }
+
+        if ($selectedOffer) {
+            $selectedOfferId = $selectedOffer->id;
+        }
 
         $menuCategories = $this->frontendProductService->getMenuCategories();
-        $availableBrands = $this->frontendProductService->getAvailableBrands($selectedSubCategory?->id, $searchTerm, $selectedOffer?->id);
+        $availableBrands = $this->frontendProductService->getAvailableBrands($selectedSubCategoryId, $searchTerm, $selectedOfferId);
         $products = $this->frontendProductService->getProductsByBrands(
-            $selectedSubCategory?->id,
+            $selectedSubCategoryId,
             $searchTerm,
-            $selectedOffer?->id,
+            $selectedOfferId,
             $selectedBrandIds
         );
 

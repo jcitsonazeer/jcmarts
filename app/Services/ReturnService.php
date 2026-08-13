@@ -75,7 +75,8 @@ class ReturnService
             return false;
         }
 
-        $currentStatus = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
+        $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
+        $currentStatus = $latestStatus ? $latestStatus->order_status : null;
 
         if (in_array($currentStatus, [
             OrderStatusService::STATUS_CANCELLATION_REQUESTED,
@@ -109,7 +110,11 @@ class ReturnService
     {
         $deliveredAt = $this->getDeliveredAt($order);
 
-        return $deliveredAt?->copy()->addDays(self::RETURN_WINDOW_DAYS);
+        if (!$deliveredAt) {
+            return null;
+        }
+
+        return $deliveredAt->copy()->addDays(self::RETURN_WINDOW_DAYS);
     }
 
     public function requestByCustomer(int $orderId, int $customerId, string $reason, ?string $customerNote, array $requestedItems): ReturnRequest
@@ -419,7 +424,9 @@ class ReturnService
 
                 return $item;
             })
-            ->filter(fn ($item) => (int) $item->returnable_quantity > 0)
+            ->filter(function ($item) {
+                return (int) $item->returnable_quantity > 0;
+            })
             ->values();
     }
 
@@ -469,11 +476,16 @@ class ReturnService
             return $order->delivered_at;
         }
 
-        return $order->statuses
+        $deliveredStatus = $order->statuses
             ->where('order_status', OrderStatusService::STATUS_ORDER_DELIVERED)
             ->sortByDesc('action_time')
-            ->first()
-            ?->action_time;
+            ->first();
+
+        if (!$deliveredStatus) {
+            return null;
+        }
+
+        return $deliveredStatus->action_time;
     }
 
     private function restoreSellableStock(ReturnRequest $return, int $adminId): void
@@ -517,6 +529,10 @@ class ReturnService
             ->lockForUpdate()
             ->first();
 
-        return (int) ($latestStock?->current_stock ?? 0);
+        if (!$latestStock) {
+            return 0;
+        }
+
+        return (int) $latestStock->current_stock;
     }
 }

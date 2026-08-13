@@ -12,7 +12,7 @@ class OfferProductService
 {
     public function getAll(?string $searchTerm = null)
     {
-        return OfferProduct::query()
+        $query = OfferProduct::query()
             ->select([
                 'id',
                 'offer_id',
@@ -23,19 +23,23 @@ class OfferProductService
                 'updated_by_id',
                 'updated_date',
             ])
-            ->with(['offer', 'product', 'createdBy', 'updatedBy'])
-            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
-                $term = trim((string) $searchTerm);
+            ->with(['offer', 'product', 'createdBy', 'updatedBy']);
 
-                $query->where(function ($innerQuery) use ($term) {
-                    $innerQuery->whereHas('offer', function ($offerQuery) use ($term) {
-                        $offerQuery->where('offer_name', 'like', '%' . $term . '%');
-                    })->orWhereHas('product', function ($productQuery) use ($term) {
-                        $productQuery->where('product_name', 'like', '%' . $term . '%');
-                    });
+        $term = trim((string) $searchTerm);
+
+        if ($term !== '') {
+            $query->where(function ($innerQuery) use ($term) {
+                $innerQuery->whereHas('offer', function ($offerQuery) use ($term) {
+                    $offerQuery->where('offer_name', 'like', '%' . $term . '%');
                 });
-            })
-            ->orderByDesc('id')
+
+                $innerQuery->orWhereHas('product', function ($productQuery) use ($term) {
+                    $productQuery->where('product_name', 'like', '%' . $term . '%');
+                });
+            });
+        }
+
+        return $query->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
     }
@@ -116,12 +120,14 @@ class OfferProductService
 
     public function existsDuplicate(int $offerId, int $productId, ?int $ignoreId = null): bool
     {
-        return OfferProduct::query()
+        $query = OfferProduct::query()
             ->where('offer_id', $offerId)
-            ->where('products_id', $productId)
-            ->when(!empty($ignoreId), function ($query) use ($ignoreId) {
-                $query->where('id', '!=', $ignoreId);
-            })
-            ->exists();
+            ->where('products_id', $productId);
+
+        if (!empty($ignoreId)) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        return $query->exists();
     }
 }

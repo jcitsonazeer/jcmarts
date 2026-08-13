@@ -216,10 +216,12 @@ class RateMasterController extends Controller
             return redirect()->back()->withErrors($errors)->withInput();
         }
 
-        $rowsToPersist = array_map(function ($row) {
+        $rowsToPersist = [];
+
+        foreach ($rowsToSave as $row) {
             unset($row['source_index']);
-            return $row;
-        }, $rowsToSave);
+            $rowsToPersist[] = $row;
+        }
 
         $this->rateMasterService->createMultiple($validatedData['product_id'], $rowsToPersist, $adminId);
 

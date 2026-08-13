@@ -10,7 +10,7 @@ class BrandService
 {
     public function getAll(?string $searchTerm = null)
     {
-        return Brand::query()
+        $query = Brand::query()
             ->select([
                 'id',
                 'brand_name',
@@ -20,11 +20,15 @@ class BrandService
                 'updated_by_id',
                 'updated_date',
             ])
-            ->with(['createdBy', 'updatedBy'])
-            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
-                $query->where('brand_name', 'like', '%' . trim((string) $searchTerm) . '%');
-            })
-            ->orderBy('id', 'desc')
+            ->with(['createdBy', 'updatedBy']);
+
+        $term = trim((string) $searchTerm);
+
+        if ($term !== '') {
+            $query->where('brand_name', 'like', '%' . $term . '%');
+        }
+
+        return $query->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
     }

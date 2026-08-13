@@ -44,7 +44,8 @@ class OrderCancellationService
                 throw new RuntimeException('Order not found.');
             }
 
-            $currentStatus = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
+            $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
+            $currentStatus = $latestStatus ? $latestStatus->order_status : null;
 
             if (!$this->orderStatusService->canCustomerCancel($currentStatus)) {
                 throw new RuntimeException('This order cannot be cancelled now.');
@@ -106,7 +107,8 @@ class OrderCancellationService
                 throw new RuntimeException('Order not found.');
             }
 
-            $currentStatus = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
+            $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
+            $currentStatus = $latestStatus ? $latestStatus->order_status : null;
 
             if ($currentStatus !== OrderStatusService::STATUS_CANCELLATION_REQUESTED) {
                 throw new RuntimeException('This order does not have a pending cancellation request.');
@@ -246,7 +248,11 @@ class OrderCancellationService
             ->lockForUpdate()
             ->first();
 
-        return (int) ($latestStock?->current_stock ?? 0);
+        if (!$latestStock) {
+            return 0;
+        }
+
+        return (int) $latestStock->current_stock;
     }
 
     private function syncSoldOutStatus(int $rateMasterId, int $currentStock, int $userId): void

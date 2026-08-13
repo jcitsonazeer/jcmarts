@@ -125,10 +125,15 @@ class CustomerAuthController extends Controller
 
         $menuCategories = $this->frontendCatalogService->getMenuCategories();
         $countdownDeadline = $otpRecord->otp_expires_at->timestamp;
+        $mobileNumber = '';
+
+        if ($otpRecord->customer) {
+            $mobileNumber = (string) $otpRecord->customer->mobile_number;
+        }
 
         return view('frontend.register_otp', [
             'menuCategories' => $menuCategories,
-            'mobileNumber' => (string) ($otpRecord->customer?->mobile_number ?? ''),
+            'mobileNumber' => $mobileNumber,
             'countdownDeadline' => $countdownDeadline,
             'isVerified' => false,
         ]);
@@ -190,10 +195,15 @@ class CustomerAuthController extends Controller
 
         $menuCategories = $this->frontendCatalogService->getMenuCategories();
         $countdownDeadline = $otpRecord->otp_expires_at->timestamp;
+        $mobileNumber = '';
+
+        if ($otpRecord->customer) {
+            $mobileNumber = (string) $otpRecord->customer->mobile_number;
+        }
 
         return view('frontend.login_otp', [
             'menuCategories' => $menuCategories,
-            'mobileNumber' => (string) ($otpRecord->customer?->mobile_number ?? ''),
+            'mobileNumber' => $mobileNumber,
             'countdownDeadline' => $countdownDeadline,
         ]);
     }

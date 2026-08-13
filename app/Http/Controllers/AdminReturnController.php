@@ -58,19 +58,27 @@ class AdminReturnController extends Controller
         ]);
 
         try {
-            match ($validated['action']) {
-                'approve' => $this->returnService->approveByAdmin($returnId, $adminId, $validated['admin_note'] ?? null),
-                'reject' => $this->returnService->rejectByAdmin($returnId, $adminId, $validated['admin_note'] ?? null),
-                'schedule_pickup' => $this->returnService->schedulePickupByAdmin($returnId, $adminId),
-                'mark_received' => $this->returnService->markReceivedByAdmin($returnId, $adminId),
-                'inspection_failed' => $this->returnService->failInspectionByAdmin($returnId, $adminId, $validated['admin_note'] ?? null),
-                'inspection_passed' => $this->returnService->passInspectionAndRefundByAdmin(
+            $adminNote = $validated['admin_note'] ?? null;
+
+            if ($validated['action'] === 'approve') {
+                $this->returnService->approveByAdmin($returnId, $adminId, $adminNote);
+            } elseif ($validated['action'] === 'reject') {
+                $this->returnService->rejectByAdmin($returnId, $adminId, $adminNote);
+            } elseif ($validated['action'] === 'schedule_pickup') {
+                $this->returnService->schedulePickupByAdmin($returnId, $adminId);
+            } elseif ($validated['action'] === 'mark_received') {
+                $this->returnService->markReceivedByAdmin($returnId, $adminId);
+            } elseif ($validated['action'] === 'inspection_failed') {
+                $this->returnService->failInspectionByAdmin($returnId, $adminId, $adminNote);
+            } elseif ($validated['action'] === 'inspection_passed') {
+                $this->returnService->passInspectionAndRefundByAdmin(
                     $returnId,
                     $adminId,
                     (bool) ($validated['sellable_stock'] ?? false)
-                ),
-                default => throw new RuntimeException('Invalid return action.'),
-            };
+                );
+            } else {
+                throw new RuntimeException('Invalid return action.');
+            }
         } catch (RuntimeException $exception) {
             return redirect()
                 ->back()

@@ -12,7 +12,7 @@ class RateMasterService
 {
     public function getAll(?string $searchTerm = null)
     {
-        return RateMaster::query()
+        $query = RateMaster::query()
             ->select([
                 'id',
                 'product_id',
@@ -25,40 +25,48 @@ class RateMasterService
                 'stock_dependent',
                 'is_active',
             ])
-            ->with(['product', 'uom', 'createdBy', 'updatedBy', 'latestStockInfo'])
-            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
-                $term = trim((string) $searchTerm);
+            ->with(['product', 'uom', 'createdBy', 'updatedBy', 'latestStockInfo']);
 
-                $query->where(function ($innerQuery) use ($term) {
-                    $innerQuery->whereHas('product', function ($productQuery) use ($term) {
-                        $productQuery->where('product_name', 'like', '%' . $term . '%');
-                    })->orWhereHas('uom', function ($uomQuery) use ($term) {
-                        $uomQuery->where('primary_uom', 'like', '%' . $term . '%')
-                            ->orWhere('secondary_uom', 'like', '%' . $term . '%');
-                    });
+        $term = trim((string) $searchTerm);
+
+        if ($term !== '') {
+            $query->where(function ($innerQuery) use ($term) {
+                $innerQuery->whereHas('product', function ($productQuery) use ($term) {
+                    $productQuery->where('product_name', 'like', '%' . $term . '%');
                 });
-            })
-            ->orderBy('id', 'desc')
+
+                $innerQuery->orWhereHas('uom', function ($uomQuery) use ($term) {
+                    $uomQuery->where('primary_uom', 'like', '%' . $term . '%')
+                        ->orWhere('secondary_uom', 'like', '%' . $term . '%');
+                });
+            });
+        }
+
+        return $query->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
     }
 
     public function getProductsForSelectedDisplay(?string $searchTerm = null)
     {
-        return Product::query()
+        $query = Product::query()
             ->select('id', 'product_name', 'product_image')
             ->whereHas('rates', function ($query) {
                 $query->where('is_active', 1);
-            })
-            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
-                $query->where('product_name', 'like', '%' . trim((string) $searchTerm) . '%');
             })
             ->withCount([
                 'rates' => function ($query) {
                     $query->where('is_active', 1);
                 },
-            ])
-            ->orderBy('product_name')
+            ]);
+
+        $term = trim((string) $searchTerm);
+
+        if ($term !== '') {
+            $query->where('product_name', 'like', '%' . $term . '%');
+        }
+
+        return $query->orderBy('product_name')
             ->paginate(20)
             ->withQueryString();
     }
@@ -102,11 +110,14 @@ class RateMasterService
 
     public function searchProductOptions(?string $searchTerm = null, int $limit = 10)
     {
-        return Product::query()
-            ->when(!empty(trim((string) $searchTerm)), function ($query) use ($searchTerm) {
-                $query->where('product_name', 'like', '%' . trim((string) $searchTerm) . '%');
-            })
-            ->orderBy('product_name')
+        $query = Product::query();
+        $term = trim((string) $searchTerm);
+
+        if ($term !== '') {
+            $query->where('product_name', 'like', '%' . $term . '%');
+        }
+
+        return $query->orderBy('product_name')
             ->limit($limit)
             ->get(['id', 'product_name'])
             ->map(function (Product $product) {

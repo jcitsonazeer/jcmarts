@@ -262,17 +262,19 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('rate-master-create-form');
-    const errorBox = document.getElementById('rate-master-client-error');
-    const errorDisplayDuration = 5000;
-    let errorHideTimeoutId = null;
-    let errorLockedUntil = 0;
+    var form = document.getElementById('rate-master-create-form');
+    var errorBox = document.getElementById('rate-master-client-error');
+    var errorDisplayDuration = 5000;
+    var errorHideTimeoutId = null;
+    var errorLockedUntil = 0;
 
     if (!form || !errorBox) {
         return;
     }
 
-    const hideError = function (force = false) {
+    function hideError(force) {
+        force = force === true;
+
         if (!force && Date.now() < errorLockedUntil) {
             return;
         }
@@ -281,9 +283,9 @@ document.addEventListener('DOMContentLoaded', function () {
         errorHideTimeoutId = null;
         errorBox.classList.add('d-none');
         errorBox.textContent = '';
-    };
+    }
 
-    const showError = function (message) {
+    function showError(message) {
         errorLockedUntil = Date.now() + errorDisplayDuration;
         errorBox.textContent = message;
         errorBox.classList.remove('d-none');
@@ -296,14 +298,14 @@ document.addEventListener('DOMContentLoaded', function () {
         errorHideTimeoutId = window.setTimeout(function () {
             hideError(true);
         }, errorDisplayDuration);
-    };
+    }
 
-    const observer = new MutationObserver(function () {
+    function keepErrorVisibleAfterLivewireUpdate() {
         if (!errorBox.textContent || Date.now() >= errorLockedUntil) {
             return;
         }
 
-        const isHidden =
+        var isHidden =
             errorBox.classList.contains('d-none') ||
             errorBox.style.display === 'none';
 
@@ -316,6 +318,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 errorBox.style.display = '';
             }
         }
+    }
+
+    var observer = new MutationObserver(function () {
+        keepErrorVisibleAfterLivewireUpdate();
     });
 
     observer.observe(errorBox, {
@@ -326,19 +332,20 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', function (event) {
         hideError(true);
 
-        const rows = form.querySelectorAll('tbody tr');
+        var rows = form.querySelectorAll('tbody tr');
 
-        for (const row of rows) {
-            const costInput = row.querySelector('input[name*="[cost_price]"]');
-            const sellingInput = row.querySelector('input[name*="[selling_price]"]');
-            const isExistingRate = row.getAttribute('data-existing-rate') === '1';
+        for (var index = 0; index < rows.length; index++) {
+            var row = rows[index];
+            var costInput = row.querySelector('input[name*="[cost_price]"]');
+            var sellingInput = row.querySelector('input[name*="[selling_price]"]');
+            var isExistingRate = row.getAttribute('data-existing-rate') === '1';
 
             if (!costInput || !sellingInput) {
                 continue;
             }
 
-            const costValue = costInput.value.trim();
-            const sellingValue = sellingInput.value.trim();
+            var costValue = costInput.value.trim();
+            var sellingValue = sellingInput.value.trim();
 
             if (costValue === '' && sellingValue === '') {
                 continue;
@@ -348,10 +355,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 continue;
             }
 
-            const costPrice = parseFloat(costValue || '0');
-            const sellingPrice = parseFloat(sellingValue || '0');
+            var costPrice = parseFloat(costValue || '0');
+            var sellingPrice = parseFloat(sellingValue || '0');
 
-            if (!Number.isNaN(costPrice) && !Number.isNaN(sellingPrice) && sellingPrice < costPrice) {
+            if (!isNaN(costPrice) && !isNaN(sellingPrice) && sellingPrice < costPrice) {
                 event.preventDefault();
                 showError('Selling price should be greater than or equal to cost price.');
                 errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });

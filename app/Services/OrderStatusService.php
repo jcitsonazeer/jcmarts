@@ -61,9 +61,13 @@ class OrderStatusService
 
     public function getStatusOptions(): array
     {
-        return collect(self::STATUS_FLOW)
-            ->mapWithKeys(fn (string $status) => [$status => $this->formatStatusLabel($status)])
-            ->all();
+        $options = [];
+
+        foreach (self::STATUS_FLOW as $status) {
+            $options[$status] = $this->formatStatusLabel($status);
+        }
+
+        return $options;
     }
 
     public function formatStatusLabel(string $status): string
@@ -164,7 +168,13 @@ class OrderStatusService
 
     public function addStatus(Order $order, string $newStatus, ?int $actionDoneById): OrderStatus
     {
-        $currentStatus = $this->getLatestStatusForOrder($order)?->order_status;
+        $latestStatus = $this->getLatestStatusForOrder($order);
+        $currentStatus = null;
+
+        if ($latestStatus) {
+            $currentStatus = $latestStatus->order_status;
+        }
+
         $this->validateNextStatus($currentStatus, $newStatus);
 
         return DB::transaction(function () use ($order, $newStatus, $actionDoneById) {
@@ -244,10 +254,16 @@ class OrderStatusService
     public function buildTimeline(Collection $statuses, ?Order $order = null): array
     {
         $historyByStatus = $statuses->keyBy('order_status');
-        $latestStatus = $statuses->sortBy([
+        $latestStatusRecord = $statuses->sortBy([
             ['action_time', 'asc'],
             ['id', 'asc'],
-        ])->last()?->order_status;
+        ])->last();
+
+        $latestStatus = null;
+        if ($latestStatusRecord) {
+            $latestStatus = $latestStatusRecord->order_status;
+        }
+
         $latestIndex = $latestStatus !== null ? array_search($latestStatus, self::STATUS_FLOW, true) : false;
         $actorNames = $this->resolveActorNames($statuses, $order);
 
@@ -255,7 +271,14 @@ class OrderStatusService
 
         foreach (self::STATUS_FLOW as $index => $status) {
             $history = $historyByStatus->get($status);
-            $actorId = $history?->action_done_by_id;
+            $actorId = null;
+            $actionTime = null;
+
+            if ($history) {
+                $actorId = $history->action_done_by_id;
+                $actionTime = $history->action_time;
+            }
+
             $timeline[] = [
                 'key' => $status,
                 'label' => $this->formatStatusLabel($status),
@@ -265,7 +288,7 @@ class OrderStatusService
                 'is_reachable' => $latestIndex === false
                     ? $index === 0
                     : $index <= ((int) $latestIndex + 1),
-                'action_time' => $history?->action_time,
+                'action_time' => $actionTime,
                 'action_done_by_id' => $actorId,
                 'actor_name' => $actorId !== null ? ($actorNames[$actorId] ?? ('User ' . $actorId)) : null,
             ];
@@ -336,8 +359,12 @@ class OrderStatusService
     {
         $actorIds = $statuses
             ->pluck('action_done_by_id')
-            ->filter(fn ($id) => $id !== null)
-            ->map(fn ($id) => (int) $id)
+            ->filter(function ($id) {
+                return $id !== null;
+            })
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->unique()
             ->values();
 

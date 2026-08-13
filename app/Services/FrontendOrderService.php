@@ -17,28 +17,28 @@ class FrontendOrderService
 
     public function getOrdersForCustomer(int $customerId, ?string $search = null)
     {
-        $orders = Order::query()
+        $query = Order::query()
             ->where('customer_id', $customerId)
-            ->where('is_active', 1)
-            ->when($search, function ($query) use ($search) {
-                $search = trim((string) $search);
-                if ($search === '') {
-                    return $query;
-                }
+            ->where('is_active', 1);
 
-                if (ctype_digit($search)) {
-                    return $query->where('id', (int) $search);
-                }
+        $search = trim((string) $search);
 
-                return $query->where(function ($subQuery) use ($search) {
-                    $subQuery->whereHas('payments', function ($paymentQuery) use ($search) {
-                        $paymentQuery->where('status', 'like', '%' . $search . '%')
-                            ->orWhere('gateway', 'like', '%' . $search . '%');
-                    })->orWhereHas('statuses', function ($statusQuery) use ($search) {
-                        $statusQuery->where('order_status', 'like', '%' . $search . '%');
-                    });
+        if ($search !== '' && ctype_digit($search)) {
+            $query->where('id', (int) $search);
+        } elseif ($search !== '') {
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->whereHas('payments', function ($paymentQuery) use ($search) {
+                    $paymentQuery->where('status', 'like', '%' . $search . '%')
+                        ->orWhere('gateway', 'like', '%' . $search . '%');
                 });
-            })
+
+                $subQuery->orWhereHas('statuses', function ($statusQuery) use ($search) {
+                    $statusQuery->where('order_status', 'like', '%' . $search . '%');
+                });
+            });
+        }
+
+        $orders = $query
             ->with(['statuses', 'payments', 'returnRequests.items'])
             ->withCount('items')
             ->orderByDesc('created_date')
@@ -46,7 +46,9 @@ class FrontendOrderService
             ->get();
 
         return $orders->each(function (Order $order) {
-            $order->current_order_status = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
+            $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
+            $order->current_order_status = $latestStatus ? $latestStatus->order_status : null;
+
             $this->attachCurrentPaymentDetails($order);
         });
     }
@@ -70,7 +72,8 @@ class FrontendOrderService
             ->first();
 
         if ($order) {
-            $order->current_order_status = $this->orderStatusService->getLatestStatusForOrder($order)?->order_status;
+            $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
+            $order->current_order_status = $latestStatus ? $latestStatus->order_status : null;
             $order->order_status_timeline = $this->orderStatusService->buildTimeline($order->statuses, $order);
             $order->can_customer_cancel = $order->is_active
                 && $this->orderStatusService->canCustomerCancel($order->current_order_status);
@@ -88,8 +91,14 @@ class FrontendOrderService
     {
         $latestPayment = $order->payments->sortByDesc('id')->first();
 
-        $order->current_payment_method = $latestPayment?->gateway;
-        $order->current_payment_status = $latestPayment?->status;
-        $order->current_payment_paid_at = $latestPayment?->paid_at;
+        $order->current_payment_method = null;
+        $order->current_payment_status = null;
+        $order->current_payment_paid_at = null;
+
+        if ($latestPayment) {
+            $order->current_payment_method = $latestPayment->gateway;
+            $order->current_payment_status = $latestPayment->status;
+            $order->current_payment_paid_at = $latestPayment->paid_at;
+        }
     }
 }
