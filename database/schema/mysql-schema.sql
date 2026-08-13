@@ -345,6 +345,7 @@ CREATE TABLE `orders` (
   `reservation_expires_at` datetime DEFAULT NULL,
   `reservation_released_at` datetime DEFAULT NULL,
   `reservation_release_reason` varchar(50) DEFAULT NULL,
+  `delivered_at` datetime DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `created_by_id` bigint(20) unsigned DEFAULT NULL,
   `created_date` datetime DEFAULT NULL,
