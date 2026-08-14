@@ -11,6 +11,7 @@ use App\Http\Controllers\FrontendCheckoutController;
 use App\Http\Controllers\FrontendProductController;
 use App\Http\Controllers\SingleProductController;
 use App\Http\Controllers\CustomerAuthController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\UomMasterController;
@@ -77,6 +78,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('categories', CategoryController::class);
         Route::resource('sub-categories', SubCategoryController::class);
         Route::resource('brands', BrandController::class);
+        Route::resource('customers', CustomerController::class);
         Route::resource('products', ProductController::class);
         Route::get('product-images', [ProductImageController::class, 'index'])->name('product-images.index');
         Route::get('product-images/create', [ProductImageController::class, 'create'])->name('product-images.create');

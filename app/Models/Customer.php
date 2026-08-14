@@ -41,4 +41,24 @@ class Customer extends Authenticatable
     {
         return $this->hasMany(CustomerAddress::class, 'customer_id');
     }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(AdminLogin::class, 'created_by_id');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(AdminLogin::class, 'updated_by_id');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'customer_id');
+    }
+
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class, 'customer_id');
+    }
 }

@@ -69,7 +69,7 @@
 
                     <!-- Dashboard -->
                     <li class="nav-item">
-                        <a href="{{ url('/') }}" class="nav-link">
+                        <a href="" class="nav-link">
                             <i class="ti-home menu-icon"></i>
                             <span class="menu-title">Dashboard</span>
                         </a>
@@ -199,9 +199,9 @@
                         </div>
                     </li>
 
-                    <!-- Customers (Future) -->
+                    <!-- Customers -->
                     <li class="nav-item">
-                        <a href="#" class="nav-link">
+                        <a href="{{ route('admin.customers.index') }}" class="nav-link">
                             <i class="ti-user menu-icon"></i>
                             <span class="menu-title">Customers</span>
                         </a>
