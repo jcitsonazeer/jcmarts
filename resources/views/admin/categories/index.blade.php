@@ -119,12 +119,4 @@
 }
 </style>
 
-@push('scripts')
-<script>
-    // Auto-hide alerts after 5 seconds
-    setTimeout(function () {
-        $('.alert').fadeOut('slow');
-    }, 5000);
-</script>
-@endpush
 @endsection

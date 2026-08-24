@@ -163,10 +163,6 @@
 
 @push('scripts')
 <script>
-    setTimeout(function () {
-        $('.alert').fadeOut('slow');
-    }, 5000);
-
     const subCategoryImageInput = document.getElementById('sub_category_image_input');
     const selectedSubCategoryImage = document.getElementById('sub_category_selected_image');
     const previewWidth = 180;

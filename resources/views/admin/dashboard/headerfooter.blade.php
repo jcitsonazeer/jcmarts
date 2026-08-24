@@ -245,6 +245,13 @@
 <script src="{{ asset('assets/admin/js/template.js') }}"></script>
 <script src="{{ asset('assets/admin/js/active.js') }}"></script>
 
+<!-- Auto-hide alerts after 5 seconds (global for all admin pages) -->
+<script>
+    setTimeout(function () {
+        $('.alert').fadeOut('slow');
+    }, 5000);
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.js-auto-search-form').forEach(function (form) {

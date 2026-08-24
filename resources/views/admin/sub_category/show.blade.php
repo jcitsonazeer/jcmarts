@@ -79,11 +79,4 @@
     </div>
 </div>
 
-@push('scripts')
-<script>
-    setTimeout(function () {
-        $('.alert').fadeOut('slow');
-    }, 5000);
-</script>
-@endpush
 @endsection

@@ -160,10 +160,6 @@
 
 @push('scripts')
 <script>
-    setTimeout(function () {
-        $('.alert').fadeOut('slow');
-    }, 5000);
-
     document.getElementById('banner_image_input')?.addEventListener('change', function (event) {
         const file = event.target.files && event.target.files[0];
         if (!file) {

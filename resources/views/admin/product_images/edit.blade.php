@@ -179,11 +179,6 @@
         preview.src = URL.createObjectURL(file);
     });
 });
-
-    setTimeout(function () {
-        $('.alert').fadeOut('slow');
-    }, 5000);
-	
 </script>
 @endpush
 @endsection
