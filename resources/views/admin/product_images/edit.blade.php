@@ -66,6 +66,13 @@
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
                                              onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
                                     </div>
+                                    @if ($product->single_image_1)
+                                        <button type="submit" form="remove_single_image_1_form"
+                                                class="btn btn-sm btn-outline-danger mt-1"
+                                                onclick="return confirm('Are you sure you want to remove this image?');">
+                                            Remove Image
+                                        </button>
+                                    @endif
                                 </div>
                                 <div class="col-md-6">
                                     <label>Single Image 2</label>
@@ -76,6 +83,13 @@
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
                                              onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
                                     </div>
+                                    @if ($product->single_image_2)
+                                        <button type="submit" form="remove_single_image_2_form"
+                                                class="btn btn-sm btn-outline-danger mt-1"
+                                                onclick="return confirm('Are you sure you want to remove this image?');">
+                                            Remove Image
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
 
@@ -89,6 +103,13 @@
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
                                              onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
                                     </div>
+                                    @if ($product->single_image_3)
+                                        <button type="submit" form="remove_single_image_3_form"
+                                                class="btn btn-sm btn-outline-danger mt-1"
+                                                onclick="return confirm('Are you sure you want to remove this image?');">
+                                            Remove Image
+                                        </button>
+                                    @endif
                                 </div>
                                 <div class="col-md-6">
                                     <label>Single Image 4</label>
@@ -99,6 +120,13 @@
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
                                              onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
                                     </div>
+                                    @if ($product->single_image_4)
+                                        <button type="submit" form="remove_single_image_4_form"
+                                                class="btn btn-sm btn-outline-danger mt-1"
+                                                onclick="return confirm('Are you sure you want to remove this image?');">
+                                            Remove Image
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
 
@@ -109,6 +137,16 @@
                                 </div>
                             </div>
                         </form>
+
+                        @foreach (['single_image_1', 'single_image_2', 'single_image_3', 'single_image_4'] as $imageField)
+                            @if ($product->{$imageField})
+                                <form id="remove_{{ $imageField }}_form" method="POST"
+                                      action="{{ route('admin.product-images.removeImage', [$product->id, $imageField]) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                </form>
+                            @endif
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -121,15 +159,31 @@
 ['1', '2', '3', '4'].forEach(function (key) {
     const input = document.getElementById('single_image_' + key + '_input');
     const preview = document.getElementById('single_image_' + key + '_preview');
+    const originalPreviewSrc = preview.src;
 
     input?.addEventListener('change', function (event) {
         const file = event.target.files && event.target.files[0];
         if (!file) {
             return;
         }
+
+        const maxFileSize = 600 * 1024; // 600 KB
+
+        if (file.size > maxFileSize) {
+            alert('Image size must not exceed 600 KB.');
+            input.value = '';
+            preview.src = originalPreviewSrc;
+            return;
+        }
+
         preview.src = URL.createObjectURL(file);
     });
 });
+
+    setTimeout(function () {
+        $('.alert').fadeOut('slow');
+    }, 5000);
+	
 </script>
 @endpush
 @endsection

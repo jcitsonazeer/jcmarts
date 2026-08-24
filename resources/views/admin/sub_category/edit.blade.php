@@ -71,7 +71,7 @@
                                                    name="sub_category_image"
                                                    class="form-control {{ $errors->has('sub_category_image') ? 'is-invalid' : '' }}"
                                                    accept=".jpg,.jpeg,.png,image/jpeg,image/png">
-                                            <small class="text-muted d-block">Allowed: JPG, JPEG, PNG (max 2MB)</small>
+                                            <small class="text-muted d-block">Allowed: JPG, JPEG, PNG (max 600 KB)</small>
                                             <small class="text-muted">Preview and upload size: 180 x 135 px</small>
                                             @error('sub_category_image')
                                                 <span class="text-danger d-block">{{ $message }}</span>
@@ -176,6 +176,16 @@
     subCategoryImageInput?.addEventListener('change', function (event) {
         const file = event.target.files && event.target.files[0];
         if (!file) {
+            return;
+        }
+
+        const maxFileSize = 600 * 1024; // 600 KB
+
+        if (file.size > maxFileSize) {
+            alert('Image size must not exceed 600 KB.');
+            subCategoryImageInput.value = '';
+            selectedSubCategoryImage.src = defaultPreviewImage;
+            selectedSubCategoryImage.style.display = 'none';
             return;
         }
 

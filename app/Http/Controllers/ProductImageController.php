@@ -45,10 +45,15 @@ class ProductImageController extends Controller
 
         $validatedData = $request->validate([
             'product_name' => 'required|string|max:150',
-            'single_image_1' => 'nullable|image|mimes:jpg,jpeg,png|max:2048|required_without_all:single_image_2,single_image_3,single_image_4',
-            'single_image_2' => 'nullable|image|mimes:jpg,jpeg,png|max:2048|required_without_all:single_image_1,single_image_3,single_image_4',
-            'single_image_3' => 'nullable|image|mimes:jpg,jpeg,png|max:2048|required_without_all:single_image_1,single_image_2,single_image_4',
-            'single_image_4' => 'nullable|image|mimes:jpg,jpeg,png|max:2048|required_without_all:single_image_1,single_image_2,single_image_3',
+            'single_image_1' => 'nullable|image|mimes:jpg,jpeg,png|max:600|required_without_all:single_image_2,single_image_3,single_image_4',
+            'single_image_2' => 'nullable|image|mimes:jpg,jpeg,png|max:600|required_without_all:single_image_1,single_image_3,single_image_4',
+            'single_image_3' => 'nullable|image|mimes:jpg,jpeg,png|max:600|required_without_all:single_image_1,single_image_2,single_image_4',
+            'single_image_4' => 'nullable|image|mimes:jpg,jpeg,png|max:600|required_without_all:single_image_1,single_image_2,single_image_3',
+        ], [
+            'single_image_1.max' => 'Each product image must not be larger than 600 KB.',
+            'single_image_2.max' => 'Each product image must not be larger than 600 KB.',
+            'single_image_3.max' => 'Each product image must not be larger than 600 KB.',
+            'single_image_4.max' => 'Each product image must not be larger than 600 KB.',
         ]);
 
         $validatedData['product_id'] = $this->productImageService->findProductIdByName($validatedData['product_name']);
@@ -87,11 +92,29 @@ class ProductImageController extends Controller
     public function update(Request $request, $productId)
     {
         $validatedData = $request->validate([
-            'single_image_1' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'single_image_2' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'single_image_3' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'single_image_4' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'single_image_1' => 'nullable|image|mimes:jpg,jpeg,png|max:600',
+            'single_image_2' => 'nullable|image|mimes:jpg,jpeg,png|max:600',
+            'single_image_3' => 'nullable|image|mimes:jpg,jpeg,png|max:600',
+            'single_image_4' => 'nullable|image|mimes:jpg,jpeg,png|max:600',
+            'remove_single_image_1' => 'nullable|boolean',
+            'remove_single_image_2' => 'nullable|boolean',
+            'remove_single_image_3' => 'nullable|boolean',
+            'remove_single_image_4' => 'nullable|boolean',
+        ], [
+            'single_image_1.max' => 'Each product image must not be larger than 600 KB.',
+            'single_image_2.max' => 'Each product image must not be larger than 600 KB.',
+            'single_image_3.max' => 'Each product image must not be larger than 600 KB.',
+            'single_image_4.max' => 'Each product image must not be larger than 600 KB.',
         ]);
+
+        // Find which existing images the admin wants to remove.
+        // A removal only applies when no new image was uploaded to replace it.
+        $imagesToRemove = [];
+        foreach (['single_image_1', 'single_image_2', 'single_image_3', 'single_image_4'] as $field) {
+            if (!empty($validatedData['remove_' . $field]) && empty($validatedData[$field])) {
+                $imagesToRemove[] = $field;
+            }
+        }
 
         $adminId = session('admin_id');
         if (!$adminId) {
@@ -101,6 +124,10 @@ class ProductImageController extends Controller
 
         try {
             $this->productImageService->updateForProduct((int) $productId, $validatedData, (int) $adminId);
+
+            if (!empty($imagesToRemove)) {
+                $this->productImageService->removeSingleImages((int) $productId, $imagesToRemove, (int) $adminId);
+            }
         } catch (RuntimeException $exception) {
             return back()
                 ->withErrors(['single_image_1' => $exception->getMessage()])
@@ -109,6 +136,33 @@ class ProductImageController extends Controller
 
         return redirect()->route('admin.product-images.edit', $productId)
             ->with('success', 'Product images updated successfully');
+    }
+
+    public function removeImage($productId, $field)
+    {
+        // Only the four known image fields are allowed for safety.
+        $allowedFields = ['single_image_1', 'single_image_2', 'single_image_3', 'single_image_4'];
+
+        if (!in_array($field, $allowedFields, true)) {
+            return redirect()->route('admin.product-images.edit', $productId)
+                ->withErrors(['single_image_1' => 'Invalid image selection.']);
+        }
+
+        $adminId = session('admin_id');
+        if (!$adminId) {
+            return redirect()->route('admin.login')
+                ->with('error', 'Please login to continue.');
+        }
+
+        try {
+            $this->productImageService->removeSingleImages((int) $productId, [$field], (int) $adminId);
+        } catch (RuntimeException $exception) {
+            return back()
+                ->withErrors(['single_image_1' => $exception->getMessage()]);
+        }
+
+        return redirect()->route('admin.product-images.edit', $productId)
+            ->with('success', 'Image removed successfully');
     }
 
     public function destroy($productId)

@@ -40,7 +40,9 @@ class SubCategoryController extends Controller
         $validatedData = $request->validate([
             'category_id' => 'required|integer|exists:category,id',
             'sub_category_name' => 'required|string|max:100|unique:sub_category,sub_category_name',
-            'sub_category_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'sub_category_image' => 'nullable|image|mimes:jpg,jpeg,png|max:600',
+        ], [
+            'sub_category_image.max' => 'The sub category image must not be larger than 600 KB.',
         ]);
 
         $adminId = session('admin_id');
@@ -85,7 +87,9 @@ class SubCategoryController extends Controller
         $validatedData = $request->validate([
             'category_id' => 'required|integer|exists:category,id',
             'sub_category_name' => 'required|string|max:100|unique:sub_category,sub_category_name,' . $id,
-            'sub_category_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'sub_category_image' => 'nullable|image|mimes:jpg,jpeg,png|max:600',
+        ], [
+            'sub_category_image.max' => 'The sub category image must not be larger than 600 KB.',
         ]);
 
         $adminId = session('admin_id');

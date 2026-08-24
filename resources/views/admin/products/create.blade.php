@@ -82,7 +82,7 @@
                                 <div class="col-md-6">
                                     <label>Product Image</label>
                                     <input type="file" id="product_image_input" name="product_image" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
-                                    <small class="text-muted d-block">Allowed: JPG, JPEG, PNG (max 2MB)</small>
+                                    <small class="text-muted d-block">Allowed: JPG, JPEG, PNG (max 600 KB)</small>
                                     <small class="text-muted">Preview and upload size: 233 x 215 px</small>
                                     @error('product_image')
                                         <small class="text-danger d-block">{{ $message }}</small>
@@ -141,6 +141,13 @@ const defaultProductImage = @json($defaultImage);
 productImageInput?.addEventListener('change', function (event) {
     const file = event.target.files && event.target.files[0];
     if (!file) {
+        return;
+    }
+    const maxFileSize = 600 * 1024; // 600 KB
+    if (file.size > maxFileSize) {
+        alert('Image size must not exceed 600 KB.');
+        productImageInput.value = '';
+        productImagePreview.src = defaultProductImage;
         return;
     }
     const allowedTypes = ['image/jpeg', 'image/png'];

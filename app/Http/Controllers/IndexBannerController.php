@@ -36,9 +36,11 @@ class IndexBannerController extends Controller
         ]);
 
         $validatedData = $request->validate([
-            'banner_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'banner_image' => 'required|image|mimes:jpg,jpeg,png|max:5120',
             'sub_category_name' => 'nullable|string|max:100',
             'offer_details_id' => 'nullable|integer|exists:offer_details,id',
+        ], [
+            'banner_image.max' => 'The banner image must not be larger than 5 MB.',
         ]);
 
         $validatedData['sub_category_id'] = $this->indexBannerService->findSubCategoryIdByName($validatedData['sub_category_name'] ?? null);
@@ -80,9 +82,11 @@ class IndexBannerController extends Controller
     public function update(Request $request, $id)
     {
         $validatedData = $request->validate([
-            'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'banner_image' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
             'sub_category_id' => 'nullable|integer|exists:sub_category,id',
             'offer_details_id' => 'nullable|integer|exists:offer_details,id',
+        ], [
+            'banner_image.max' => 'The banner image must not be larger than 5 MB.',
         ]);
 
         $adminId = session('admin_id');

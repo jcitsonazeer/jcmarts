@@ -73,7 +73,7 @@
                                 <div class="col-md-6">
                                     <label>Product Image</label>
                                     <input type="file" id="product_image_input" name="product_image" class="form-control" accept=".jpg,.jpeg,.png,.webp,image/*">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG, WEBP (max 2MB)</small>
+                                    <small class="text-muted">Allowed: JPG, JPEG, PNG, WEBP (max 600 KB)</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label>Status <span class="text-danger">*</span></label>
@@ -153,6 +153,15 @@
 document.getElementById('product_image_input')?.addEventListener('change', function (event) {
     const file = event.target.files && event.target.files[0];
     if (!file) {
+        return;
+    }
+    const maxFileSize = 600 * 1024; // 600 KB
+    if (file.size > maxFileSize) {
+        alert('Image size must not exceed 600 KB.');
+        event.target.value = '';
+        const selectedImage = document.getElementById('product_selected_image');
+        selectedImage.src = @json($defaultImage);
+        selectedImage.style.display = 'none';
         return;
     }
     const selectedImage = document.getElementById('product_selected_image');

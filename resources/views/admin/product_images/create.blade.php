@@ -58,7 +58,7 @@
                                 <div class="col-md-6">
                                     <label>Single Image 1</label>
                                     <input type="file" id="single_image_1_input" name="single_image_1" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 2MB). Stored size: 500 x 500 px</small>
+                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 600 KB). Stored size: 500 x 500 px</small>
                                     <div class="mt-2">
                                         <img id="single_image_1_preview" src="{{ $defaultImage }}" alt="Single Image 1"
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
@@ -68,7 +68,7 @@
                                 <div class="col-md-6">
                                     <label>Single Image 2</label>
                                     <input type="file" id="single_image_2_input" name="single_image_2" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 2MB). Stored size: 500 x 500 px</small>
+                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 600 KB). Stored size: 500 x 500 px</small>
                                     <div class="mt-2">
                                         <img id="single_image_2_preview" src="{{ $defaultImage }}" alt="Single Image 2"
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
@@ -81,7 +81,7 @@
                                 <div class="col-md-6">
                                     <label>Single Image 3</label>
                                     <input type="file" id="single_image_3_input" name="single_image_3" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 2MB). Stored size: 500 x 500 px</small>
+                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 600 KB). Stored size: 500 x 500 px</small>
                                     <div class="mt-2">
                                         <img id="single_image_3_preview" src="{{ $defaultImage }}" alt="Single Image 3"
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
@@ -91,7 +91,7 @@
                                 <div class="col-md-6">
                                     <label>Single Image 4</label>
                                     <input type="file" id="single_image_4_input" name="single_image_4" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
-                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 2MB). Stored size: 500 x 500 px</small>
+                                    <small class="text-muted">Allowed: JPG, JPEG, PNG (max 600 KB). Stored size: 500 x 500 px</small>
                                     <div class="mt-2">
                                         <img id="single_image_4_preview" src="{{ $defaultImage }}" alt="Single Image 4"
                                              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"
@@ -126,6 +126,15 @@
     input?.addEventListener('change', function (event) {
         const file = event.target.files && event.target.files[0];
         if (!file) {
+            return;
+        }
+
+        const maxFileSize = 600 * 1024; // 600 KB
+
+        if (file.size > maxFileSize) {
+            alert('Image size must not exceed 600 KB.');
+            input.value = '';
+            preview.src = @json($defaultImage);
             return;
         }
 

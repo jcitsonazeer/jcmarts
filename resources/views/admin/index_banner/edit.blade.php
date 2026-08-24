@@ -52,8 +52,8 @@
                                                    id="banner_image_input"
                                                    name="banner_image"
                                                    class="form-control {{ $errors->has('banner_image') ? 'is-invalid' : '' }}"
-                                                   accept=".jpg,.jpeg,.png,.webp,image/*">
-                                            <small class="text-muted">Allowed: JPG, JPEG, PNG, WEBP (max 4MB)</small>
+                                                   accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                                            <small class="text-muted">Allowed: JPG, JPEG, PNG (max 5 MB)</small>
                                             @error('banner_image')
                                                 <span class="text-danger d-block">{{ $message }}</span>
                                             @enderror
@@ -169,6 +169,31 @@
         if (!file) {
             return;
         }
+
+        const maxFileSize = 5 * 1024 * 1024; // 5 MB
+
+        if (file.size > maxFileSize) {
+            alert('Banner image must not exceed 5 MB.');
+            event.target.value = '';
+            const selectedImage = document.getElementById('banner_selected_image');
+            selectedImage.src = @json($defaultImage);
+            selectedImage.style.display = 'none';
+            return;
+        }
+
+        const allowedTypes = ['image/jpeg', 'image/png'];
+        const fileName = (file.name || '').toLowerCase();
+        const isAllowedExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png');
+
+        if (!allowedTypes.includes(file.type) || !isAllowedExtension) {
+            alert('Please select only JPG, JPEG, or PNG image.');
+            event.target.value = '';
+            const selectedImage = document.getElementById('banner_selected_image');
+            selectedImage.src = @json($defaultImage);
+            selectedImage.style.display = 'none';
+            return;
+        }
+
         const selectedImage = document.getElementById('banner_selected_image');
         selectedImage.src = URL.createObjectURL(file);
         selectedImage.style.display = 'block';

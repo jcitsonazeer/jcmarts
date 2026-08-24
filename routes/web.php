@@ -86,6 +86,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('product-images/{productId}/edit', [ProductImageController::class, 'edit'])->name('product-images.edit');
         Route::put('product-images/{productId}', [ProductImageController::class, 'update'])->name('product-images.update');
         Route::delete('product-images/{productId}', [ProductImageController::class, 'destroy'])->name('product-images.destroy');
+        Route::delete('product-images/{productId}/remove-image/{field}', [ProductImageController::class, 'removeImage'])->name('product-images.removeImage');
         Route::resource('index-banners', IndexBannerController::class);
         Route::resource('offer-details', OfferDetailController::class);
         Route::resource('offer-products', OfferProductController::class);

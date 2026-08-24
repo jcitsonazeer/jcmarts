@@ -45,10 +45,12 @@ class ProductController extends Controller
             'sub_category_name' => 'required|string|max:100',
             'brand_name' => 'nullable|string|max:120',
             'product_name' => 'required|string|max:150|unique:products,product_name',
-            'product_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'product_image' => 'nullable|image|mimes:jpg,jpeg,png|max:600',
             'description' => 'nullable|string|max:1000',
             'warranty_info' => 'nullable|string|max:500',
             'is_active' => 'required|boolean',
+        ], [
+            'product_image.max' => 'The product image must not be larger than 600 KB.',
         ]);
 
         $validatedData['sub_category_id'] = $this->productService->findSubCategoryIdByName($validatedData['sub_category_name']);
@@ -115,10 +117,12 @@ class ProductController extends Controller
             'sub_category_name' => 'nullable|string|max:100',
             'brand_name' => 'nullable|string|max:120',
             'product_name' => 'required|string|max:150|unique:products,product_name,' . $id,
-            'product_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'product_image' => 'nullable|image|mimes:jpg,jpeg,png|max:600',
             'description' => 'nullable|string|max:1000',
             'warranty_info' => 'nullable|string|max:500',
             'is_active' => 'required|boolean',
+        ], [
+            'product_image.max' => 'The product image must not be larger than 600 KB.',
         ]);
 
         if (empty($validatedData['sub_category_id']) && !empty($validatedData['sub_category_name'])) {

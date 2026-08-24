@@ -147,6 +147,27 @@ class ProductImageService
         return $product;
     }
 
+    public function removeSingleImages(int $productId, array $fieldsToRemove, int $adminId)
+    {
+        $product = Product::findOrFail($productId);
+
+        $updateData = [
+            'updated_by_id' => $adminId,
+            'updated_date' => Carbon::now(),
+        ];
+
+        foreach ($this->imageFields as $field) {
+            if (in_array($field, $fieldsToRemove, true) && !empty($product->{$field})) {
+                Storage::disk('public')->delete('product/single/' . $product->{$field});
+                $updateData[$field] = null;
+            }
+        }
+
+        $product->update($updateData);
+
+        return $product;
+    }
+
     public function hasAnySingleImage(Product $product): bool
     {
         foreach ($this->imageFields as $field) {
