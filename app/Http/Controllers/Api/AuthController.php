@@ -41,13 +41,19 @@ class AuthController extends Controller
                 ->first();
 
             if (!$customer) {
-                $customer = Customer::create([
-                    'name' => trim((string) ($validated['name'] ?? 'Customer')),
-                    'mobile_number' => $mobileNumber,
-                    'verified_status' => 'pending',
-                    'is_active' => 1,
-                    'created_date' => $now,
-                ]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Mobile number not registered. Please sign up first.',
+                    'data' => null,
+                ], 404);
+            }
+
+            if ($customer->verified_status !== 'verified') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Mobile number not registered. Please sign up first.',
+                    'data' => null,
+                ], 404);
             }
 
             if (!$customer->is_active) {
@@ -74,6 +80,10 @@ class AuthController extends Controller
 
             return ['customer' => $customer, 'otp' => $otp];
         });
+
+        if ($result instanceof \Illuminate\Http\JsonResponse) {
+            return $result;
+        }
 
         $smsResponse = app()->environment(['local', 'testing']) && blank(config('services.sms_api.key'))
             ? ['success' => true, 'message' => 'OTP generated for local testing.']

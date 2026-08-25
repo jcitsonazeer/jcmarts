@@ -63,6 +63,39 @@ class ProductController extends Controller
         ]);
     }
 
+    public function rates($id)
+    {
+        try {
+            $product = $this->productService->findForShow($id);
+        } catch (ModelNotFoundException) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Product not found',
+                'data' => null,
+            ], 404);
+        }
+
+        if (!$product->is_active) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Product not found',
+                'data' => null,
+            ], 404);
+        }
+
+        $rates = $this->productService->getActiveRatesForProduct($product->id);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Product rates fetched successfully',
+            'data' => [
+                'product_id' => $product->id,
+                'product_name' => $product->product_name,
+                'rates' => $rates,
+            ],
+        ]);
+    }
+
     private function buildProductResponse(Request $request, string $message)
     {
         $subCategoryId = $request->query('sub_category_id');

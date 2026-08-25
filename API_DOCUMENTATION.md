@@ -4,7 +4,7 @@
 
 **Last Updated:** August 2026
 
-**Total Endpoints:** 43
+**Total Endpoints:** 44
 
 ---
 
@@ -23,7 +23,7 @@
 
 ---
 
-## Quick Reference — All 43 Endpoints
+## Quick Reference — All 44 Endpoints
 
 | # | Method | Endpoint | Auth | Description |
 |---|--------|----------|------|-------------|
@@ -40,25 +40,26 @@
 | 11 | GET | `/api/v1/products` | No | Product list (paginated) |
 | 12 | GET | `/api/v1/products/search` | No | Search products |
 | 13 | GET | `/api/v1/products/{id}` | No | Product detail |
-| 14 | GET | `/api/v1/featured-products` | No | Featured products |
-| 15 | GET | `/api/v1/offers` | No | Offer products |
-| 16 | GET | `/api/v1/cart` | Optional | Get cart items |
-| 17 | POST | `/api/v1/cart` | Optional | Add to cart |
-| 18 | PUT | `/api/v1/cart/{cartId}` | Optional | Update cart quantity |
-| 19 | DELETE | `/api/v1/cart/{cartId}` | Optional | Remove cart item |
-| 20 | GET | `/api/v1/cart/count` | Optional | Cart item count |
-| 21 | POST | `/api/v1/cart/merge` | Yes | Merge guest cart after login |
-| 22 | GET | `/api/v1/wishlist` | Yes | Get wishlist |
-| 23 | POST | `/api/v1/wishlist` | Yes | Add to wishlist |
-| 24 | DELETE | `/api/v1/wishlist/{productId}` | Yes | Remove from wishlist |
-| 25 | POST | `/api/v1/wishlist/toggle` | Yes | Toggle wishlist |
-| 26 | GET | `/api/v1/wishlist/check/{productId}` | Yes | Check wishlist status |
-| 27 | GET | `/api/v1/wishlist/count` | Yes | Wishlist count |
-| 28 | GET | `/api/v1/profile` | Yes | Get profile |
-| 29 | PUT | `/api/v1/profile` | Yes | Update profile name |
-| 30 | GET | `/api/v1/addresses` | Yes | List addresses |
-| 31 | POST | `/api/v1/addresses` | Yes | Add address |
-| 32 | PUT | `/api/v1/addresses/{addressId}` | Yes | Update address |
+| 14 | GET | `/api/v1/products/{id}/rates` | No | Product rates (UOM variants) |
+| 15 | GET | `/api/v1/featured-products` | No | Featured products |
+| 16 | GET | `/api/v1/offers` | No | Offer products |
+| 17 | GET | `/api/v1/cart` | Optional | Get cart items |
+| 18 | POST | `/api/v1/cart` | Optional | Add to cart |
+| 19 | PUT | `/api/v1/cart/{cartId}` | Optional | Update cart quantity |
+| 20 | DELETE | `/api/v1/cart/{cartId}` | Optional | Remove cart item |
+| 21 | GET | `/api/v1/cart/count` | Optional | Cart item count |
+| 22 | POST | `/api/v1/cart/merge` | Yes | Merge guest cart after login |
+| 23 | GET | `/api/v1/wishlist` | Yes | Get wishlist |
+| 24 | POST | `/api/v1/wishlist` | Yes | Add to wishlist |
+| 25 | DELETE | `/api/v1/wishlist/{productId}` | Yes | Remove from wishlist |
+| 26 | POST | `/api/v1/wishlist/toggle` | Yes | Toggle wishlist |
+| 27 | GET | `/api/v1/wishlist/check/{productId}` | Yes | Check wishlist status |
+| 28 | GET | `/api/v1/wishlist/count` | Yes | Wishlist count |
+| 29 | GET | `/api/v1/profile` | Yes | Get profile |
+| 30 | PUT | `/api/v1/profile` | Yes | Update profile name |
+| 31 | GET | `/api/v1/addresses` | Yes | List addresses |
+| 32 | POST | `/api/v1/addresses` | Yes | Add address |
+| 33 | PUT | `/api/v1/addresses/{addressId}` | Yes | Update address |
 | 33 | DELETE | `/api/v1/addresses/{addressId}` | Yes | Delete address |
 | 34 | GET | `/api/v1/serviceable-pincodes` | Yes | Get serviceable pincodes |
 | 35 | GET | `/api/v1/checkout` | Yes | Checkout data |
@@ -168,6 +169,17 @@ Send a 6-digit OTP to the customer's mobile number. If the number is not registe
 ```
 
 > In non-production environments, the response includes `"otp": "123456"` for testing.
+
+**Error (404 — Mobile not registered):**
+```json
+{
+    "status": false,
+    "message": "Mobile number not registered. Please sign up first.",
+    "data": null
+}
+```
+
+> This error is returned if the mobile number does not exist or has not been verified yet. The customer must register first before logging in.
 
 ---
 
@@ -366,10 +378,30 @@ Get homepage data: product categories, offers, and featured products.
             }
         ],
         "product_offers": [ "..." ],
-        "featured_products": [ "..." ]
+        "featured_products": [
+            {
+                "id": 10,
+                "brand": { "id": 5, "brand_name": "Amul" },
+                "product_name": "Amul Butter",
+                "product_image": "http://your-domain/storage/product/butter.jpg",
+                "rates": [
+                    {
+                        "id": 25,
+                        "selling_price": "120.00",
+                        "final_price": "108.00",
+                        "offer_percentage": "10.00",
+                        "soldout_status": "NO",
+                        "selected_display": true,
+                        "uom": { "id": 1, "primary_uom": "Kg", "secondary_uom": "500" }
+                    }
+                ]
+            }
+        ]
     }
 }
 ```
+
+> Each `featured_products` item includes a `rates` array with all UOM variants. See [Featured Products](#14-featured-products) for full rates structure.
 
 ---
 
@@ -518,7 +550,17 @@ Get a paginated list of products. Supports filtering by subcategory and search.
                 "id": 10,
                 "product_name": "Apple",
                 "product_image": "http://your-domain/storage/product/apple.jpg",
-                "rates": [ "..." ]
+                "rates": [
+                    {
+                        "id": 25,
+                        "selling_price": "120.00",
+                        "final_price": "108.00",
+                        "offer_percentage": "10.00",
+                        "soldout_status": "NO",
+                        "selected_display": true,
+                        "uom": { "id": 1, "primary_uom": "Kg", "secondary_uom": "500" }
+                    }
+                ]
             }
         ],
         "per_page": 10,
@@ -526,6 +568,8 @@ Get a paginated list of products. Supports filtering by subcategory and search.
     }
 }
 ```
+
+> Each product includes a `rates` array with all UOM variants. See [Featured Products](#14-featured-products) for full rates structure.
 
 ---
 
@@ -603,7 +647,86 @@ Get full details for a single product including all rate variants and images.
 
 ---
 
-### 14. Featured Products
+### 14. Product Rates (UOM Variants)
+
+Get all active rate variants (UOM options) for a specific product.
+
+| Detail | Value |
+|--------|-------|
+| **Endpoint** | `GET /api/v1/products/{id}/rates` |
+| **Auth Required** | No |
+
+**URL Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Product ID |
+
+**Response (200 OK):**
+```json
+{
+    "status": true,
+    "message": "Product rates fetched successfully",
+    "data": {
+        "product_id": 10,
+        "product_name": "Amul Butter",
+        "rates": [
+            {
+                "id": 25,
+                "product_id": 10,
+                "uom_id": 1,
+                "selling_price": "120.00",
+                "offer_percentage": "10.00",
+                "offer_price": "12.00",
+                "final_price": "108.00",
+                "soldout_status": "NO",
+                "stock_dependent": "NO",
+                "is_active": true,
+                "selected_display": true,
+                "uom": {
+                    "id": 1,
+                    "primary_uom": "Kg",
+                    "secondary_uom": "500"
+                }
+            },
+            {
+                "id": 26,
+                "product_id": 10,
+                "uom_id": 2,
+                "selling_price": "200.00",
+                "offer_percentage": null,
+                "offer_price": null,
+                "final_price": "200.00",
+                "soldout_status": "NO",
+                "stock_dependent": "NO",
+                "is_active": true,
+                "selected_display": false,
+                "uom": {
+                    "id": 2,
+                    "primary_uom": "Kg",
+                    "secondary_uom": "1"
+                }
+            }
+        ]
+    }
+}
+```
+
+> **UOM label** = `secondary_uom + " " + primary_uom` (e.g., "500 Kg", "1 Kg").
+> **Price logic:** Use `final_price` if > 0, otherwise use `selling_price`.
+> **Default selection:** The rate with `selected_display: true`.
+
+**Error (404):**
+```json
+{
+    "status": false,
+    "message": "Product not found",
+    "data": null
+}
+```
+
+---
+
+### 15. Featured Products
 
 | Detail | Value |
 |--------|-------|
@@ -615,13 +738,64 @@ Get full details for a single product including all rate variants and images.
 {
     "status": true,
     "message": "Featured products fetched successfully",
-    "data": [ "..." ]
+    "data": [
+        {
+            "id": 10,
+            "brand": {
+                "id": 5,
+                "brand_name": "Amul"
+            },
+            "product_name": "Amul Butter",
+            "product_image": "http://your-domain/storage/product/butter.jpg",
+            "is_active": true,
+            "rates": [
+                {
+                    "id": 25,
+                    "product_id": 10,
+                    "uom_id": 1,
+                    "selling_price": "120.00",
+                    "offer_percentage": "10.00",
+                    "offer_price": "12.00",
+                    "final_price": "108.00",
+                    "soldout_status": "NO",
+                    "stock_dependent": "NO",
+                    "is_active": true,
+                    "selected_display": true,
+                    "uom": {
+                        "id": 1,
+                        "primary_uom": "Kg",
+                        "secondary_uom": "500"
+                    }
+                },
+                {
+                    "id": 26,
+                    "product_id": 10,
+                    "uom_id": 2,
+                    "selling_price": "200.00",
+                    "offer_percentage": null,
+                    "offer_price": null,
+                    "final_price": "200.00",
+                    "soldout_status": "NO",
+                    "stock_dependent": "NO",
+                    "is_active": true,
+                    "selected_display": false,
+                    "uom": {
+                        "id": 2,
+                        "primary_uom": "Kg",
+                        "secondary_uom": "1"
+                    }
+                }
+            ]
+        }
+    ]
 }
 ```
 
+> **UOM Switching in App:** Each product includes a `rates` array with all available UOM variants. The `selected_display: true` rate is the default selection. Build a UOM picker from the `rates` array and update the displayed price client-side — no additional API call is needed. The UOM label is `secondary_uom + " " + primary_uom` (e.g., "500 Kg", "1 Kg"). Price logic: use `final_price` if > 0, otherwise use `selling_price`.
+
 ---
 
-### 15. Offers
+### 16. Offers
 
 | Detail | Value |
 |--------|-------|
@@ -648,7 +822,7 @@ Get full details for a single product including all rate variants and images.
 | Guest (not logged in) | `X-Device-ID` header -> `session_id = "device_{uuid}"` |
 | Logged in | Bearer token -> `session_id = "customer_{id}"` |
 
-### 16. Get Cart Items
+### 17. Get Cart Items
 
 | Detail | Value |
 |--------|-------|
@@ -713,7 +887,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ---
 
-### 17. Add Item to Cart
+### 18. Add Item to Cart
 
 | Detail | Value |
 |--------|-------|
@@ -753,7 +927,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ---
 
-### 18. Update Cart Item Quantity
+### 19. Update Cart Item Quantity
 
 | Detail | Value |
 |--------|-------|
@@ -787,7 +961,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ---
 
-### 19. Remove Cart Item
+### 20. Remove Cart Item
 
 | Detail | Value |
 |--------|-------|
@@ -813,7 +987,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ---
 
-### 20. Get Cart Item Count
+### 21. Get Cart Item Count
 
 | Detail | Value |
 |--------|-------|
@@ -833,7 +1007,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ---
 
-### 21. Merge Guest Cart (After Login)
+### 22. Merge Guest Cart (After Login)
 
 Transfer guest cart items into the authenticated customer's cart. **Call this immediately after login.**
 
@@ -883,7 +1057,7 @@ Transfer guest cart items into the authenticated customer's cart. **Call this im
 
 > Wishlist **requires login**. No guest wishlist.
 
-### 22. Get Wishlist Items
+### 23. Get Wishlist Items
 
 | Detail | Value |
 |--------|-------|
@@ -916,7 +1090,7 @@ Transfer guest cart items into the authenticated customer's cart. **Call this im
 
 ---
 
-### 23. Add Product to Wishlist
+### 24. Add Product to Wishlist
 
 | Detail | Value |
 |--------|-------|
@@ -948,7 +1122,7 @@ Transfer guest cart items into the authenticated customer's cart. **Call this im
 
 ---
 
-### 24. Remove Product from Wishlist
+### 25. Remove Product from Wishlist
 
 | Detail | Value |
 |--------|-------|
@@ -968,7 +1142,7 @@ Transfer guest cart items into the authenticated customer's cart. **Call this im
 
 ---
 
-### 25. Toggle Wishlist
+### 26. Toggle Wishlist
 
 Best for heart/like buttons on product cards.
 
@@ -999,7 +1173,7 @@ Best for heart/like buttons on product cards.
 
 ---
 
-### 26. Check Wishlist Status
+### 27. Check Wishlist Status
 
 Check if a product is wishlisted (for showing heart icon state on product detail page).
 
@@ -1021,7 +1195,7 @@ Check if a product is wishlisted (for showing heart icon state on product detail
 
 ---
 
-### 27. Get Wishlist Count
+### 28. Get Wishlist Count
 
 | Detail | Value |
 |--------|-------|
@@ -1045,7 +1219,7 @@ Check if a product is wishlisted (for showing heart icon state on product detail
 
 > All profile and address endpoints **require login**.
 
-### 28. Get Profile
+### 29. Get Profile
 
 | Detail | Value |
 |--------|-------|
@@ -1069,7 +1243,7 @@ Check if a product is wishlisted (for showing heart icon state on product detail
 
 ---
 
-### 29. Update Profile
+### 30. Update Profile
 
 | Detail | Value |
 |--------|-------|
@@ -1099,7 +1273,7 @@ Check if a product is wishlisted (for showing heart icon state on product detail
 
 ---
 
-### 30. Get Addresses
+### 31. Get Addresses
 
 | Detail | Value |
 |--------|-------|
@@ -1129,7 +1303,7 @@ Check if a product is wishlisted (for showing heart icon state on product detail
 
 ---
 
-### 31. Add Address
+### 32. Add Address
 
 | Detail | Value |
 |--------|-------|
@@ -1188,7 +1362,7 @@ Check if a product is wishlisted (for showing heart icon state on product detail
 
 ---
 
-### 32. Update Address
+### 33. Update Address
 
 | Detail | Value |
 |--------|-------|
@@ -1223,7 +1397,7 @@ Check if a product is wishlisted (for showing heart icon state on product detail
 
 ---
 
-### 33. Delete Address
+### 34. Delete Address
 
 | Detail | Value |
 |--------|-------|
@@ -1241,7 +1415,7 @@ Check if a product is wishlisted (for showing heart icon state on product detail
 
 ---
 
-### 34. Get Serviceable Pincodes
+### 35. Get Serviceable Pincodes
 
 | Detail | Value |
 |--------|-------|
@@ -1271,7 +1445,7 @@ Check if a product is wishlisted (for showing heart icon state on product detail
 
 > All checkout endpoints **require login** and an **active cart with items**.
 
-### 35. Get Checkout Data
+### 36. Get Checkout Data
 
 Returns cart items, addresses, and order summary for the checkout screen.
 
@@ -1310,7 +1484,7 @@ Returns cart items, addresses, and order summary for the checkout screen.
 
 ---
 
-### 36. Create Razorpay Order
+### 37. Create Razorpay Order
 
 Creates a pending order (reserves stock for 5 minutes) and initiates a Razorpay payment order.
 
@@ -1351,7 +1525,7 @@ Creates a pending order (reserves stock for 5 minutes) and initiates a Razorpay 
 
 ---
 
-### 37. Verify Razorpay Payment
+### 38. Verify Razorpay Payment
 
 After the Razorpay SDK completes payment, call this to verify and finalize the order.
 
@@ -1398,7 +1572,7 @@ After the Razorpay SDK completes payment, call this to verify and finalize the o
 
 ---
 
-### 38. Release Pending Payment
+### 39. Release Pending Payment
 
 If the user closes the Razorpay SDK without paying, call this to release the stock reservation.
 
@@ -1431,7 +1605,7 @@ If the user closes the Razorpay SDK without paying, call this to release the sto
 
 > All order endpoints **require login**. Customers can only access their own orders.
 
-### 39. List Orders
+### 40. List Orders
 
 | Detail | Value |
 |--------|-------|
@@ -1461,7 +1635,7 @@ If the user closes the Razorpay SDK without paying, call this to release the sto
 
 ---
 
-### 40. Get Return Reasons
+### 41. Get Return Reasons
 
 | Detail | Value |
 |--------|-------|
@@ -1489,7 +1663,7 @@ If the user closes the Razorpay SDK without paying, call this to release the sto
 
 ---
 
-### 41. Get Order Details
+### 42. Get Order Details
 
 | Detail | Value |
 |--------|-------|
@@ -1545,7 +1719,7 @@ If the user closes the Razorpay SDK without paying, call this to release the sto
 
 ---
 
-### 42. Request Order Cancellation
+### 43. Request Order Cancellation
 
 | Detail | Value |
 |--------|-------|
@@ -1573,7 +1747,7 @@ If the user closes the Razorpay SDK without paying, call this to release the sto
 
 ---
 
-### 43. Request Return
+### 44. Request Return
 
 | Detail | Value |
 |--------|-------|
@@ -1646,12 +1820,36 @@ Future<String> getDeviceId() async {
 
 1. Customer enters mobile number
 2. Call `POST /api/v1/otp/send` with `mobile_number`
-3. Receive OTP (from SMS, or from response in non-production)
-4. Call `POST /api/v1/otp/verify` with `mobile_number` + `otp`
-5. Receive `token` in response
-6. Store token securely (`flutter_secure_storage` or `shared_preferences`)
-7. **Immediately** call `POST /api/v1/cart/merge` with both `Authorization` and `X-Device-ID` headers
-8. Use `Authorization: Bearer {token}` for all subsequent requests
+3. If response `status` is `false`, display the `message` (e.g., "Mobile number not registered. Please sign up first.") and redirect to registration
+4. Receive OTP (from SMS, or from response in non-production)
+5. Call `POST /api/v1/otp/verify` with `mobile_number` + `otp`
+6. Receive `token` in response
+7. Store token securely (`flutter_secure_storage` or `shared_preferences`)
+8. **Immediately** call `POST /api/v1/cart/merge` with both `Authorization` and `X-Device-ID` headers
+9. Use `Authorization: Bearer {token}` for all subsequent requests
+
+#### Handling Login API Error (Dart Example)
+
+```dart
+final response = await http.post(
+  Uri.parse('$baseUrl/api/v1/otp/send'),
+  headers: {'Content-Type': 'application/json'},
+  body: jsonEncode({'mobile_number': mobileNumber}),
+);
+
+final body = jsonDecode(response.body);
+
+if (body['status'] == false) {
+  // Show error message from body['message']
+  // e.g., "Mobile number not registered. Please sign up first."
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(body['message'])),
+  );
+  return;
+}
+
+// OTP sent successfully — proceed to OTP verification screen
+```
 
 ### Complete User Journey
 

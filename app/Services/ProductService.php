@@ -134,6 +134,30 @@ class ProductService
         ])->findOrFail($id);
     }
 
+    public function getActiveRatesForProduct(int $productId)
+    {
+        return RateMaster::query()
+            ->where('product_id', $productId)
+            ->where('is_active', 1)
+            ->select([
+                'id',
+                'product_id',
+                'uom_id',
+                'selling_price',
+                'offer_percentage',
+                'offer_price',
+                'final_price',
+                'soldout_status',
+                'stock_dependent',
+                'is_active',
+                'selected_display',
+            ])
+            ->with(['uom:id,primary_uom,secondary_uom'])
+            ->orderByDesc('selected_display')
+            ->orderBy('id')
+            ->get();
+    }
+
     public function findForEdit($id)
     {
         return Product::with(['subCategory', 'brand', 'createdBy', 'updatedBy'])->findOrFail($id);
