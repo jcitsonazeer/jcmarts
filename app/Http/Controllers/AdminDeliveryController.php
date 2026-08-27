@@ -253,7 +253,6 @@ class AdminDeliveryController extends Controller
     private function buildDeliveryTimeline($delivery): array
     {
         $statuses = [
-            'not_assigned' => 'Not Assigned',
             'assigned' => 'Assigned',
             'accepted' => 'Accepted',
             'picked_up' => 'Picked Up',
@@ -262,7 +261,6 @@ class AdminDeliveryController extends Controller
         ];
 
         $timestampMap = [
-            'not_assigned' => null,
             'assigned' => 'assigned_at',
             'accepted' => 'accepted_at',
             'picked_up' => 'picked_up_at',
@@ -270,13 +268,23 @@ class AdminDeliveryController extends Controller
             'delivered' => 'delivered_at',
         ];
 
-        $currentIndex = null;
         $statusKeys = array_keys($statuses);
+        $currentIndex = null;
         foreach ($statusKeys as $index => $status) {
             if ($status === $delivery->status) {
                 $currentIndex = $index;
                 break;
             }
+        }
+
+        if ($delivery->status === 'not_assigned' || in_array($delivery->status, ['rejected', 'cancelled', 'failed'], true)) {
+            return [[
+                'key' => 'not_assigned',
+                'label' => 'Not Assigned',
+                'is_completed' => false,
+                'is_current' => true,
+                'timestamp' => null,
+            ]];
         }
 
         $timeline = [];
