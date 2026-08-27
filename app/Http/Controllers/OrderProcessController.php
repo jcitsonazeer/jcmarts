@@ -153,7 +153,7 @@ class OrderProcessController extends Controller
                 : 'Not Started',
             'nextAllowedStatuses' => $this->orderStatusService->getNextAllowedStatuses($currentStatus),
             'statusOptions' => $this->orderStatusService->getStatusOptions(),
-            'statusFlow' => $this->orderStatusService->getStatusFlow(),
+            'statusFlow' => $this->orderStatusService->getAdminProcessStatusFlow(),
             'timeline' => $order->order_status_timeline ?? [],
         ];
     }

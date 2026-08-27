@@ -119,6 +119,29 @@
                             </div>
                         @endforeach
                     </div>
+
+                    @if($selectedOrder->delivery && $selectedOrder->delivery->statusHistories->isNotEmpty())
+                        <div class="section-title">Delivery Progress</div>
+                        @php($deliveryStatusOrder = ['assigned', 'accepted', 'picked_up', 'out_for_delivery', 'delivered'])
+                        <div class="order-worm-graph horizontal-worm-graph">
+                            @foreach($deliveryStatusOrder as $step)
+                                @php($history = $selectedOrder->delivery->statusHistories->where('new_status', $step)->sortByDesc('changed_at')->first())
+                                <div class="worm-step {{ $history ? 'completed' : '' }} {{ $selectedOrder->current_delivery_status === $step ? 'current' : '' }} {{ $history ? '' : 'pending' }}">
+                                    <div class="worm-marker"></div>
+                                    <div class="worm-content">
+                                        <div class="worm-title">{{ ucwords(str_replace('_', ' ', $step)) }}</div>
+                                        <div class="worm-meta">
+                                            @if($history && $history->changed_at)
+                                                {{ $history->changed_at->format('d-m-Y H:i') }}
+                                            @else
+                                                Pending
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
 <div class="row">
     <div class="col-md-6">
                         <div class="section-title">Order Info</div>
@@ -185,6 +208,17 @@
                             <div class="label">Order Process Status</div>
                             <div class="value">{{ $selectedOrder->current_order_status ? ucwords(str_replace('_', ' ', $selectedOrder->current_order_status)) : 'Not Started' }}</div>
                         </div>
+                        @if(!empty($selectedOrder->current_delivery_status))
+                            <div class="info-row">
+                                <div class="label">Delivery Status</div>
+                                <div class="value">
+                                    {{ ucwords(str_replace('_', ' ', $selectedOrder->current_delivery_status)) }}
+                                    @if(!empty($selectedOrder->current_delivery_person_name))
+                                        <div class="meta">by {{ $selectedOrder->current_delivery_person_name }}</div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
                         <div class="info-row">
                             <div class="label">Active</div>
                             <div class="value">{{ $selectedOrder->is_active ? 'Yes' : 'No' }}</div>

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AdminLogin;
 use App\Models\Customer;
+use App\Models\DeliveryPerson;
 use App\Models\Order;
 use App\Models\OrderStatus;
 use Carbon\Carbon;
@@ -38,6 +39,16 @@ class OrderStatusService
         self::STATUS_ORDER_DELIVERED,
     ];
 
+    // Flow steps an admin selects manually on the order-process page.
+    // After 'assigned_for_delivery', delivery statuses are driven by the
+    // delivery person through the DeliveryStatusService, not by the admin.
+    public const ADMIN_PROCESS_FLOW = [
+        'order_accept',
+        'order_under_packing',
+        'ready_for_delivery',
+        'assigned_for_delivery',
+    ];
+
     public const RETURN_STATUS_FLOW = [
         self::STATUS_RETURN_REQUESTED,
         self::STATUS_RETURN_APPROVED,
@@ -57,6 +68,11 @@ class OrderStatusService
     public function getStatusFlow(): array
     {
         return self::STATUS_FLOW;
+    }
+
+    public function getAdminProcessStatusFlow(): array
+    {
+        return self::ADMIN_PROCESS_FLOW;
     }
 
     public function getStatusOptions(): array
@@ -147,6 +163,14 @@ class OrderStatusService
         }
 
         if ($currentIndex === count(self::STATUS_FLOW) - 1) {
+            return [];
+        }
+
+        // Once the order is assigned for delivery, the admin cannot advance it
+        // further. The remaining delivery statuses (accepted, picked up,
+        // out for delivery, delivered) are driven by the delivery person
+        // through the DeliveryStatusService.
+        if ($currentStatus === 'assigned_for_delivery') {
             return [];
         }
 
@@ -267,9 +291,14 @@ class OrderStatusService
         $latestIndex = $latestStatus !== null ? array_search($latestStatus, self::STATUS_FLOW, true) : false;
         $actorNames = $this->resolveActorNames($statuses, $order);
 
+        // Display flow excludes the legacy delivery steps (delivery_person_accepts,
+        // reached_doorstep) which are now driven by the DeliveryStatusService and
+        // shown separately as "Delivery Progress".
+        $displayFlow = array_merge(self::ADMIN_PROCESS_FLOW, [self::STATUS_ORDER_DELIVERED]);
+
         $timeline = [];
 
-        foreach (self::STATUS_FLOW as $index => $status) {
+        foreach ($displayFlow as $index => $status) {
             $history = $historyByStatus->get($status);
             $actorId = null;
             $actionTime = null;
@@ -380,11 +409,20 @@ class OrderStatusService
             ->whereIn('id', $actorIds->all())
             ->pluck('name', 'id');
 
+        $deliveryPersonNames = DeliveryPerson::query()
+            ->whereIn('id', $actorIds->all())
+            ->pluck('name', 'id');
+
         $resolved = [];
 
         foreach ($actorIds as $actorId) {
             if ($adminNames->has($actorId)) {
                 $resolved[$actorId] = (string) $adminNames->get($actorId);
+                continue;
+            }
+
+            if ($deliveryPersonNames->has($actorId)) {
+                $resolved[$actorId] = (string) $deliveryPersonNames->get($actorId);
                 continue;
             }
 

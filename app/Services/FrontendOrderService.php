@@ -68,12 +68,16 @@ class FrontendOrderService
                 'refunds',
                 'returnRequests.items.product',
                 'returnRequests.refunds',
+                'delivery.deliveryPerson',
+                'delivery.statusHistories',
             ])
             ->first();
 
         if ($order) {
             $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
             $order->current_order_status = $latestStatus ? $latestStatus->order_status : null;
+            $order->current_delivery_status = $order->delivery ? $order->delivery->status : null;
+            $order->current_delivery_person_name = $order->delivery?->deliveryPerson?->name ?? null;
             $order->order_status_timeline = $this->orderStatusService->buildTimeline($order->statuses, $order);
             $order->can_customer_cancel = $order->is_active
                 && $this->orderStatusService->canCustomerCancel($order->current_order_status);

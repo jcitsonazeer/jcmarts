@@ -28,6 +28,7 @@ use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\AdminRefundController;
 use App\Http\Controllers\AdminReturnController;
 use App\Http\Controllers\OrderProcessController;
+use App\Http\Controllers\AdminDeliveryController;
 
 Route::get('/', [FrontendController::class, 'index'])->name('frontend.home');
 Route::get('/products', [FrontendProductController::class, 'index'])->name('frontend.products');
@@ -117,5 +118,23 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('orders/{id}', [AdminOrderController::class, 'show'])->name('orders.show');
         Route::get('orders/{orderId}/process', [OrderProcessController::class, 'adminShow'])->name('orders.process.show');
         Route::post('orders/{orderId}/process', [OrderProcessController::class, 'adminUpdate'])->name('orders.process.update');
+
+        // Delivery Management
+        Route::get('deliveries', [AdminDeliveryController::class, 'dashboard'])->name('deliveries.dashboard');
+        Route::get('deliveries/unassigned', [AdminDeliveryController::class, 'unassigned'])->name('deliveries.unassigned');
+        Route::get('deliveries/{orderId}/assign', [AdminDeliveryController::class, 'assign'])->name('deliveries.assign');
+        Route::post('deliveries/{orderId}/assign', [AdminDeliveryController::class, 'assignStore'])->name('deliveries.assign.store');
+        Route::get('deliveries/active', [AdminDeliveryController::class, 'active'])->name('deliveries.active');
+        Route::get('deliveries/history', [AdminDeliveryController::class, 'history'])->name('deliveries.history');
+        Route::get('deliveries/{deliveryId}', [AdminDeliveryController::class, 'show'])->name('deliveries.show');
+        Route::post('deliveries/{deliveryId}/status', [AdminDeliveryController::class, 'updateStatus'])->name('deliveries.update-status');
+
+        // Delivery Persons
+        Route::get('delivery-persons', [AdminDeliveryController::class, 'personsIndex'])->name('deliveries.persons.index');
+        Route::get('delivery-persons/create', [AdminDeliveryController::class, 'personsCreate'])->name('deliveries.persons.create');
+        Route::post('delivery-persons', [AdminDeliveryController::class, 'personsStore'])->name('deliveries.persons.store');
+        Route::get('delivery-persons/{id}', [AdminDeliveryController::class, 'personsShow'])->name('deliveries.persons.show');
+        Route::get('delivery-persons/{id}/edit', [AdminDeliveryController::class, 'personsEdit'])->name('deliveries.persons.edit');
+        Route::put('delivery-persons/{id}', [AdminDeliveryController::class, 'personsUpdate'])->name('deliveries.persons.update');
     });
 });

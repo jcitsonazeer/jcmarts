@@ -207,6 +207,44 @@
                         </a>
                     </li>
 
+                    <!-- Delivery Menu -->
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="ti-truck menu-icon"></i>
+                            <span class="menu-title">Delivery</span>
+                            <i class="menu-arrow"></i>
+                        </a>
+                        <div class="submenu">
+                            <ul class="submenu-item">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.deliveries.dashboard') }}">
+                                        Dashboard
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.deliveries.persons.index') }}">
+                                        Delivery Persons
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.deliveries.unassigned') }}">
+                                        Unassigned Orders
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.deliveries.active') }}">
+                                        Active Deliveries
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.deliveries.history') }}">
+                                        Delivery History
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
                     <!-- Logout -->
                     <li class="nav-item">
                         <form action="{{ route('admin.logout') }}" method="POST" class="nav-link p-0">
