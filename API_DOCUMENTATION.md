@@ -1009,7 +1009,11 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ### 22. Merge Guest Cart (After Login)
 
-Transfer guest cart items into the authenticated customer's cart. **Call this immediately after login.**
+Transfer guest cart items into the authenticated customer's cart.
+
+> **Automatic on login:** Since the auto-merge was added, `POST /api/v1/otp/verify` (and `/register/otp/verify`) already merges the guest cart when the developer sends the `X-Device-ID` header on that request, and returns it as `data.cart`. This manual endpoint remains only as an explicit fallback.
+
+**Call this immediately after login (fallback):**
 
 | Detail | Value |
 |--------|-------|
@@ -1822,11 +1826,12 @@ Future<String> getDeviceId() async {
 2. Call `POST /api/v1/otp/send` with `mobile_number`
 3. If response `status` is `false`, display the `message` (e.g., "Mobile number not registered. Please sign up first.") and redirect to registration
 4. Receive OTP (from SMS, or from response in non-production)
-5. Call `POST /api/v1/otp/verify` with `mobile_number` + `otp`
-6. Receive `token` in response
+5. Call `POST /api/v1/otp/verify` with `mobile_number` + `otp` **and** the `X-Device-ID` header. The guest cart is **merged automatically** on the server during login (see §22).
+6. Receive `token` in response, plus `data.cart` containing the merged cart (`items`, `item_count`, `sub_total`)
 7. Store token securely (`flutter_secure_storage` or `shared_preferences`)
-8. **Immediately** call `POST /api/v1/cart/merge` with both `Authorization` and `X-Device-ID` headers
-9. Use `Authorization: Bearer {token}` for all subsequent requests
+8. Use `Authorization: Bearer {token}` for all subsequent requests
+
+> **Note:** The `X-Device-ID` header MUST be sent on the `verify` request for the auto-merge to run. If it is omitted, no merge happens at login. The manual `POST /api/v1/cart/merge` endpoint (§22) remains available as an explicit fallback.
 
 #### Handling Login API Error (Dart Example)
 
@@ -1859,9 +1864,8 @@ if (body['status'] == false) {
 3. Tap "Add to Cart" -> POST /api/v1/cart (with X-Device-ID header)
 4. View cart -> GET /api/v1/cart (with X-Device-ID header)
 5. Tap "Checkout" -> Show login/register screen
-6. Login via OTP -> Receive token
-7. Call POST /api/v1/cart/merge (with token + X-Device-ID)
-8. Call GET /api/v1/checkout -> Shows addresses + summary
+6. Login via OTP (send `X-Device-ID` header) -> Receive token + merged cart
+7. Call GET /api/v1/checkout -> Shows addresses + summary
 9. Add/select address -> POST /api/v1/addresses or select existing
 10. Call POST /api/v1/payment/create-order -> Receives Razorpay order details
 11. Open Razorpay SDK with the order details

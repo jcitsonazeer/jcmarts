@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerRegisterOtp;
+use App\Services\ApiCartService;
 use App\Services\CustomerAuthService;
 use App\Services\OtpSmsService;
 use Carbon\Carbon;
@@ -16,7 +17,8 @@ class AuthController extends Controller
 {
     public function __construct(
         protected CustomerAuthService $customerAuthService,
-        protected OtpSmsService $otpSmsService
+        protected OtpSmsService $otpSmsService,
+        protected ApiCartService $apiCartService
     ) {
     }
 
@@ -178,6 +180,8 @@ class AuthController extends Controller
 
         $token = $customer->createToken('flutter-app')->plainTextToken;
 
+        $mergedData = $this->mergeGuestCartIfPresent($request, $customer);
+
         return response()->json([
             'status' => true,
             'message' => 'Login successful',
@@ -190,6 +194,7 @@ class AuthController extends Controller
                     'mobile_number' => $customer->mobile_number,
                     'verified_status' => $customer->verified_status,
                 ],
+                'cart' => $mergedData,
             ],
         ]);
     }
@@ -354,6 +359,8 @@ class AuthController extends Controller
 
         $token = $customer->createToken('flutter-app')->plainTextToken;
 
+        $mergedData = $this->mergeGuestCartIfPresent($request, $customer);
+
         return response()->json([
             'status' => true,
             'message' => 'Registration completed successfully',
@@ -366,6 +373,7 @@ class AuthController extends Controller
                     'mobile_number' => $customer->mobile_number,
                     'verified_status' => $customer->verified_status,
                 ],
+                'cart' => $mergedData,
             ],
         ]);
     }
@@ -387,5 +395,37 @@ class AuthController extends Controller
             'message' => 'Logged out successfully',
             'data' => null,
         ]);
+    }
+
+    /**
+     * Auto-merge a guest cart into the authenticated customer's cart.
+     *
+     * Reads the X-Device-ID header from the login request. If present, the
+     * guest cart for that device is merged into the customer cart right after
+     * login so the Flutter app does not need a separate merge step.
+     */
+    protected function mergeGuestCartIfPresent(Request $request, Customer $customer): ?array
+    {
+        $deviceId = $request->header('X-Device-ID');
+
+        if (blank($deviceId)) {
+            return null;
+        }
+
+        $amount = $this->apiCartService->mergeGuestCart(
+            'device_' . $deviceId,
+            'customer_' . $customer->id
+        );
+
+        return [
+            'items' => $amount,
+            'item_count' => $this->apiCartService->getItemCount('customer_' . $customer->id),
+            'sub_total' => number_format(
+                $this->apiCartService->getSubTotal('customer_' . $customer->id),
+                2,
+                '.',
+                ''
+            ),
+        ];
     }
 }
