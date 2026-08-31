@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\DeliveryAuthController;
+use App\Http\Controllers\Api\DeliveryController;
 
 Route::prefix('v1')->group(function () {
     Route::post('/otp/send', [AuthController::class, 'sendOtp']);
@@ -38,8 +40,8 @@ Route::prefix('v1')->group(function () {
     Route::delete('/cart/{cartId}', [CartController::class, 'destroy'])->whereNumber('cartId');
     Route::get('/cart/count', [CartController::class, 'count']);
 
-    // Auth-required routes
-    Route::middleware('auth:sanctum')->group(function () {
+    // Auth-required routes (customer only)
+    Route::middleware(['auth:sanctum', 'ensure.customer'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
 
         // Cart merge — transfer guest cart to customer cart after login
@@ -77,6 +79,28 @@ Route::prefix('v1')->group(function () {
         Route::get('/orders/{orderId}', [OrderController::class, 'show'])->whereNumber('orderId');
         Route::post('/orders/{orderId}/cancel', [OrderController::class, 'cancel'])->whereNumber('orderId');
         Route::post('/orders/{orderId}/return', [OrderController::class, 'requestReturn'])->whereNumber('orderId');
+    });
+
+    // ─── Delivery Person (Flutter) ─────────────────────────
+    // Public delivery OTP routes
+    Route::prefix('delivery')->group(function () {
+        Route::post('/otp/send', [DeliveryAuthController::class, 'sendOtp']);
+        Route::post('/otp/verify', [DeliveryAuthController::class, 'verifyOtp']);
+
+        // Auth + delivery-person-only routes
+        Route::middleware(['auth:sanctum', 'ensure.delivery'])->group(function () {
+            Route::post('/logout', [DeliveryAuthController::class, 'logout']);
+            Route::get('/me', [DeliveryAuthController::class, 'me']);
+
+            Route::get('/dashboard', [DeliveryController::class, 'dashboard']);
+            Route::get('/assigned-orders', [DeliveryController::class, 'assignedOrders']);
+            Route::get('/history', [DeliveryController::class, 'history']);
+            Route::put('/availability', [DeliveryController::class, 'updateAvailability']);
+
+            Route::get('/deliveries/{deliveryId}', [DeliveryController::class, 'show'])->whereNumber('deliveryId');
+            Route::post('/deliveries/{deliveryId}/status', [DeliveryController::class, 'updateStatus'])->whereNumber('deliveryId');
+            Route::post('/deliveries/{deliveryId}/location', [DeliveryController::class, 'saveLocation'])->whereNumber('deliveryId');
+        });
     });
 });
 

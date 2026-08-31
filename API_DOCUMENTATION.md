@@ -1,8 +1,8 @@
 # JC MARTS — Flutter API Documentation
 
-**Base URL:** `{your-domain}/api/v1`
+**Base URL:** `https://jcmarts.com/api/v1`
 
-**Last Updated:** August 2026
+**Last Updated:** 31 August 2026
 
 **Total Endpoints:** 44
 
@@ -25,52 +25,53 @@
 
 ## Quick Reference — All 44 Endpoints
 
-| # | Method | Endpoint | Auth | Description |
-|---|--------|----------|------|-------------|
-| 1 | POST | `/api/v1/otp/send` | No | Send login OTP |
-| 2 | POST | `/api/v1/otp/verify` | No | Verify login OTP, get token |
-| 3 | POST | `/api/v1/register/otp/send` | No | Send registration OTP |
-| 4 | POST | `/api/v1/register/otp/verify` | No | Verify registration OTP, get token |
-| 5 | POST | `/api/v1/logout` | Yes | Logout (delete token) |
-| 6 | GET | `/api/v1/home` | No | Home page data |
-| 7 | GET | `/api/v1/banners` | No | Banner images |
-| 8 | GET | `/api/v1/categories` | No | Categories + subcategories |
-| 9 | GET | `/api/v1/sub-categories` | No | Active subcategories |
-| 10 | GET | `/api/v1/brands` | No | Active brands |
-| 11 | GET | `/api/v1/products` | No | Product list (paginated) |
-| 12 | GET | `/api/v1/products/search` | No | Search products |
-| 13 | GET | `/api/v1/products/{id}` | No | Product detail |
-| 14 | GET | `/api/v1/products/{id}/rates` | No | Product rates (UOM variants) |
-| 15 | GET | `/api/v1/featured-products` | No | Featured products |
-| 16 | GET | `/api/v1/offers` | No | Offer products |
-| 17 | GET | `/api/v1/cart` | Optional | Get cart items |
-| 18 | POST | `/api/v1/cart` | Optional | Add to cart |
-| 19 | PUT | `/api/v1/cart/{cartId}` | Optional | Update cart quantity |
-| 20 | DELETE | `/api/v1/cart/{cartId}` | Optional | Remove cart item |
-| 21 | GET | `/api/v1/cart/count` | Optional | Cart item count |
-| 22 | POST | `/api/v1/cart/merge` | Yes | Merge guest cart after login |
-| 23 | GET | `/api/v1/wishlist` | Yes | Get wishlist |
-| 24 | POST | `/api/v1/wishlist` | Yes | Add to wishlist |
-| 25 | DELETE | `/api/v1/wishlist/{productId}` | Yes | Remove from wishlist |
-| 26 | POST | `/api/v1/wishlist/toggle` | Yes | Toggle wishlist |
-| 27 | GET | `/api/v1/wishlist/check/{productId}` | Yes | Check wishlist status |
-| 28 | GET | `/api/v1/wishlist/count` | Yes | Wishlist count |
-| 29 | GET | `/api/v1/profile` | Yes | Get profile |
-| 30 | PUT | `/api/v1/profile` | Yes | Update profile name |
-| 31 | GET | `/api/v1/addresses` | Yes | List addresses |
-| 32 | POST | `/api/v1/addresses` | Yes | Add address |
-| 33 | PUT | `/api/v1/addresses/{addressId}` | Yes | Update address |
-| 33 | DELETE | `/api/v1/addresses/{addressId}` | Yes | Delete address |
-| 34 | GET | `/api/v1/serviceable-pincodes` | Yes | Get serviceable pincodes |
-| 35 | GET | `/api/v1/checkout` | Yes | Checkout data |
-| 36 | POST | `/api/v1/payment/create-order` | Yes | Create Razorpay order |
-| 37 | POST | `/api/v1/payment/verify` | Yes | Verify payment |
-| 38 | POST | `/api/v1/payment/release` | Yes | Release payment reservation |
-| 39 | GET | `/api/v1/orders` | Yes | List orders |
-| 40 | GET | `/api/v1/orders/returns/reasons` | Yes | Return reasons |
-| 41 | GET | `/api/v1/orders/{orderId}` | Yes | Order detail |
-| 42 | POST | `/api/v1/orders/{orderId}/cancel` | Yes | Cancel order |
-| 43 | POST | `/api/v1/orders/{orderId}/return` | Yes | Return order |
+| #  | Method | Full Endpoint                                           | Auth     | Description                        |
+| -- | ------ | ------------------------------------------------------- | -------- | ---------------------------------- |
+| 1  | POST   | `https://jcmarts.com/api/v1/otp/send`                   | No       | Send login OTP                     |
+| 2  | POST   | `https://jcmarts.com/api/v1/otp/verify`                 | No       | Verify login OTP, get token        |
+| 3  | POST   | `https://jcmarts.com/api/v1/register/otp/send`          | No       | Send registration OTP              |
+| 4  | POST   | `https://jcmarts.com/api/v1/register/otp/verify`        | No       | Verify registration OTP, get token |
+| 5  | POST   | `https://jcmarts.com/api/v1/logout`                     | Yes      | Logout (delete token)              |
+| 6  | GET    | `https://jcmarts.com/api/v1/home`                       | No       | Home page data                     |
+| 7  | GET    | `https://jcmarts.com/api/v1/banners`                    | No       | Banner images                      |
+| 8  | GET    | `https://jcmarts.com/api/v1/categories`                 | No       | Categories + subcategories         |
+| 9  | GET    | `https://jcmarts.com/api/v1/sub-categories`             | No       | Active subcategories               |
+| 10 | GET    | `https://jcmarts.com/api/v1/brands`                     | No       | Active brands                      |
+| 11 | GET    | `https://jcmarts.com/api/v1/products`                   | No       | Product list (paginated)           |
+| 12 | GET    | `https://jcmarts.com/api/v1/products/search`            | No       | Search products                    |
+| 13 | GET    | `https://jcmarts.com/api/v1/products/{id}`              | No       | Product detail                     |
+| 14 | GET    | `https://jcmarts.com/api/v1/products/{id}/rates`        | No       | Product rates (UOM variants)       |
+| 15 | GET    | `https://jcmarts.com/api/v1/featured-products`          | No       | Featured products                  |
+| 16 | GET    | `https://jcmarts.com/api/v1/offers`                     | No       | Offer products                     |
+| 17 | GET    | `https://jcmarts.com/api/v1/cart`                       | Optional | Get cart items                     |
+| 18 | POST   | `https://jcmarts.com/api/v1/cart`                       | Optional | Add to cart                        |
+| 19 | PUT    | `https://jcmarts.com/api/v1/cart/{cartId}`              | Optional | Update cart quantity               |
+| 20 | DELETE | `https://jcmarts.com/api/v1/cart/{cartId}`              | Optional | Remove cart item                   |
+| 21 | GET    | `https://jcmarts.com/api/v1/cart/count`                 | Optional | Cart item count                    |
+| 22 | POST   | `https://jcmarts.com/api/v1/cart/merge`                 | Yes      | Merge guest cart after login       |
+| 23 | GET    | `https://jcmarts.com/api/v1/wishlist`                   | Yes      | Get wishlist                       |
+| 24 | POST   | `https://jcmarts.com/api/v1/wishlist`                   | Yes      | Add to wishlist                    |
+| 25 | DELETE | `https://jcmarts.com/api/v1/wishlist/{productId}`       | Yes      | Remove from wishlist               |
+| 26 | POST   | `https://jcmarts.com/api/v1/wishlist/toggle`            | Yes      | Toggle wishlist                    |
+| 27 | GET    | `https://jcmarts.com/api/v1/wishlist/check/{productId}` | Yes      | Check wishlist status              |
+| 28 | GET    | `https://jcmarts.com/api/v1/wishlist/count`             | Yes      | Wishlist count                     |
+| 29 | GET    | `https://jcmarts.com/api/v1/profile`                    | Yes      | Get profile                        |
+| 30 | PUT    | `https://jcmarts.com/api/v1/profile`                    | Yes      | Update profile name                |
+| 31 | GET    | `https://jcmarts.com/api/v1/addresses`                  | Yes      | List addresses                     |
+| 32 | POST   | `https://jcmarts.com/api/v1/addresses`                  | Yes      | Add address                        |
+| 33 | PUT    | `https://jcmarts.com/api/v1/addresses/{addressId}`      | Yes      | Update address                     |
+| 34 | DELETE | `https://jcmarts.com/api/v1/addresses/{addressId}`      | Yes      | Delete address                     |
+| 35 | GET    | `https://jcmarts.com/api/v1/serviceable-pincodes`       | Yes      | Get serviceable pincodes           |
+| 36 | GET    | `https://jcmarts.com/api/v1/checkout`                   | Yes      | Checkout data                      |
+| 37 | POST   | `https://jcmarts.com/api/v1/payment/create-order`       | Yes      | Create Razorpay order              |
+| 38 | POST   | `https://jcmarts.com/api/v1/payment/verify`             | Yes      | Verify payment                     |
+| 39 | POST   | `https://jcmarts.com/api/v1/payment/release`            | Yes      | Release payment reservation        |
+| 40 | GET    | `https://jcmarts.com/api/v1/orders`                     | Yes      | List orders                        |
+| 41 | GET    | `https://jcmarts.com/api/v1/orders/returns/reasons`     | Yes      | Return reasons                     |
+| 42 | GET    | `https://jcmarts.com/api/v1/orders/{orderId}`           | Yes      | Order detail                       |
+| 43 | POST   | `https://jcmarts.com/api/v1/orders/{orderId}/cancel`    | Yes      | Cancel order                       |
+| 44 | POST   | `https://jcmarts.com/api/v1/orders/{orderId}/return`    | Yes      | Return order                       |
+
 
 **Auth column legend:**
 - **No** = No authentication required

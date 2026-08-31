@@ -34,6 +34,7 @@ class ProfileController extends Controller
             'status' => true,
             'message' => 'Profile fetched successfully',
             'data' => [
+                'role' => 'customer',
                 'id' => $customer->id,
                 'name' => $customer->name,
                 'mobile_number' => $customer->mobile_number,
