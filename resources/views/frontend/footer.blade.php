@@ -8,19 +8,24 @@
           <h4 data-aos="fade-up-right">My Account</h4>
           <h5 class="collapsed" data-target="#dropdown-account" data-toggle="collapse">My Account <span class="icon"></span></h5>
           <ul class="list-unstyled collapse" id="dropdown-account" data-aos="fade-up-right">
-            <li><a href="#">My Account</a></li>
-            <li><a href="#">Order History</a></li>
+            @if(session()->has('customer_id'))
+              <li><a href="{{ route('frontend.account') }}">My Account</a></li>
+              <li><a href="{{ route('frontend.orders.index') }}">Order History</a></li>
+            @else
+              <li><a href="{{ route('frontend.login') }}">My Account</a></li>
+              <li><a href="{{ route('frontend.login') }}">Order History</a></li>
+            @endif
           </ul>
         </div>
                 <div class="col-xs-12 col-sm-12 col-md-4 column information">
           <h4 data-aos="fade-up-left">Information</h4>
           <h5 class="collapsed" data-target="#dropdown-information" data-toggle="collapse">Information <span class="icon"></span></h5>
           <ul class="list-unstyled collapse" id="dropdown-information"  data-aos="flip-down">
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Delivery Information</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Terms &amp; Conditions</a></li>
-                        <li><a href="#">Returns</a></li>
+                        <li><a href="{{ route('frontend.about_us') }}">About Us</a></li>
+                        <li><a href="{{ route('frontend.delivery_info') }}">Delivery Information</a></li>
+                        <li><a href="{{ route('frontend.privacy_policy') }}">Privacy Policy</a></li>
+                        <li><a href="{{ route('frontend.terms_conditions') }}">Terms &amp; Conditions</a></li>
+                        <li><a href="{{ route('frontend.returns') }}">Returns</a></li>
           </ul>
         </div>
                   

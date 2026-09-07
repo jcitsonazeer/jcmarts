@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\OfferDetail;
 use App\Models\Product;
+use App\Models\PromoTile;
 use App\Models\SubCategory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -49,9 +50,21 @@ class FrontendProductService
             ->find($offerId);
     }
 
-    public function getProducts($subCategoryId = null, $searchTerm = null, $offerId = null)
+    public function getSelectedPromoTile($promoTileId)
     {
-        $query = $this->buildBaseProductsQuery($subCategoryId, $searchTerm, $offerId)
+        if (empty($promoTileId) || !is_numeric($promoTileId)) {
+            return null;
+        }
+
+        return PromoTile::query()
+            ->select(['id', 'promo_title'])
+            ->where('is_active', 1)
+            ->find($promoTileId);
+    }
+
+    public function getProducts($subCategoryId = null, $searchTerm = null, $offerId = null, $promoTileId = null)
+    {
+        $query = $this->buildBaseProductsQuery($subCategoryId, $searchTerm, $offerId, $promoTileId)
             ->with([
                 'subCategory:id,category_id,sub_category_name',
                 'subCategory.category:id,category_name',
@@ -81,9 +94,9 @@ class FrontendProductService
         return $query->paginate(12)->withQueryString();
     }
 
-    public function getProductsByBrands($subCategoryId = null, $searchTerm = null, $offerId = null, array $brandIds = [])
+    public function getProductsByBrands($subCategoryId = null, $searchTerm = null, $offerId = null, array $brandIds = [], $promoTileId = null)
     {
-        $query = $this->buildBaseProductsQuery($subCategoryId, $searchTerm, $offerId);
+        $query = $this->buildBaseProductsQuery($subCategoryId, $searchTerm, $offerId, $promoTileId);
 
         if (!empty($brandIds)) {
             $query->whereIn('brand_id', $brandIds);
@@ -118,7 +131,7 @@ class FrontendProductService
         return $query->paginate(12)->withQueryString();
     }
 
-    public function getAvailableBrands($subCategoryId = null, $searchTerm = null, $offerId = null): Collection
+    public function getAvailableBrands($subCategoryId = null, $searchTerm = null, $offerId = null, $promoTileId = null): Collection
     {
         $query = Product::query()
             ->where('is_active', 1)
@@ -128,6 +141,12 @@ class FrontendProductService
             ->whereNotNull('brand_id')
             ->selectRaw('brand_id, COUNT(*) as product_count')
             ->groupBy('brand_id');
+
+        if (!empty($promoTileId)) {
+            $query->whereHas('promoTiles', function ($promoTileQuery) use ($promoTileId) {
+                $promoTileQuery->where('promo_tile_id', $promoTileId);
+            });
+        }
 
         if (!empty($offerId)) {
             $query->whereHas('offerProducts', function ($offerProductQuery) use ($offerId) {
@@ -168,7 +187,7 @@ class FrontendProductService
             ->values();
     }
 
-    private function buildBaseProductsQuery($subCategoryId = null, $searchTerm = null, $offerId = null): Builder
+    private function buildBaseProductsQuery($subCategoryId = null, $searchTerm = null, $offerId = null, $promoTileId = null): Builder
     {
         $normalizedSearchTerm = trim((string) $searchTerm);
 
@@ -187,6 +206,12 @@ class FrontendProductService
             ->whereHas('rates', function ($query) {
                 $query->where('is_active', 1);
             });
+
+        if (!empty($promoTileId)) {
+            $query->whereHas('promoTiles', function ($promoTileQuery) use ($promoTileId) {
+                $promoTileQuery->where('promo_tile_id', $promoTileId);
+            });
+        }
 
         if (!empty($offerId)) {
             $query->whereHas('offerProducts', function ($offerProductQuery) use ($offerId) {

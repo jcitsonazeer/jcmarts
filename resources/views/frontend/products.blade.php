@@ -8,6 +8,7 @@
     $isSearching = !empty($searchTerm);
     $selectedOffer = $selectedOffer ?? null;
     $selectedSubCategory = $selectedSubCategory ?? null;
+    $selectedPromoTile = $selectedPromoTile ?? null;
     $selectedBrandIds = $selectedBrandIds ?? [];
     $selectedBrandIds = collect($selectedBrandIds)->map(function ($id) {
       return (int) $id;
@@ -19,6 +20,9 @@
   <ul class="breadcrumb">
     <li><a href="{{ route('frontend.home') }}"><i class="fa fa-home"></i></a></li>
     <li><a href="{{ route('frontend.products') }}">Products</a></li>
+    @if(!empty($selectedPromoTile))
+      <li><a href="{{ route('frontend.products', ['promo_tile' => $selectedPromoTile->id]) }}">{{ $selectedPromoTile->promo_title }}</a></li>
+    @endif
     @if(!empty($selectedOffer))
       <li><a href="{{ route('frontend.products', ['offer' => $selectedOffer->id]) }}">{{ $selectedOffer->offer_name }}</a></li>
     @endif
@@ -105,6 +109,9 @@
                   @if($selectedSubCategory)
                     <input type="hidden" name="sub_category" value="{{ $selectedSubCategory->id }}">
                   @endif
+                  @if(!empty($selectedPromoTile))
+                    <input type="hidden" name="promo_tile" value="{{ $selectedPromoTile->id }}">
+                  @endif
                   @if($selectedOffer)
                     <input type="hidden" name="offer" value="{{ $selectedOffer->id }}">
                   @endif
@@ -140,6 +147,8 @@
       <h1>
         @if($isSearching)
           Search results for "{{ $searchTerm }}"
+        @elseif(!empty($selectedPromoTile))
+          {{ $selectedPromoTile->promo_title }}
         @elseif($selectedOffer)
           {{ $selectedOffer->offer_name }}
         @elseif($selectedSubCategory)
@@ -162,7 +171,8 @@
                 No products found
                 {{ $isSearching ? ' for "' . $searchTerm . '"' : '' }}
                 {{ $selectedSubCategory ? ' in selected sub category' : '' }}
-                {{ $selectedOffer ? ' for selected offer' : '' }}.
+                {{ $selectedOffer ? ' for selected offer' : '' }}
+                {{ !empty($selectedPromoTile) ? ' for selected promo tile' : '' }}.
               </div>
             </div>
           @endforelse

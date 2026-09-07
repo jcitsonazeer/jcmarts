@@ -27,8 +27,9 @@ class FrontendController extends Controller
         $topSubCategories = $this->frontendCatalogService->getTopSubCategories();
         $productOffers = $this->frontendCatalogService->getProductOffers();
         $featuredProducts = $this->frontendCatalogService->getFeaturedProducts();
+        $promoTiles = $this->frontendCatalogService->getPromoTiles();
 
-        return view('frontend.index', compact('menuCategories', 'indexBanners', 'topSubCategories', 'productOffers', 'featuredProducts'));
+        return view('frontend.index', compact('menuCategories', 'indexBanners', 'topSubCategories', 'productOffers', 'featuredProducts', 'promoTiles'));
     }
 
     public function products()

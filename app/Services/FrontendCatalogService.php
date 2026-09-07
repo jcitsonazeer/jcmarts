@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\SubCategory;
 use App\Models\RateMaster;
 use App\Models\IndexBanner;
+use App\Models\PromoTile;
 
 class FrontendCatalogService
 {
@@ -112,6 +113,17 @@ class FrontendCatalogService
             ])
             ->orderByDesc('id')
             ->limit(12)
+            ->get();
+    }
+
+    public function getPromoTiles()
+    {
+        return PromoTile::query()
+            ->select(['id', 'promo_title', 'promo_image', 'sort_order'])
+            ->where('is_active', 1)
+            ->withCount('products')
+            ->orderBy('sort_order')
+            ->orderByDesc('id')
             ->get();
     }
 }

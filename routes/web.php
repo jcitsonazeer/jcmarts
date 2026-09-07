@@ -29,6 +29,9 @@ use App\Http\Controllers\AdminRefundController;
 use App\Http\Controllers\AdminReturnController;
 use App\Http\Controllers\OrderProcessController;
 use App\Http\Controllers\AdminDeliveryController;
+use App\Http\Controllers\AdminDeliveryChargeController;
+use App\Http\Controllers\FrontendPageController;
+use App\Http\Controllers\AdminPromoTileController;
 
 Route::get('/', [FrontendController::class, 'index'])->name('frontend.home');
 Route::get('/products', [FrontendProductController::class, 'index'])->name('frontend.products');
@@ -55,10 +58,17 @@ Route::post('/login', [CustomerAuthController::class, 'storeLogin'])->name('fron
 Route::get('/login/otp', [CustomerAuthController::class, 'showLoginOtp'])->name('frontend.login.otp');
 Route::post('/login/otp', [CustomerAuthController::class, 'verifyLoginOtp'])->name('frontend.login.otp.verify');
 Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('frontend.logout');
+Route::get('/my-account', [CustomerAuthController::class, 'account'])->name('frontend.account');
 Route::get('/register/otp', [CustomerAuthController::class, 'showRegisterOtp'])->name('frontend.register.otp');
 Route::post('/register/otp', [CustomerAuthController::class, 'verifyRegisterOtp'])->name('frontend.register.otp.verify');
 Route::get('/add-address', [FrontendCheckoutController::class, 'showAddAddress'])->name('frontend.add_address');
 Route::post('/add-address', [FrontendCheckoutController::class, 'storeAddress'])->name('frontend.add_address.store');
+
+Route::get('/about-us', [FrontendPageController::class, 'aboutUs'])->name('frontend.about_us');
+Route::get('/delivery-information', [FrontendPageController::class, 'deliveryInfo'])->name('frontend.delivery_info');
+Route::get('/privacy-policy', [FrontendPageController::class, 'privacyPolicy'])->name('frontend.privacy_policy');
+Route::get('/terms-conditions', [FrontendPageController::class, 'termsConditions'])->name('frontend.terms_conditions');
+Route::get('/returns', [FrontendPageController::class, 'returns'])->name('frontend.returns');
 
 // Optional compatibility for old template URLs
 Route::redirect('/index.html', '/');
@@ -136,5 +146,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('delivery-persons/{id}', [AdminDeliveryController::class, 'personsShow'])->name('deliveries.persons.show');
         Route::get('delivery-persons/{id}/edit', [AdminDeliveryController::class, 'personsEdit'])->name('deliveries.persons.edit');
         Route::put('delivery-persons/{id}', [AdminDeliveryController::class, 'personsUpdate'])->name('deliveries.persons.update');
+
+        Route::get('delivery-charges', [AdminDeliveryChargeController::class, 'index'])->name('delivery-charges.index');
+        Route::post('delivery-charges', [AdminDeliveryChargeController::class, 'store'])->name('delivery-charges.store');
+
+        // Promo Tiles
+        Route::get('promo-tiles', [AdminPromoTileController::class, 'index'])->name('promo-tiles.index');
+        Route::get('promo-tiles/create', [AdminPromoTileController::class, 'create'])->name('promo-tiles.create');
+        Route::post('promo-tiles', [AdminPromoTileController::class, 'store'])->name('promo-tiles.store');
+        Route::get('promo-tiles/{promoTile}/edit', [AdminPromoTileController::class, 'edit'])->name('promo-tiles.edit');
+        Route::put('promo-tiles/{promoTile}', [AdminPromoTileController::class, 'update'])->name('promo-tiles.update');
+        Route::delete('promo-tiles/{promoTile}', [AdminPromoTileController::class, 'destroy'])->name('promo-tiles.destroy');
+        Route::get('promo-tiles/{promoTile}/products', [AdminPromoTileController::class, 'products'])->name('promo-tiles.products');
+        Route::post('promo-tiles/{promoTile}/products', [AdminPromoTileController::class, 'storeProduct'])->name('promo-tiles.products.store');
+        Route::delete('promo-tiles/{promoTile}/products/{productId}', [AdminPromoTileController::class, 'destroyProduct'])->name('promo-tiles.products.destroy');
     });
 });

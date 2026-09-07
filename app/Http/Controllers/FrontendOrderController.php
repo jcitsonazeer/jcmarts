@@ -46,9 +46,6 @@ class FrontendOrderController extends Controller
         $orders = $this->frontendOrderService->getOrdersForCustomer($customerId, $search);
 
         $selectedOrderId = (int) $request->query('order_id', 0);
-        if ($selectedOrderId === 0 && $orders->isNotEmpty()) {
-            $selectedOrderId = (int) $orders->first()->id;
-        }
 
         $selectedOrder = null;
         if ($selectedOrderId > 0) {

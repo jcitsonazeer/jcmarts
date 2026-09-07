@@ -70,7 +70,7 @@
 <div class="header-top-right pull-right">
     <div class="telephone"><a href="#"><i class="fa fa-phone"></i>8925880110</a></div>
     @if(session()->has('customer_id'))
-      <div class="login"><span><i class="fa fa-user" ></i>Hello {{ session('customer_name') }}</span></div>
+      <div class="login"><a href="{{ route('frontend.account') }}"><i class="fa fa-user" ></i>Hello {{ session('customer_name') }}</a></div>
       <div class="login"><a href="{{ route('frontend.orders.index') }}"><i class="fa fa-shopping-bag"></i>My Orders</a></div>
       <div>
         <form method="POST" action="{{ route('frontend.logout') }}" style="display:inline;">
@@ -164,7 +164,7 @@
   </div>
   <div class="login_icon">
       @if(session()->has('customer_id'))
-        <a href="javascript:void(0);"><i class="fa fa-user"></i>Hello {{ session('customer_name') }}</a>
+        <a href="{{ route('frontend.account') }}"><i class="fa fa-user"></i>Hello {{ session('customer_name') }}</a>
       @else
         <a href="{{ route('frontend.login') }}"><i class="fa fa-user"></i>Login</a>
       @endif

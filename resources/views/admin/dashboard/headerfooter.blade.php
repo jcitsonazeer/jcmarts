@@ -133,6 +133,11 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.promo-tiles.index') }}">
+                                        Promo Tiles
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a class="nav-link" href="{{ route('admin.uom-masters.index') }}">
                                         UOM Master
                                     </a>
@@ -239,6 +244,11 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="{{ route('admin.deliveries.history') }}">
                                         Delivery History
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.delivery-charges.index') }}">
+                                        Delivery Charges
                                     </a>
                                 </li>
                             </ul>

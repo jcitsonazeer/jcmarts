@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CustomerAddress;
 use App\Services\CartService;
+use App\Services\DeliveryChargeService;
 use App\Services\FrontendCatalogService;
 use App\Services\OrderService;
 use App\Services\Payment\RazorpayService;
@@ -48,17 +49,20 @@ class FrontendCheckoutController extends Controller
     protected CartService $cartService;
     protected RazorpayService $razorpayService;
     protected OrderService $orderService;
+    protected DeliveryChargeService $deliveryChargeService;
 
     public function __construct(
         FrontendCatalogService $frontendCatalogService,
         CartService $cartService,
         RazorpayService $razorpayService,
-        OrderService $orderService
+        OrderService $orderService,
+        DeliveryChargeService $deliveryChargeService
     ) {
         $this->frontendCatalogService = $frontendCatalogService;
         $this->cartService = $cartService;
         $this->razorpayService = $razorpayService;
         $this->orderService = $orderService;
+        $this->deliveryChargeService = $deliveryChargeService;
     }
 
     public function index(): RedirectResponse|View
@@ -147,6 +151,16 @@ class FrontendCheckoutController extends Controller
             return $guardRedirect;
         }
 
+        $orderSummary = $this->buildOrderSummary();
+        if (!$this->deliveryChargeService->isDeliveryAllowed((float) $orderSummary['sub_total'])) {
+            $setting = $this->deliveryChargeService->getActiveSettings();
+            $minimum = $setting ? (float) $setting->minimum_order_value : 0;
+
+            return redirect()
+                ->route('frontend.checkout')
+                ->withErrors(['minimum_order' => 'Minimum order value for direct delivery is Rs. ' . number_format($minimum, 0) . '. Please add more items to continue.']);
+        }
+
         $validated = $request->validate([
             'selected_address_id' => ['required', 'integer'],
         ]);
@@ -227,6 +241,13 @@ class FrontendCheckoutController extends Controller
         $orderSummary = $this->buildOrderSummary();
         $total = (float) $orderSummary['total'];
         $amountInPaise = (int) round($total * 100);
+
+        if (!$this->deliveryChargeService->isDeliveryAllowed((float) $orderSummary['sub_total'])) {
+            $setting = $this->deliveryChargeService->getActiveSettings();
+            $minimum = $setting ? (float) $setting->minimum_order_value : 0;
+
+            return response()->json(['message' => 'Minimum order value for direct delivery is Rs. ' . number_format($minimum, 0) . '. Please add more items to continue.'], 422);
+        }
 
         if ($amountInPaise < 100) {
             return response()->json(['message' => 'Minimum payable amount is Rs 1.'], 422);
@@ -383,7 +404,7 @@ class FrontendCheckoutController extends Controller
             return ((float) $item->unit_price) * ((int) $item->quantity);
         });
 
-        $deliveryCharge = 0.0;
+        $deliveryCharge = $this->deliveryChargeService->calculateDeliveryCharge($subTotal);
         $packingCharge = 0.0;
         $otherCharge = 0.0;
         $total = $subTotal + $deliveryCharge + $packingCharge + $otherCharge;

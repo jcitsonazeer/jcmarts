@@ -18,6 +18,7 @@ class FrontendProductController extends Controller
     {
         $subCategoryId = $request->query('sub_category');
         $offerId = $request->query('offer');
+        $promoTileId = $request->query('promo_tile');
         $searchTerm = trim((string) $request->query('search', ''));
         $searchTerm = $searchTerm !== '' ? $searchTerm : null;
         $selectedBrandIds = collect((array) $request->query('brands', []))
@@ -33,8 +34,10 @@ class FrontendProductController extends Controller
 
         $selectedSubCategory = $this->frontendProductService->getSelectedSubCategory($subCategoryId);
         $selectedOffer = $this->frontendProductService->getSelectedOffer($offerId);
+        $selectedPromoTile = $this->frontendProductService->getSelectedPromoTile($promoTileId);
         $selectedSubCategoryId = null;
         $selectedOfferId = null;
+        $selectedPromoTileId = null;
 
         if ($selectedSubCategory) {
             $selectedSubCategoryId = $selectedSubCategory->id;
@@ -44,13 +47,18 @@ class FrontendProductController extends Controller
             $selectedOfferId = $selectedOffer->id;
         }
 
+        if ($selectedPromoTile) {
+            $selectedPromoTileId = (int) $selectedPromoTile->id;
+        }
+
         $menuCategories = $this->frontendProductService->getMenuCategories();
-        $availableBrands = $this->frontendProductService->getAvailableBrands($selectedSubCategoryId, $searchTerm, $selectedOfferId);
+        $availableBrands = $this->frontendProductService->getAvailableBrands($selectedSubCategoryId, $searchTerm, $selectedOfferId, $selectedPromoTileId);
         $products = $this->frontendProductService->getProductsByBrands(
             $selectedSubCategoryId,
             $searchTerm,
             $selectedOfferId,
-            $selectedBrandIds
+            $selectedBrandIds,
+            $selectedPromoTileId
         );
 
         return view('frontend.products', compact(
@@ -58,6 +66,7 @@ class FrontendProductController extends Controller
             'products',
             'selectedSubCategory',
             'selectedOffer',
+            'selectedPromoTile',
             'searchTerm',
             'availableBrands',
             'selectedBrandIds'

@@ -77,4 +77,9 @@ class Product extends Model
     {
         return $this->hasMany(OfferProduct::class, 'products_id');
     }
+
+    public function promoTiles()
+    {
+        return $this->belongsToMany(PromoTile::class, 'promo_tile_products', 'product_id', 'promo_tile_id');
+    }
 }

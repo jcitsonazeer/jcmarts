@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerAddress;
 use App\Services\ApiCartService;
+use App\Services\DeliveryChargeService;
 use App\Services\OrderService;
 use App\Services\Payment\RazorpayService;
 use Illuminate\Http\JsonResponse;
@@ -18,15 +19,18 @@ class CheckoutController extends Controller
     protected ApiCartService $apiCartService;
     protected RazorpayService $razorpayService;
     protected OrderService $orderService;
+    protected DeliveryChargeService $deliveryChargeService;
 
     public function __construct(
         ApiCartService $apiCartService,
         RazorpayService $razorpayService,
-        OrderService $orderService
+        OrderService $orderService,
+        DeliveryChargeService $deliveryChargeService
     ) {
         $this->apiCartService = $apiCartService;
         $this->razorpayService = $razorpayService;
         $this->orderService = $orderService;
+        $this->deliveryChargeService = $deliveryChargeService;
     }
 
     /**
@@ -58,7 +62,7 @@ class CheckoutController extends Controller
             return ((float) $item->unit_price) * ((int) $item->quantity);
         });
 
-        $deliveryCharge = 0.0;
+        $deliveryCharge = $this->deliveryChargeService->calculateDeliveryCharge($subTotal);
         $packingCharge = 0.0;
         $otherCharge = 0.0;
         $total = $subTotal + $deliveryCharge + $packingCharge + $otherCharge;
@@ -131,12 +135,25 @@ class CheckoutController extends Controller
             return ((float) $item->unit_price) * ((int) $item->quantity);
         });
 
+        if (!$this->deliveryChargeService->isDeliveryAllowed($subTotal)) {
+            $setting = $this->deliveryChargeService->getActiveSettings();
+            $minimum = $setting ? (float) $setting->minimum_order_value : 0;
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Minimum order value for direct delivery is Rs. ' . number_format($minimum, 0) . '. Please add more items to continue.',
+                'data' => null,
+            ], 422);
+        }
+
+        $deliveryCharge = $this->deliveryChargeService->calculateDeliveryCharge($subTotal);
+
         $orderSummary = [
             'sub_total' => $subTotal,
-            'delivery_charge' => 0.0,
+            'delivery_charge' => $deliveryCharge,
             'packing_charge' => 0.0,
             'other_charge' => 0.0,
-            'total' => $subTotal,
+            'total' => $subTotal + $deliveryCharge,
         ];
 
         $total = (float) $orderSummary['total'];

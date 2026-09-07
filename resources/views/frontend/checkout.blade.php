@@ -19,6 +19,10 @@
         <div class="alert alert-danger">{{ session('error') }}</div>
       @endif
 
+      @if($errors->has('minimum_order'))
+        <div class="alert alert-danger">{{ $errors->first('minimum_order') }}</div>
+      @endif
+
       <form method="POST" action="{{ route('frontend.checkout.proceed') }}" id="checkout-address-form">
         @csrf
         <input type="hidden" name="selected_address_id" id="selected_address_id" value="{{ old('selected_address_id', '') }}">

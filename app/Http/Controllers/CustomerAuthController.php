@@ -251,4 +251,18 @@ class CustomerAuthController extends Controller
 
         return redirect()->route('frontend.home')->with('success', 'Logged out successfully.');
     }
+
+    public function account()
+    {
+        if (!$this->customerAuthService->isCustomerLoggedIn()) {
+            return redirect()
+                ->route('frontend.login')
+                ->with('error', 'Please login to view your account.');
+        }
+
+        $menuCategories = $this->frontendCatalogService->getMenuCategories();
+        $customer = \App\Models\Customer::with('addresses')->find((int) session('customer_id'));
+
+        return view('frontend.account', compact('menuCategories', 'customer'));
+    }
 }
