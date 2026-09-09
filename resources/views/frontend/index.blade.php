@@ -49,29 +49,37 @@
 </div>
 
 @if(($promoTiles ?? collect())->isNotEmpty())
-<div class="container">
-  <div class="row">
-    <div id="promo-tiles-block" class="col-sm-12">
-      <div class="row">
-        @foreach(($promoTiles ?? collect()) as $promoTile)
-          @php
-            $promoTileImage = $promoTile->promo_image
-              ? asset('storage/promo_tile/' . $promoTile->promo_image)
-              : asset('assets/frontend/images/no_image.png');
-          @endphp
-          <div class="col-xs-12 col-sm-4">
-            <a href="{{ route('frontend.products', ['promo_tile' => $promoTile->id]) }}" class="promo-tile-link" style="display:block;">
-              <img src="{{ $promoTileImage }}"
-                   alt="{{ $promoTile->promo_title }}"
-                   class="img-responsive"
-                   style="width: 100%; border-radius: 8px;"
-                   onerror="this.onerror=null;this.src='{{ asset('assets/frontend/images/no_image.png') }}';">
-            </a>
+	<div class="container">
+<div class="section featured">
+  <div class="owl-carousel offers-carousel">
+    @foreach(($promoTiles ?? collect()) as $promoTile)
+      @php
+        $promoTileImage = $promoTile->promo_image
+          ? asset('storage/promo_tile/' . $promoTile->promo_image)
+          : asset('assets/frontend/images/no_image.png');
+      @endphp
+      <div class="product-items">
+        <div class="product-thumb transition">
+          <div class="imageproduct-cstm offer-image">
+            <div>
+              @if($promoTile->products_count > 0)
+                <a href="{{ route('frontend.products', ['promo_tile' => $promoTile->id]) }}">
+              @endif
+                <img src="{{ $promoTileImage }}"
+                     alt="{{ $promoTile->promo_title }}"
+                     title="{{ $promoTile->promo_title }}"
+                     class="img-responsive"
+                     onerror="this.onerror=null;this.src='{{ asset('assets/frontend/images/no_image.png') }}';">
+              @if($promoTile->products_count > 0)
+                </a>
+              @endif
+            </div>
           </div>
-        @endforeach
+        </div>
       </div>
-    </div>
+    @endforeach
   </div>
+</div>
 </div>
 @endif
 

@@ -110,6 +110,21 @@ $('.manufacture-slider').owlCarousel({
 		itemsMobile : [360,2]
 	});
 
+$('.offers-carousel').owlCarousel({
+        items: 5,
+        autoPlay: 1500,
+        stopOnHover: true,
+        singleItem: false,
+        navigation: true,
+        pagination: false,
+        itemsDesktop: [1199, 4],
+        itemsDesktopSmall: [991, 3],
+        itemsTablet: [767, 3],
+        itemsTabletSmall: [650, 2],
+        itemsMobile: [350, 1],
+        itemsMobileSmall: [349, 1]
+    });
+
 });
 --></script>
 <script>

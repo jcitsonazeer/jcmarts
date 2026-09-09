@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\DeliveryAuthController;
 use App\Http\Controllers\Api\DeliveryController;
+use App\Http\Controllers\Api\PromoTileController;
 
 Route::prefix('v1')->group(function () {
     Route::post('/otp/send', [AuthController::class, 'sendOtp']);
@@ -32,6 +33,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/banners', [CatalogController::class, 'banners']);
     Route::get('/featured-products', [CatalogController::class, 'featuredProducts']);
     Route::get('/offers', [CatalogController::class, 'offers']);
+    Route::get('/promo-tiles', [PromoTileController::class, 'index']);
 
     // Cart routes — work for BOTH guests (with X-Device-ID header) and authenticated users
     Route::get('/cart', [CartController::class, 'index']);

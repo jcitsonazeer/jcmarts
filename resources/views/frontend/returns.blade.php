@@ -58,8 +58,8 @@
       <h3>Contact Us</h3>
       <p>For any grievance redress &amp; customer support, please contact JC MART Customer Care through any of the following channels:</p>
       <ul>
-        <li><strong>Email:</strong> customerservice@jcmart.com</li>
-        <li><strong>Phone:</strong> (+91) 8925880110</li>
+        <li><strong>Email:</strong> jcmartsindia@gmail.com</li>
+        <li><strong>Phone:</strong> (+91) 9788700444</li>
       </ul>
     </div>
   </div>

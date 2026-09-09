@@ -136,6 +136,52 @@ class PromoTileService
             ->get();
     }
 
+    public function getActivePromoTilesForApi()
+    {
+        return PromoTile::query()
+            ->where('is_active', 1)
+            ->withCount('products')
+            ->with(['products' => function ($query) {
+                $query->select([
+                    'products.id',
+                    'products.sub_category_id',
+                    'products.brand_id',
+                    'products.product_name',
+                    'products.product_image',
+                    'products.is_active',
+                ])
+                    ->where('products.is_active', 1)
+                    ->whereHas('rates', function ($rateQuery) {
+                        $rateQuery->where('is_active', 1);
+                    })
+                    ->with([
+                        'brand:id,brand_name',
+                        'rates' => function ($rateQuery) {
+                            $rateQuery->select([
+                                'id',
+                                'product_id',
+                                'uom_id',
+                                'selling_price',
+                                'offer_percentage',
+                                'offer_price',
+                                'final_price',
+                                'soldout_status',
+                                'stock_dependent',
+                                'is_active',
+                                'selected_display',
+                            ])
+                                ->where('is_active', 1)
+                                ->with(['uom:id,primary_uom,secondary_uom'])
+                                ->orderByDesc('selected_display')
+                                ->orderBy('id');
+                        },
+                    ]);
+            }])
+            ->orderBy('sort_order')
+            ->orderByDesc('id')
+            ->get();
+    }
+
     public function getLinkedProducts($tileId)
     {
         return PromoTileProduct::query()

@@ -67,8 +67,8 @@
       <h3>10. Contact Us</h3>
       <p>For any questions or concerns about this Privacy Policy, please contact us at:</p>
       <ul>
-        <li><strong>Email:</strong> customerservice@jcmart.com</li>
-        <li><strong>Phone:</strong> (+91) 8925880110</li>
+        <li><strong>Email:</strong> jcmartsindia@gmail.com</li>
+        <li><strong>Phone:</strong> (+91) 9788700444</li>
         <li><strong>Address:</strong> 15-62/10, Chengamoolai, Kuzhithurai P.O, Vilavancode Taluk, Kanyakumari District, Pin: 629163</li>
       </ul>
     </div>

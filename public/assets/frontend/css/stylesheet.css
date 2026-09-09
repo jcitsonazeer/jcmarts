@@ -4898,6 +4898,9 @@ opacity: 1;
 	border-radius:15px;
 	box-shadow:inset 3px 4px 4px -1px #0a6c56;
 }
+.offer-image{
+    height:350px;
+}
 
 /* Quantity input: keep default spinner area on white background */
 input.qty[type="number"] {
