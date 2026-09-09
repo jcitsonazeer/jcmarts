@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerRegisterOtp;
-use App\Models\DeliveryPerson;
 use App\Services\ApiCartService;
 use App\Services\CustomerAuthService;
 use App\Services\OtpSmsService;
@@ -13,7 +12,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -26,12 +24,6 @@ class AuthController extends Controller
 
     public function sendOtp(Request $request)
     {
-        $rejected = $this->rejectDeliveryPersonSession($request);
-
-        if ($rejected) {
-            return $rejected;
-        }
-
         $validated = $request->validate([
             'mobile_number' => ['required_without:mobile', 'nullable', 'regex:/^[0-9]{10,15}$/'],
             'mobile' => ['required_without:mobile_number', 'nullable', 'regex:/^[0-9]{10,15}$/'],
@@ -129,12 +121,6 @@ class AuthController extends Controller
 
     public function verifyOtp(Request $request)
     {
-        $rejected = $this->rejectDeliveryPersonSession($request);
-
-        if ($rejected) {
-            return $rejected;
-        }
-
         $validated = $request->validate([
             'mobile_number' => ['required_without:mobile', 'nullable', 'regex:/^[0-9]{10,15}$/'],
             'mobile' => ['required_without:mobile_number', 'nullable', 'regex:/^[0-9]{10,15}$/'],
@@ -216,12 +202,6 @@ class AuthController extends Controller
 
     public function sendRegisterOtp(Request $request)
     {
-        $rejected = $this->rejectDeliveryPersonSession($request);
-
-        if ($rejected) {
-            return $rejected;
-        }
-
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'mobile_number' => ['required_without:mobile', 'nullable', 'regex:/^[0-9]{10,15}$/'],
@@ -320,12 +300,6 @@ class AuthController extends Controller
 
     public function verifyRegisterOtp(Request $request)
     {
-        $rejected = $this->rejectDeliveryPersonSession($request);
-
-        if ($rejected) {
-            return $rejected;
-        }
-
         $validated = $request->validate([
             'mobile_number' => ['required_without:mobile', 'nullable', 'regex:/^[0-9]{10,15}$/'],
             'mobile' => ['required_without:mobile_number', 'nullable', 'regex:/^[0-9]{10,15}$/'],
@@ -423,33 +397,6 @@ class AuthController extends Controller
             'message' => 'Logged out successfully',
             'data' => null,
         ]);
-    }
-
-    /**
-     * Reject the request if a delivery person is already logged in.
-     *
-     * A delivery person session must be logged out before logging in as a
-     * customer, so only ONE active role exists on the device/app at a time.
-     */
-    protected function rejectDeliveryPersonSession(Request $request)
-    {
-        $bearerToken = $request->bearerToken();
-
-        if (!$bearerToken) {
-            return null;
-        }
-
-        $token = PersonalAccessToken::findToken($bearerToken);
-
-        if ($token && $token->tokenable instanceof DeliveryPerson) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Logged in as delivery person. If you wish to login as a customer, you should log out first from the delivery person login.',
-                'data' => null,
-            ], 403);
-        }
-
-        return null;
     }
 
     /**

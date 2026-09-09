@@ -3,14 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
 use App\Models\DeliveryPerson;
 use App\Models\DeliveryPersonOtp;
 use App\Services\OtpSmsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class DeliveryAuthController extends Controller
 {
@@ -27,12 +25,6 @@ class DeliveryAuthController extends Controller
      */
     public function sendOtp(Request $request)
     {
-        $rejected = $this->rejectCustomerSession($request);
-
-        if ($rejected) {
-            return $rejected;
-        }
-
         $validated = $request->validate([
             'mobile' => ['required', 'regex:/^[0-9]{10,15}$/'],
         ]);
@@ -120,12 +112,6 @@ class DeliveryAuthController extends Controller
      */
     public function verifyOtp(Request $request)
     {
-        $rejected = $this->rejectCustomerSession($request);
-
-        if ($rejected) {
-            return $rejected;
-        }
-
         $validated = $request->validate([
             'mobile' => ['required', 'regex:/^[0-9]{10,15}$/'],
             'otp' => ['required', 'digits:6'],
@@ -248,30 +234,4 @@ class DeliveryAuthController extends Controller
         ]);
     }
 
-    /**
-     * Reject the request if a customer is already logged in.
-     *
-     * A customer session must be logged out before logging in as a delivery
-     * person, so only ONE active role exists on the device/app at a time.
-     */
-    protected function rejectCustomerSession(Request $request)
-    {
-        $bearerToken = $request->bearerToken();
-
-        if (!$bearerToken) {
-            return null;
-        }
-
-        $token = PersonalAccessToken::findToken($bearerToken);
-
-        if ($token && $token->tokenable instanceof Customer) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Logged in as customer. If you wish to login as a delivery person, you should log out first from the customer login.',
-                'data' => null,
-            ], 403);
-        }
-
-        return null;
-    }
 }
