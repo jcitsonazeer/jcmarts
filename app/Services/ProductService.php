@@ -54,7 +54,7 @@ class ProductService
     }
 	
     // For Mobile API
-    public function getActiveProductsForApi($subCategoryId = null, $search = null, $perPage = 10)
+    public function getActiveProductsForApi($subCategoryId = null, $search = null, $perPage = 10, $promoTileId = null)
     {
         $query = Product::query()
             ->where('is_active', 1)
@@ -77,6 +77,12 @@ class ProductService
 
         if (!empty($search)) {
             $query->where('product_name', 'like', '%' . $search . '%');
+        }
+
+        if (!empty($promoTileId)) {
+            $query->whereHas('promoTiles', function ($promoTileQuery) use ($promoTileId) {
+                $promoTileQuery->where('promo_tile_id', $promoTileId);
+            });
         }
 
         return $query->orderByDesc('id')

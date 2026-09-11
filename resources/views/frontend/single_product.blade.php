@@ -5,17 +5,27 @@
 
 @php
     $defaultImage = asset('assets/frontend/images/no_image.png');
-    $fallbackImage = !empty($product->product_image) ? asset('storage/product/' . $product->product_image) : $defaultImage;
+    $allImages = collect();
+
+    if (!empty($product->product_image)) {
+        $allImages->push(asset('storage/product/' . $product->product_image));
+    }
+
     $galleryList = collect($galleryImages ?? []);
 
-    if ($galleryList->isEmpty()) {
-        $galleryList = collect([$fallbackImage]);
-    } else {
-        $galleryList = $galleryList->map(function ($img) {
-            return asset('storage/product/single/' . $img);
+    if ($galleryList->isNotEmpty()) {
+        $galleryList->each(function ($img) use ($allImages) {
+            $allImages->push(asset('storage/product/single/' . $img));
         });
     }
 
+    $allImages = $allImages->unique()->values();
+
+    if ($allImages->isEmpty()) {
+        $allImages = collect([$defaultImage]);
+    }
+
+    $galleryList = $allImages;
 @endphp
 
 <div id="product-product" class="container product">

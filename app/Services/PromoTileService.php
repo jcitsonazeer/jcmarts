@@ -129,6 +129,13 @@ class PromoTileService
     public function getActiveTiles()
     {
         return PromoTile::query()
+            ->select([
+                'id',
+                'promo_title',
+                'promo_image',
+                'sort_order',
+                'is_active',
+            ])
             ->where('is_active', 1)
             ->withCount('products')
             ->orderBy('sort_order')

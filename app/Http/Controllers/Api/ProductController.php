@@ -99,12 +99,13 @@ class ProductController extends Controller
     private function buildProductResponse(Request $request, string $message)
     {
         $subCategoryId = $request->query('sub_category_id');
+        $promoTileId = $request->query('promo_tile');
         $search = trim((string) $request->query('search', ''));
         $search = $search !== '' ? $search : null;
         $perPage = (int) $request->query('per_page', 10);
         $perPage = max(1, min($perPage, 100));
 
-        $products = $this->productService->getActiveProductsForApi($subCategoryId, $search, $perPage);
+        $products = $this->productService->getActiveProductsForApi($subCategoryId, $search, $perPage, $promoTileId);
 
         $products->getCollection()->transform(function ($product) {
             $product->product_image = $product->product_image
@@ -119,6 +120,7 @@ class ProductController extends Controller
             'message' => $message,
             'filters' => [
                 'sub_category_id' => $subCategoryId,
+                'promo_tile' => $promoTileId,
                 'search' => $search,
                 'per_page' => $perPage,
             ],
