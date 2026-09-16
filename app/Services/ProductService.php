@@ -14,8 +14,8 @@ use RuntimeException;
 
 class ProductService
 {
-    private const IMAGE_WIDTH = 233;
-    private const IMAGE_HEIGHT = 215;
+    private const IMAGE_WIDTH = 500;
+    private const IMAGE_HEIGHT = 500;
 
     public function getAll(?string $searchTerm = null)
     {

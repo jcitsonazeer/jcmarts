@@ -83,7 +83,7 @@
                                     <label>Product Image</label>
                                     <input type="file" id="product_image_input" name="product_image" class="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
                                     <small class="text-muted d-block">Allowed: JPG, JPEG, PNG (max 600 KB)</small>
-                                    <small class="text-muted">Preview and upload size: 233 x 215 px</small>
+                                    <small class="text-muted">Preview and upload size: 500 x 500 px</small>
                                     @error('product_image')
                                         <small class="text-danger d-block">{{ $message }}</small>
                                     @enderror
@@ -92,7 +92,7 @@
                                         <img id="product_image_preview"
                                              src="{{ $defaultImage }}"
                                              alt="Product Preview"
-                                             style="width: 233px; height: 215px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd;"
+                                             style="width: 500px; height: 500px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd;"
                                              onerror="this.onerror=null;this.src='{{ $defaultImage }}';">
                                     </div>
                                 </div>
@@ -134,8 +134,8 @@
 <script>
 const productImageInput = document.getElementById('product_image_input');
 const productImagePreview = document.getElementById('product_image_preview');
-const productPreviewWidth = 233;
-const productPreviewHeight = 215;
+const productPreviewWidth = 500;
+const productPreviewHeight = 500;
 const defaultProductImage = @json($defaultImage);
 
 productImageInput?.addEventListener('change', function (event) {
