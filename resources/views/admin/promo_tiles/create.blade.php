@@ -39,9 +39,9 @@
                                                    id="promo_image_input"
                                                    name="promo_image"
                                                    class="form-control {{ $errors->has('promo_image') ? 'is-invalid' : '' }}"
-                                                   accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                                                   accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
                                                    required>
-                                            <small class="text-muted">Allowed: JPG, JPEG, PNG (max 5 MB)</small>
+                                            <small class="text-muted">Allowed: JPG, JPEG, PNG, GIF image (max 5 MB, GIF up to 16 MB)</small>
                                             @error('promo_image')
                                                 <span class="text-danger d-block">{{ $message }}</span>
                                             @enderror
@@ -130,27 +130,29 @@
             return;
         }
 
-        const maxFileSize = 5 * 1024 * 1024; // 5 MB
+        const imagePreview = document.getElementById('promo_image_preview');
+        const fileName = (file.name || '').toLowerCase();
+        const isGif = fileName.endsWith('.gif');
+        const maxFileSize = isGif ? 16 * 1024 * 1024 : 5 * 1024 * 1024; // 16 MB for GIF, 5 MB for others
 
         if (file.size > maxFileSize) {
-            alert('Promo image must not exceed 5 MB.');
+            alert(isGif ? 'Promo image must not exceed 16 MB.' : 'Promo image must not exceed 5 MB.');
             event.target.value = '';
-            document.getElementById('promo_image_preview').src = @json($defaultImage);
+            imagePreview.src = @json($defaultImage);
             return;
         }
 
-        const allowedTypes = ['image/jpeg', 'image/png'];
-        const fileName = (file.name || '').toLowerCase();
-        const isAllowedExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png');
+        const isImage = ['image/jpeg', 'image/png', 'image/gif'].includes(file.type)
+            && (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.gif'));
 
-        if (!allowedTypes.includes(file.type) || !isAllowedExtension) {
-            alert('Please select only JPG, JPEG, or PNG image.');
+        if (!isImage) {
+            alert('Please select only a JPG, JPEG, PNG, or GIF image.');
             event.target.value = '';
-            document.getElementById('promo_image_preview').src = @json($defaultImage);
+            imagePreview.src = @json($defaultImage);
             return;
         }
 
-        document.getElementById('promo_image_preview').src = URL.createObjectURL(file);
+        imagePreview.src = URL.createObjectURL(file);
     });
 </script>
 @endpush

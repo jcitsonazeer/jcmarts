@@ -32,11 +32,27 @@ class AdminPromoTileController extends Controller
     {
         $validatedData = $request->validate([
             'promo_title' => 'required|string|max:150',
-            'promo_image' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+            'promo_image' => [
+                'required',
+                'file',
+                'mimes:jpg,jpeg,png,gif',
+                function ($attribute, $value, $fail) {
+                    if (!$value instanceof \Illuminate\Http\UploadedFile) {
+                        return;
+                    }
+                    if (strtolower($value->getClientOriginalExtension()) === 'gif') {
+                        if ($value->getSize() > 16 * 1024 * 1024) {
+                            $fail('The promo image must not be larger than 16 MB.');
+                        }
+                    } elseif ($value->getSize() > 5 * 1024 * 1024) {
+                        $fail('The promo image must not be larger than 5 MB.');
+                    }
+                },
+            ],
             'sort_order' => 'required|integer|min:0',
             'is_active' => 'required|boolean',
         ], [
-            'promo_image.max' => 'The promo image must not be larger than 5 MB.',
+            'promo_image.mimes' => 'The promo image must be a JPG, JPEG, PNG, or GIF image.',
         ]);
 
         $adminId = session('admin_id');
@@ -62,11 +78,27 @@ class AdminPromoTileController extends Controller
     {
         $validatedData = $request->validate([
             'promo_title' => 'required|string|max:150',
-            'promo_image' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'promo_image' => [
+                'nullable',
+                'file',
+                'mimes:jpg,jpeg,png,gif',
+                function ($attribute, $value, $fail) {
+                    if (!$value instanceof \Illuminate\Http\UploadedFile) {
+                        return;
+                    }
+                    if (strtolower($value->getClientOriginalExtension()) === 'gif') {
+                        if ($value->getSize() > 16 * 1024 * 1024) {
+                            $fail('The promo image must not be larger than 16 MB.');
+                        }
+                    } elseif ($value->getSize() > 5 * 1024 * 1024) {
+                        $fail('The promo image must not be larger than 5 MB.');
+                    }
+                },
+            ],
             'sort_order' => 'required|integer|min:0',
             'is_active' => 'required|boolean',
         ], [
-            'promo_image.max' => 'The promo image must not be larger than 5 MB.',
+            'promo_image.mimes' => 'The promo image must be a JPG, JPEG, PNG, or GIF image.',
         ]);
 
         $adminId = session('admin_id');
