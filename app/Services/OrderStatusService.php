@@ -49,6 +49,18 @@ class OrderStatusService
         'assigned_for_delivery',
     ];
 
+    // Each delivery status (deliveries.status) mapped to the order status that
+    // represents the same stage. This is used only for showing the current
+    // status, so an order follows the live delivery progress instead of
+    // stopping at 'assigned_for_delivery'.
+    public const DELIVERY_STATUS_TO_ORDER_STATUS = [
+        'assigned' => 'assigned_for_delivery',
+        'accepted' => self::STATUS_DELIVERY_PERSON_ACCEPTS,
+        'picked_up' => 'reached_doorstep',
+        'out_for_delivery' => 'reached_doorstep',
+        'delivered' => self::STATUS_ORDER_DELIVERED,
+    ];
+
     public const RETURN_STATUS_FLOW = [
         self::STATUS_RETURN_REQUESTED,
         self::STATUS_RETURN_APPROVED,
@@ -137,6 +149,66 @@ class OrderStatusService
         }
 
         return $order->statuses()->orderByDesc('action_time')->orderByDesc('id')->first();
+    }
+
+    /**
+     * Latest order status exactly as it is saved in the order_status table.
+     * Used wherever the original status flow must not change.
+     */
+    public function getStoredOrderStatus(Order $order): ?string
+    {
+        $latestStatus = $this->getLatestStatusForOrder($order);
+
+        return $latestStatus ? $latestStatus->order_status : null;
+    }
+
+    /**
+     * Order status that matches the given delivery status.
+     * Returns null when the delivery status has no matching order status.
+     */
+    public function getOrderStatusFromDeliveryStatus(?string $deliveryStatus): ?string
+    {
+        if ($deliveryStatus === null || $deliveryStatus === '') {
+            return null;
+        }
+
+        return self::DELIVERY_STATUS_TO_ORDER_STATUS[$deliveryStatus] ?? null;
+    }
+
+    /**
+     * Current status to show for an order.
+     *
+     * The saved order status is returned as it is, until the order is handed
+     * over to delivery. After that the status follows the delivery row, so the
+     * order shows the live delivery progress (accepted, picked up, out for
+     * delivery, delivered) instead of staying on 'assigned_for_delivery'.
+     */
+    public function getCurrentOrderStatus(Order $order): ?string
+    {
+        $storedStatus = $this->getStoredOrderStatus($order);
+
+        $storedIndex = array_search($storedStatus, self::STATUS_FLOW, true);
+        $assignedIndex = array_search('assigned_for_delivery', self::STATUS_FLOW, true);
+
+        // Delivery can only move the status forward once the order is assigned
+        // for delivery. Before that the admin process decides the status.
+        if ($storedIndex === false || $assignedIndex === false || $storedIndex < $assignedIndex) {
+            return $storedStatus;
+        }
+
+        $deliveryOrderStatus = $this->getOrderStatusFromDeliveryStatus($order->delivery?->status);
+
+        return $deliveryOrderStatus ?? $storedStatus;
+    }
+
+    /**
+     * Readable label for the current status of an order.
+     */
+    public function getCurrentOrderStatusLabel(Order $order): string
+    {
+        $currentStatus = $this->getCurrentOrderStatus($order);
+
+        return $currentStatus ? $this->formatStatusLabel($currentStatus) : 'Not Started';
     }
 
     public function getNextAllowedStatuses(?string $currentStatus): array

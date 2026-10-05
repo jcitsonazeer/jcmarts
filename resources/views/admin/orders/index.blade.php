@@ -51,7 +51,8 @@
                                             <td>{{ $order->customer?->mobile_number ?? '-' }}</td>
                                             <td>{{ $order->currency }} {{ number_format((float) $order->total_amount, 2) }}</td>
                                             <td>{{ $order->current_payment_status ?? '-' }}</td>
-                                            <td>{{ $order->current_order_status ? ucwords(str_replace('_', ' ', $order->current_order_status)) : 'Not Started' }}</td>
+                                            @php($listStatus = $order->current_display_order_status ?? $order->current_order_status)
+                                            <td>{{ $listStatus ? ucwords(str_replace('_', ' ', $listStatus)) : 'Not Started' }}</td>
                                             <td>{{ $order->items_count ?? 0 }}</td>
                                             <td>{{ $orderDate ? date('d-m-Y H:i', strtotime($orderDate)) : '-' }}</td>
                                             <td>

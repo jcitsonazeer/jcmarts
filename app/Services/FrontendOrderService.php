@@ -39,15 +39,17 @@ class FrontendOrderService
         }
 
         $orders = $query
-            ->with(['statuses', 'payments', 'returnRequests.items'])
+            ->with(['statuses', 'payments', 'delivery', 'returnRequests.items'])
             ->withCount('items')
             ->orderByDesc('created_date')
             ->orderByDesc('id')
             ->get();
 
         return $orders->each(function (Order $order) {
-            $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
-            $order->current_order_status = $latestStatus ? $latestStatus->order_status : null;
+            // Status sent to the app. It follows the delivery status once the
+            // order is handed over to delivery, so the list does not keep
+            // showing 'Assigned for delivery'.
+            $order->current_order_status = $this->orderStatusService->getCurrentOrderStatus($order);
 
             $this->attachCurrentPaymentDetails($order);
         });
@@ -74,13 +76,19 @@ class FrontendOrderService
             ->first();
 
         if ($order) {
-            $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
-            $order->current_order_status = $latestStatus ? $latestStatus->order_status : null;
+            // Saved order status. Used for the existing cancel rules so the
+            // cancellation behaviour stays the same.
+            $storedStatus = $this->orderStatusService->getStoredOrderStatus($order);
+
+            // Status sent to the app. It follows the delivery status once the
+            // order is handed over to delivery, so the app does not keep
+            // showing 'Assigned for delivery'.
+            $order->current_order_status = $this->orderStatusService->getCurrentOrderStatus($order);
             $order->current_delivery_status = $order->delivery ? $order->delivery->status : null;
             $order->current_delivery_person_name = $order->delivery?->deliveryPerson?->name ?? null;
             $order->order_status_timeline = $this->orderStatusService->buildTimeline($order->statuses, $order);
             $order->can_customer_cancel = $order->is_active
-                && $this->orderStatusService->canCustomerCancel($order->current_order_status);
+                && $this->orderStatusService->canCustomerCancel($storedStatus);
             $order->can_customer_return = $this->returnService->canCustomerRequestReturn($order);
             $order->return_allowed_until = $this->returnService->returnAllowedUntil($order);
             $order->return_period_expired = $this->returnService->isReturnPeriodExpired($order);

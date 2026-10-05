@@ -50,9 +50,8 @@
                                     <tr>
                                         <th>Order Status</th>
                                         <td>
-                                            @php($orderStatus = $delivery->order?->statuses?->sortByDesc('action_time')->first())
-                                            @if($orderStatus)
-                                                <span class="badge badge-info">{{ ucwords(str_replace('_', ' ', $orderStatus->order_status)) }}</span>
+                                            @if($orderStatusLabel)
+                                                <span class="badge badge-info">{{ $orderStatusLabel }}</span>
                                             @else
                                                 <span class="badge badge-secondary">Not Started</span>
                                             @endif

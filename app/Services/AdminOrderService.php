@@ -27,7 +27,7 @@ class AdminOrderService
                 'currency',
                 'created_date',
             ])
-            ->with(['customer', 'payments', 'statuses', 'returnRequests.items'])
+            ->with(['customer', 'payments', 'statuses', 'delivery', 'returnRequests.items'])
             ->withCount('items')
             ->orderByDesc('created_date')
             ->orderByDesc('id')
@@ -37,6 +37,9 @@ class AdminOrderService
         $orders->getCollection()->transform(function (Order $order) {
             $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
             $order->current_order_status = $latestStatus ? $latestStatus->order_status : null;
+            // Status shown in the list. Follows the delivery progress once the
+            // order is handed over to delivery.
+            $order->current_display_order_status = $this->orderStatusService->getCurrentOrderStatus($order);
 
             $this->attachCurrentPaymentDetails($order);
 
@@ -55,6 +58,7 @@ class AdminOrderService
                 'items.product',
                 'items.rate',
                 'statuses',
+                'delivery',
                 'payments',
                 'refunds',
                 'returnRequests.items.product',
@@ -66,6 +70,9 @@ class AdminOrderService
         if ($order) {
             $latestStatus = $this->orderStatusService->getLatestStatusForOrder($order);
             $order->current_order_status = $latestStatus ? $latestStatus->order_status : null;
+            // Status shown on screen. Follows the delivery progress once the
+            // order is handed over to delivery.
+            $order->current_display_order_status = $this->orderStatusService->getCurrentOrderStatus($order);
             $order->order_status_timeline = $this->orderStatusService->buildTimeline($order->statuses, $order);
             $this->attachCurrentPaymentDetails($order);
         }

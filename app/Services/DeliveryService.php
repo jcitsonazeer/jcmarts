@@ -68,6 +68,7 @@ class DeliveryService
                 'order.items.product',
                 'order.items.rate.uom',
                 'order.statuses',
+                'order.delivery',
                 'order.payments',
                 'deliveryPerson',
                 'statusHistories',

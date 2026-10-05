@@ -143,13 +143,21 @@ class OrderProcessController extends Controller
 
     private function buildProcessViewData($order): array
     {
-        $currentStatus = $order->current_order_status;
+        // The saved order status decides which step is current and which steps
+        // can be picked, so the existing status flow stays exactly the same.
+        $currentStatus = $this->orderStatusService->getStoredOrderStatus($order);
+
+        // The label follows the live delivery status, so an order that is with
+        // the delivery person shows the delivery progress and not only
+        // 'Assigned for delivery'.
+        $displayStatus = $order->current_display_order_status
+            ?? $this->orderStatusService->getCurrentOrderStatus($order);
 
         return [
             'order' => $order,
             'currentStatus' => $currentStatus,
-            'currentStatusLabel' => $currentStatus
-                ? $this->orderStatusService->formatStatusLabel($currentStatus)
+            'currentStatusLabel' => $displayStatus
+                ? $this->orderStatusService->formatStatusLabel($displayStatus)
                 : 'Not Started',
             'nextAllowedStatuses' => $this->orderStatusService->getNextAllowedStatuses($currentStatus),
             'statusOptions' => $this->orderStatusService->getStatusOptions(),

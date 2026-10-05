@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\DeliveryAssignmentService;
 use App\Services\DeliveryService;
 use App\Services\DeliveryStatusService;
+use App\Services\OrderStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -14,15 +15,18 @@ class AdminDeliveryController extends Controller
     protected DeliveryService $deliveryService;
     protected DeliveryAssignmentService $deliveryAssignmentService;
     protected DeliveryStatusService $deliveryStatusService;
+    protected OrderStatusService $orderStatusService;
 
     public function __construct(
         DeliveryService $deliveryService,
         DeliveryAssignmentService $deliveryAssignmentService,
-        DeliveryStatusService $deliveryStatusService
+        DeliveryStatusService $deliveryStatusService,
+        OrderStatusService $orderStatusService
     ) {
         $this->deliveryService = $deliveryService;
         $this->deliveryAssignmentService = $deliveryAssignmentService;
         $this->deliveryStatusService = $deliveryStatusService;
+        $this->orderStatusService = $orderStatusService;
     }
 
     public function dashboard()
@@ -166,7 +170,13 @@ class AdminDeliveryController extends Controller
         $timeline = $this->buildDeliveryTimeline($delivery);
         $allowedStatuses = $this->deliveryStatusService->getAllowedNextStatuses($delivery->status);
 
-        return view('admin.deliveries.show', compact('delivery', 'timeline', 'allowedStatuses'));
+        // Order status shown in "Order Information". It follows the current
+        // delivery status, so it does not stay on 'Assigned for delivery'.
+        $orderStatusLabel = $delivery->order
+            ? $this->orderStatusService->getCurrentOrderStatusLabel($delivery->order)
+            : 'Not Started';
+
+        return view('admin.deliveries.show', compact('delivery', 'timeline', 'allowedStatuses', 'orderStatusLabel'));
     }
 
     public function updateStatus(Request $request, int $deliveryId)
