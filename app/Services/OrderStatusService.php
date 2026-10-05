@@ -49,16 +49,16 @@ class OrderStatusService
         'assigned_for_delivery',
     ];
 
-    // Each delivery status (deliveries.status) mapped to the order status that
-    // represents the same stage. This is used only for showing the current
-    // status, so an order follows the live delivery progress instead of
-    // stopping at 'assigned_for_delivery'.
-    public const DELIVERY_STATUS_TO_ORDER_STATUS = [
-        'assigned' => 'assigned_for_delivery',
-        'accepted' => self::STATUS_DELIVERY_PERSON_ACCEPTS,
-        'picked_up' => 'reached_doorstep',
-        'out_for_delivery' => 'reached_doorstep',
-        'delivered' => self::STATUS_ORDER_DELIVERED,
+    // Once an order is handed over to delivery, the order status follows every
+    // single step of the delivery. These are the delivery statuses that have a
+    // matching order status, so the order moves along with the delivery instead
+    // of showing the same value again and again.
+    public const DELIVERY_PROGRESS_STATUSES = [
+        'assigned',
+        'accepted',
+        'picked_up',
+        'out_for_delivery',
+        'delivered',
     ];
 
     public const RETURN_STATUS_FLOW = [
@@ -163,8 +163,16 @@ class OrderStatusService
     }
 
     /**
-     * Order status that matches the given delivery status.
-     * Returns null when the delivery status has no matching order status.
+     * Order status that shows the given delivery status.
+     *
+     * Every delivery step keeps its own status, so assigned, accepted,
+     * picked_up and out_for_delivery each show separately. A finished delivery
+     * shows 'order_delivered', which is the normal order status used after the
+     * order is delivered.
+     *
+     * Returns null when the delivery status has no matching order status, for
+     * example not_assigned, rejected, cancelled or failed. The saved order
+     * status is then used.
      */
     public function getOrderStatusFromDeliveryStatus(?string $deliveryStatus): ?string
     {
@@ -172,7 +180,15 @@ class OrderStatusService
             return null;
         }
 
-        return self::DELIVERY_STATUS_TO_ORDER_STATUS[$deliveryStatus] ?? null;
+        if (!in_array($deliveryStatus, self::DELIVERY_PROGRESS_STATUSES, true)) {
+            return null;
+        }
+
+        if ($deliveryStatus === 'delivered') {
+            return self::STATUS_ORDER_DELIVERED;
+        }
+
+        return $deliveryStatus;
     }
 
     /**
@@ -180,12 +196,17 @@ class OrderStatusService
      *
      * The saved order status is returned as it is, until the order is handed
      * over to delivery. After that the status follows the delivery row, so the
-     * order shows the live delivery progress (accepted, picked up, out for
-     * delivery, delivered) instead of staying on 'assigned_for_delivery'.
+     * order shows every delivery step (assigned, accepted, picked up, out for
+     * delivery) and not only 'assigned_for_delivery'.
      */
     public function getCurrentOrderStatus(Order $order): ?string
     {
         $storedStatus = $this->getStoredOrderStatus($order);
+
+        // A delivered order is final, so the delivery row cannot change it.
+        if ($storedStatus === self::STATUS_ORDER_DELIVERED) {
+            return $storedStatus;
+        }
 
         $storedIndex = array_search($storedStatus, self::STATUS_FLOW, true);
         $assignedIndex = array_search('assigned_for_delivery', self::STATUS_FLOW, true);
