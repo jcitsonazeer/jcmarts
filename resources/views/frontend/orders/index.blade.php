@@ -37,7 +37,7 @@
                                     </div>
                                     <div class="order-right">
                                         <div class="order-total">{{ $order->currency }} {{ number_format((float) $order->total_amount, 2) }}</div>
-                                        <div class="status-pill">{{ $order->current_order_status ? ucwords(str_replace('_', ' ', $order->current_order_status)) : 'Not Started' }}</div>
+                                        <div class="status-pill">{{ $order->current_order_status ? app(\App\Services\OrderStatusService::class)->formatStatusLabel($order->current_order_status) : 'Not Started' }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -58,7 +58,7 @@
                         <span class="order-date">Order date: {{ $orderDate ? date('d-m-Y H:i', strtotime($orderDate)) : '-' }}</span>
                         @php($hasProcessStatus = !empty($selectedOrder->current_order_status))
                         <span class="badge-status {{ $hasProcessStatus ? 'badge-paid' : 'badge-unpaid' }}">
-                            {{ $selectedOrder->current_order_status ? ucwords(str_replace('_', ' ', $selectedOrder->current_order_status)) : 'Not Started' }}
+                            {{ $selectedOrder->current_order_status ? app(\App\Services\OrderStatusService::class)->formatStatusLabel($selectedOrder->current_order_status) : 'Not Started' }}
                         </span>
                     </div>
 
@@ -129,7 +129,7 @@
                                 <div class="worm-step {{ $history ? 'completed' : '' }} {{ $selectedOrder->current_delivery_status === $step ? 'current' : '' }} {{ $history ? '' : 'pending' }}">
                                     <div class="worm-marker"></div>
                                     <div class="worm-content">
-                                        <div class="worm-title">{{ ucwords(str_replace('_', ' ', $step)) }}</div>
+                                        <div class="worm-title">{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($step) }}</div>
                                         <div class="worm-meta">
                                             @if($history && $history->changed_at)
                                                 {{ $history->changed_at->format('d-m-Y H:i') }}
@@ -206,13 +206,13 @@
                         @endif
                         <div class="info-row">
                             <div class="label">Order Process Status</div>
-                            <div class="value">{{ $selectedOrder->current_order_status ? ucwords(str_replace('_', ' ', $selectedOrder->current_order_status)) : 'Not Started' }}</div>
+                            <div class="value">{{ $selectedOrder->current_order_status ? app(\App\Services\OrderStatusService::class)->formatStatusLabel($selectedOrder->current_order_status) : 'Not Started' }}</div>
                         </div>
                         @if(!empty($selectedOrder->current_delivery_status))
                             <div class="info-row">
                                 <div class="label">Delivery Status</div>
                                 <div class="value">
-                                    {{ ucwords(str_replace('_', ' ', $selectedOrder->current_delivery_status)) }}
+                                    {{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($selectedOrder->current_delivery_status) }}
                                     @if(!empty($selectedOrder->current_delivery_person_name))
                                         <div class="meta">by {{ $selectedOrder->current_delivery_person_name }}</div>
                                     @endif

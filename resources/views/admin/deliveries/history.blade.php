@@ -95,7 +95,7 @@
                                                 @if($delivery->status === 'delivered')
                                                     <span class="badge badge-success">Delivered</span>
                                                 @else
-                                                    <span class="badge badge-secondary">{{ ucwords(str_replace('_', ' ', $delivery->status)) }}</span>
+                                                    <span class="badge badge-secondary">{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($delivery->status) }}</span>
                                                 @endif
                                             </td>
                                             <td>{{ $delivery->delivered_at ? date('d-m-Y H:i', strtotime($delivery->delivered_at)) : '-' }}</td>

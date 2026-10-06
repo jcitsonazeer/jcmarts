@@ -178,6 +178,19 @@
                                         <th>Payment Status</th>
                                         <td>{{ $order->current_payment_status ?? '-' }}</td>
                                     </tr>
+                                    @php($orderProcessStatus = $order->current_display_order_status ?? $order->current_order_status)
+                                    <tr>
+                                        <th>Order Process Status</th>
+                                        <td>
+                                            @if($orderProcessStatus)
+                                                <span class="badge badge-info">
+                                                    {{ app(\App\Services\OrderStatusService::class)->formatStatusLabel($orderProcessStatus) }}
+                                                </span>
+                                            @else
+                                                <span class="badge badge-secondary">Not Started</span>
+                                            @endif
+                                        </td>
+                                    </tr>
                                     @if($latestRefund)
                                         <tr>
                                             <th>Refund Status</th>

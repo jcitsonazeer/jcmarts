@@ -69,9 +69,9 @@
                                             @if($delivery->status === 'not_assigned')
                                                 <span class="badge badge-secondary">Not Assigned</span>
                                             @elseif($delivery->status === 'assigned')
-                                                <span class="badge badge-primary">Assigned</span>
+                                                <span class="badge badge-primary">Delivery Assigned</span>
                                             @elseif($delivery->status === 'accepted')
-                                                <span class="badge badge-info">Accepted</span>
+                                                <span class="badge badge-info">Delivery Accepted by Delivery Person</span>
                                             @elseif($delivery->status === 'picked_up')
                                                 <span class="badge badge-warning">Picked Up</span>
                                             @elseif($delivery->status === 'out_for_delivery')
@@ -85,7 +85,7 @@
                                             @elseif($delivery->status === 'rejected')
                                                 <span class="badge badge-danger">Rejected</span>
                                             @else
-                                                <span class="badge badge-secondary">{{ ucwords(str_replace('_', ' ', $delivery->status)) }}</span>
+                                                <span class="badge badge-secondary">{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($delivery->status) }}</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -131,7 +131,7 @@
                                             <select name="delivery_status" class="form-control" required>
                                                 <option value="">-- Select Status --</option>
                                                 @foreach($allowedStatuses as $status)
-                                                    <option value="{{ $status }}">{{ \Illuminate\Support\Str::headline(str_replace('_', ' ', $status)) }}</option>
+                                                    <option value="{{ $status }}">{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($status) }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -179,8 +179,8 @@
                                                 @foreach($delivery->statusHistories->sortByDesc('changed_at') as $history)
                                                     <tr>
                                                         <td>{{ $history->changed_at ? date('d-m-Y H:i', strtotime($history->changed_at)) : '-' }}</td>
-                                                        <td>{{ $history->old_status ? ucwords(str_replace('_', ' ', $history->old_status)) : '-' }}</td>
-                                                        <td>{{ ucwords(str_replace('_', ' ', $history->new_status)) }}</td>
+                                                        <td>{{ $history->old_status ? app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($history->old_status) : '-' }}</td>
+                                                        <td>{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($history->new_status) }}</td>
                                                         <td>{{ $history->changed_by_id ?? '-' }}</td>
                                                     </tr>
                                                 @endforeach

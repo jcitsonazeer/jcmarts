@@ -263,8 +263,8 @@ class AdminDeliveryController extends Controller
     private function buildDeliveryTimeline($delivery): array
     {
         $statuses = [
-            'assigned' => 'Assigned',
-            'accepted' => 'Accepted',
+            'assigned' => 'Delivery Assigned',
+            'accepted' => 'Delivery Accepted by Delivery Person',
             'picked_up' => 'Picked Up',
             'out_for_delivery' => 'Out for Delivery',
             'delivered' => 'Delivered',

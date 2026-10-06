@@ -98,6 +98,9 @@
 
                                         <div class="order-status-actions">
                                             @foreach($statusFlow as $status)
+                                                @if($status === 'assigned_for_delivery')
+                                                    @continue
+                                                @endif
                                                 <div class="order-status-item">
                                                     <span class="current-stage-label {{ $status === $currentStatus ? '' : 'placeholder' }}">
                                                         <span aria-hidden="true">&darr;</span>

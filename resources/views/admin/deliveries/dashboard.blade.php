@@ -39,7 +39,7 @@
                             <div class="col-md-3">
                                 <div class="card border-left-warning">
                                     <div class="card-body">
-                                        <h6 class="text-muted mb-1">Assigned</h6>
+                                        <h6 class="text-muted mb-1">Delivery Assigned</h6>
                                         <h3 class="mb-0">{{ $stats['deliveries']['assigned'] ?? 0 }}</h3>
                                     </div>
                                 </div>

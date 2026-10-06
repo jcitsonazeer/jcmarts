@@ -85,6 +85,14 @@ class DeliveryStatusService
 
     public function formatStatusLabel(string $status): string
     {
+        if ($status === self::STATUS_ASSIGNED) {
+            return 'Delivery Assigned';
+        }
+
+        if ($status === self::STATUS_ACCEPTED) {
+            return 'Delivery Accepted by Delivery Person';
+        }
+
         return ucwords(str_replace('_', ' ', $status));
     }
 

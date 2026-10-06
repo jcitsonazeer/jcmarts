@@ -53,15 +53,15 @@
                                             <td>{{ $delivery->deliveryPerson?->name ?? '-' }}</td>
                                             <td>
                                                 @if($delivery->status === 'assigned')
-                                                    <span class="badge badge-primary">Assigned</span>
+                                                    <span class="badge badge-primary">Delivery Assigned</span>
                                                 @elseif($delivery->status === 'accepted')
-                                                    <span class="badge badge-info">Accepted</span>
+                                                    <span class="badge badge-info">Delivery Accepted by Delivery Person</span>
                                                 @elseif($delivery->status === 'picked_up')
                                                     <span class="badge badge-warning">Picked Up</span>
                                                 @elseif($delivery->status === 'out_for_delivery')
                                                     <span class="badge badge-dark">Out for Delivery</span>
                                                 @else
-                                                    <span class="badge badge-secondary">{{ ucwords(str_replace('_', ' ', $delivery->status)) }}</span>
+                                                    <span class="badge badge-secondary">{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($delivery->status) }}</span>
                                                 @endif
                                             </td>
                                             <td>{{ $delivery->assigned_at ? date('d-m-Y H:i', strtotime($delivery->assigned_at)) : '-' }}</td>

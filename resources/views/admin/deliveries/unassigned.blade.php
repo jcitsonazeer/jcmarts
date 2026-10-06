@@ -52,7 +52,7 @@
                                             <td>{{ $order->currency ?? 'INR' }} {{ number_format((float) ($order->total_amount ?? 0), 2) }}</td>
                                             <td>
                                                 @if($orderStatus)
-                                                    <span class="badge badge-info">{{ ucwords(str_replace('_', ' ', $orderStatus->order_status)) }}</span>
+                                                    <span class="badge badge-info">{{ app(\App\Services\OrderStatusService::class)->formatStatusLabel($orderStatus->order_status) }}</span>
                                                 @else
                                                     <span class="badge badge-secondary">Not Started</span>
                                                 @endif

@@ -100,6 +100,14 @@ class OrderStatusService
 
     public function formatStatusLabel(string $status): string
     {
+        if ($status === 'assigned') {
+            return 'Delivery Assigned';
+        }
+
+        if ($status === 'accepted') {
+            return 'Delivery Accepted by Delivery Person';
+        }
+
         if ($status === self::STATUS_CANCELLATION_REQUESTED) {
             return 'Cancellation Requested';
         }

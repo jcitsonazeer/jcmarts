@@ -55,7 +55,7 @@
                                         <td>
                                             @php($latestStatus = $order->statuses->sortByDesc('action_time')->first())
                                             @if($latestStatus)
-                                                <span class="badge badge-info">{{ ucwords(str_replace('_', ' ', $latestStatus->order_status)) }}</span>
+                                                <span class="badge badge-info">{{ app(\App\Services\OrderStatusService::class)->formatStatusLabel($latestStatus->order_status) }}</span>
                                             @else
                                                 <span class="badge badge-secondary">Not Started</span>
                                             @endif
