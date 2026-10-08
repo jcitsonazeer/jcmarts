@@ -116,9 +116,9 @@ class DeliveryStatusService
         }
     }
 
-    public function changeStatus(int $deliveryId, string $newStatus, int $changedById): Delivery
+    public function changeStatus(int $deliveryId, string $newStatus, int $changedById, ?string $changedByType = null): Delivery
     {
-        return DB::transaction(function () use ($deliveryId, $newStatus, $changedById) {
+        return DB::transaction(function () use ($deliveryId, $newStatus, $changedById, $changedByType) {
             $delivery = Delivery::query()
                 ->where('id', $deliveryId)
                 ->lockForUpdate()
@@ -145,7 +145,7 @@ class DeliveryStatusService
 
             $delivery->update($updateData);
 
-            $this->recordStatusChange($delivery->id, $oldStatus, $newStatus, $changedById);
+            $this->recordStatusChange($delivery->id, $oldStatus, $newStatus, $changedById, $changedByType);
 
             if ($newStatus === self::STATUS_DELIVERED) {
                 $this->handleDeliveryCompleted($delivery, $changedById);
@@ -161,20 +161,21 @@ class DeliveryStatusService
         });
     }
 
-    public function recordStatusChange(int $deliveryId, ?string $oldStatus, string $newStatus, ?int $changedById): DeliveryStatusHistory
+    public function recordStatusChange(int $deliveryId, ?string $oldStatus, string $newStatus, ?int $changedById, ?string $changedByType = null): DeliveryStatusHistory
     {
         return DeliveryStatusHistory::create([
             'delivery_id' => $deliveryId,
             'old_status' => $oldStatus,
             'new_status' => $newStatus,
             'changed_by_id' => $changedById,
+            'changed_by_type' => $changedByType,
             'changed_at' => Carbon::now(),
             'created_by_id' => $changedById,
             'created_date' => Carbon::now(),
         ]);
     }
 
-    private function handleDeliveryCompleted(Delivery $delivery, int $adminId): void
+    private function handleDeliveryCompleted(Delivery $delivery, int $changedById): void
     {
         if ($delivery->delivery_person_id) {
             $this->checkAndFreeDeliveryPerson($delivery->delivery_person_id);
@@ -193,7 +194,7 @@ class DeliveryStatusService
                     $this->orderStatusService->addSystemStatus(
                         $order,
                         OrderStatusService::STATUS_ORDER_DELIVERED,
-                        $delivery->delivery_person_id ?: $adminId
+                        $delivery->delivery_person_id ?: $changedById
                     );
 
                     if (empty($order->delivered_at)) {
@@ -201,7 +202,7 @@ class DeliveryStatusService
                             ->where('id', $order->id)
                             ->update([
                                 'delivered_at' => Carbon::now(),
-                                'updated_by_id' => $delivery->delivery_person_id ?: $adminId,
+                                'updated_by_id' => $delivery->delivery_person_id ?: $changedById,
                                 'updated_date' => Carbon::now(),
                             ]);
                     }
@@ -213,7 +214,7 @@ class DeliveryStatusService
         }
     }
 
-    private function handleDeliveryTerminal(Delivery $delivery, int $adminId): void
+    private function handleDeliveryTerminal(Delivery $delivery, int $changedById): void
     {
         if ($delivery->delivery_person_id) {
             $this->checkAndFreeDeliveryPerson($delivery->delivery_person_id);

@@ -195,7 +195,8 @@ class AdminDeliveryController extends Controller
             $this->deliveryStatusService->changeStatus(
                 $deliveryId,
                 $validated['delivery_status'],
-                $adminId
+                $adminId,
+                'admin'
             );
         } catch (\Exception $exception) {
             return redirect()->route('admin.deliveries.show', $deliveryId)

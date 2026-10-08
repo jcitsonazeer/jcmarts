@@ -117,7 +117,7 @@
                             </div>
                         </div>
 
-                        <div class="row mt-3">
+                 {{--       <div class="row mt-3">
                             <div class="col-md-6">
                                 <h5>Delivery Address</h5>
                                 <p>{{ $delivery->delivery_address ?? '-' }}</p>
@@ -141,7 +141,7 @@
                                     </form>
                                 @endif
                             </div>
-                        </div>
+                        </div>   --}}
 
                         <div class="row mt-4">
                             <div class="col-md-12">
@@ -181,7 +181,7 @@
                                                         <td>{{ $history->changed_at ? date('d-m-Y H:i', strtotime($history->changed_at)) : '-' }}</td>
                                                         <td>{{ $history->old_status ? app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($history->old_status) : '-' }}</td>
                                                         <td>{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($history->new_status) }}</td>
-                                                        <td>{{ $history->changed_by_id ?? '-' }}</td>
+                                                        <td>{{ $history->changed_by_name ?? '-' }}</td>
                                                     </tr>
                                                 @endforeach
                                             </tbody>

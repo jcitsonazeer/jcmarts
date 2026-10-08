@@ -169,7 +169,8 @@ class DeliveryController extends Controller
             $updatedDelivery = $this->deliveryStatusService->changeStatus(
                 $deliveryId,
                 $validated['status'],
-                $deliveryPerson->id
+                $deliveryPerson->id,
+                'delivery_person'
             );
         } catch (InvalidArgumentException | RuntimeException $e) {
             return response()->json([

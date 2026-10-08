@@ -90,7 +90,8 @@ class DeliveryAssignmentService
                 $delivery->id,
                 null,
                 'assigned',
-                $adminId
+                $adminId,
+                'admin'
             );
 
             $deliveryPerson->update([
@@ -152,7 +153,8 @@ class DeliveryAssignmentService
                 $delivery->id,
                 $oldStatus,
                 'not_assigned',
-                $adminId
+                $adminId,
+                'admin'
             );
 
             if ($oldDeliveryPersonId) {

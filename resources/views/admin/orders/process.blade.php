@@ -86,7 +86,7 @@
                             <div class="col-md-12">
                                 <h5>Update Order Status</h5>
 
-                                @if (empty($nextAllowedStatuses))
+                                @if ($currentStatus === 'order_delivered')
                                     <div class="alert alert-info">
                                         This order has already reached the final stage.
                                     </div>
