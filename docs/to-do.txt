@@ -1,0 +1,116 @@
++ Thought: 4.1s
+I've completed a thorough read-only analysis. Nothing was modified. Here is the full report.
+JCMarts — Project Analysis
+Stack: Laravel 12, PHP 8.2, MySQL, Livewire 4, Sanctum, Razorpay, Telescope.
+Structure: Session-based admin auth + session-based customer web auth + Sanctum token API (Flutter customers & delivery persons). Services layer is generally well-separated (good).
+1. CRITICAL bugs
+1.1 Stock is never decremented on purchase, and gets inflated on release/cancel/return
+This is the most serious business bug. It spans three services.
+- app/Services/CartService.php:87-91 and app/Services/ApiCartService.php:89-93 eager-load the rate without the stock_dependent column (rate:id,uom_id / rate:id,uom_id,final_price,selling_price).
+- app/Services/OrderService.php:125-139 then reads $item->rate->stock_dependent. Because the column wasn't selected, it is null, so null !== 'YES' is true and the loop continues → no stock reservation happens when the pending order is created.
+- app/Services/OrderService.php:173-195 — same, so no StockInfo "sale" row is created.
+- app/Services/OrderService.php:231-290 — markPendingOrderAsPaid() only deactivates cart rows; it never reduces stock. So a successful purchase never decrements inventory.
+- app/Services/OrderService.php:326-348 (releasePendingOrder), OrderCancellationService.php:181-203 (approved cancellation), and ReturnService.php:491-522 (sellable return) all add stock back.
+Net effect: stock only ever increases. Overselling and phantom stock. (Verified directly.)
+1.2 Fresh php artisan migrate fails
+database/migrations/ contains only 4 files. 2026_10_07_120000_add_changed_by_type_to_delivery_status_histories_table.php:14 runs Schema::table('delivery_status_histories', ...) but no CREATE migration exists for that table (it's also absent from database/schema/mysql-schema.sql). A clean install cannot migrate.
+Related: nearly every real table (orders, products, cart, customers, deliveries, delivery_persons, refunds, returns, return_items, etc.) has a model but no migration. The only DB definition is the manually-exported SQL schema, whose migrations table has no rows. This makes the project non-reproducible.
+1.3 Admin login accepts plaintext passwords
+app/Http/Controllers/AdminAuthController.php:35-36:
+$passwordOk = Hash::check($credentials['password'], $admin->admin_password)
+    || $credentials['password'] === $admin->admin_password;
+The || fallback means any account whose admin_password column stores plaintext authenticates with that literal string, using a timing-unsafe comparison. Should be hashed-only.
+1.4 OTP passwords are returned in API responses
+app/Http/Controllers/Api/AuthController.php:111-113 and :290-292, and app/Http/Controllers/Api/DeliveryAuthController.php:96-98:
+if (!app()->environment('production')) { $data['otp'] = $otpCode; }
+Any non-production environment (local and staging) leaks the OTP in the JSON body, defeating OTP entirely.
+1.5 Runtime fatal: unimported class
+app/Services/DeliveryService.php:105 calls DeliveryStatusHistory::query() but there is no use App\Models\DeliveryStatusHistory; in the file (imports are lines 5-12). As written it resolves to a non-existent App\Services\DeliveryStatusHistory → fatal error if getDeliveryHistory() is ever called.
+2. HIGH-severity issues
+Security
+ 1. Cross-role cart access / expired tokens — app/Http/Controllers/Api/CartController.php:27-64. resolveSession() manually calls PersonalAccessToken::findToken($token), ignores expires_at, and never checks the tokenable type. A delivery-person token is mapped to customer_{id}; a delivery person with the same id can read/modify a customer's cart (IDOR). findToken also doesn't enforce expiry (and no config/sanctum.php exists → tokens never expire).
+ 2. No rate limiting anywhere — bootstrap/app.php:14-20 never calls throttleApi(), and routes/api.php:20-23,89-90 have no throttle. OTP send/verify and login are fully brute-forceable (6-digit OTP, 3-minute window, unlimited attempts). This is the root enabler of OTP brute force and SMS-bombing.
+ 3. OTP brute force — Api/AuthController.php:122-164 / :301-344 and DeliveryAuthController.php:122-151 have no attempt counter/lockout and look up the OTP with a plain DB where('otp_code', ...).
+ 4. cost_price (margin) leakage — app/Services/ProductService.php:64-72 eager-loads rates with no column whitelist, so /api/v1/products and /search serialize cost_price, created_by_id, updated_by_id. Same in app/Services/FrontendOrderService.php:66 (items.rate), exposed via order show. getActiveRatesForProduct (line 143+) does it correctly — use that pattern.
+ 5. Payment signatures leaked — app/Models/Payment.php :1-48 and app/Models/Refund.php have no $hidden, and Api/OrderController.php:102-109 returns payments/refunds raw, exposing gateway_signature, gateway_payment_id, gateway_refund_id.
+ 6. Telescope on by default — config/telescope.php:19 env('TELESCOPE_ENABLED', true). It records request payloads (incl. OTPs/tokens) in every environment; UI is open in local.
+ 7. Session fixation — AdminAuthController.php:46-54 and CustomerAuthService::loginCustomer() (:176-182) set session data without session()->regenerate().
+ 8. User enumeration — API sendOtp returns 404 for unregistered vs 200 for registered (AuthController.php:45-59). Same for delivery (DeliveryAuthController.php:38-44).
+ 9. No Razorpay amount/capture verification — FrontendCheckoutController.php:300-352 and API CheckoutController trust the client callback after signature only; amount and captured status are never checked, and there is no webhook (config/razorpay.php has no webhook_secret).
+10. APP_DEBUG=true / APP_ENV=local in .env — must never ship. (.env itself is correctly gitignored.)
+Logic
+11. Global cleanup on any user request — Api/CheckoutController.php:170-171 and FrontendCheckoutController.php:234 call cleanupExpiredPendingOrders(), which scans and releases every customer's expired pending orders, not just the caller's.
+12. Cart deactivation is quantity-sensitive — OrderService::deactivatePurchasedCartItems() (:529-555) only deactivates a cart row when product, rate and exact quantity all match. Editing the cart between create-order and verify leaves purchased items active.
+3. MEDIUM issues
+- Admin middleware only checks session()->has('admin_id') (AdminAuth.php:13) — never re-validates the admin exists/is ACTIVE, and active_session_id (written on login) is never enforced. Deactivated admins keep access.
+- No admin login throttle (AdminAuthController).
+- No per-role authorization in admin routes (routes/web.php:88-163); AdminUserController index/show aren't gated, so ENTRYSTAFF can view admin accounts and toggleStatus can deactivate the last MASTER (lockout).
+- File uploads use client-supplied extension: PromoTileService.php:254-255, IndexBannerService.php:131-132 (getClientOriginalExtension()), and AdminPromoTileController.php:35-51 validates mimes but not image.
+- WishlistController::toggle() (:114-135) doesn't catch ModelNotFoundException → 500 on an inactive product.
+- CustomerAuthService::createCustomerAndSendOtp (:33-69) does the duplicate check against only is_active=1, so re-registering an inactive customer's number throws an uncaught unique-constraint error (500). Also, the SMS HTTP call runs inside the DB transaction (holds locks for up to 20s) :55-58,93-96.
+- OtpSmsService.php:56-83 logs the full provider response (may contain the OTP) and PII at info level.
+- DeliveryService.php:380-381 / Api/DeliveryController.php:316-317,407-408 read $address->city / state — columns that don't exist → always null.
+- Missing config files: no config/sanctum.php (non-expiring tokens, web/User guard) and no config/cors.php (framework default allowed_origins: ['*']).
+- config/auth.php:38-66 only defines a web guard backed by App\Models\User, which is essentially dead — the real actors are AdminLogin/Customer/DeliveryPerson (not Authenticatable for AdminLogin).
+- customer_address has no FK/index consistency issues per se, but WishlistService.php:104,116 stores the customer id into created_by_id/updated_by_id (semantically admin FKs).
+- Session cookie: SESSION_ENCRYPT=false (.env:32) and no SESSION_SECURE_COOKIE (config/session.php:172).
+4. LOW / code quality
+- routes/web.php:75-76 redirect /category.html → /category and /product.html → /product, but those named routes don't exist (paths are /products, /single-product).
+- Route::get('/test', ...) public in routes/api.php:109-114.
+- Order lists/search use payment status in FrontendOrderService:26-39 — fine, but broad.
+- DeliveryService.php:152-168 mixes whereHas/orWhereHas (weakens the constraint); method currently unused.
+- OrderProcessController::frontendUpdate() (:106-142) would let a customer submit admin-only statuses — currently not routed, but latent.
+- config/app.php:68 timezone hardcoded Asia/Kolkata; schema dump pins UTC.
+- .env.example omits SMS_API_KEY/SMS_API_URL that config/services.php expects.
+- promo_tile_products pivot has no unique composite index (2026_09_07_163847_...), race possible.
+- admin_login has no UNIQUE on admin_username in the schema dump.
+- No tests beyond the default scaffolds; database/seeders is just an empty DatabaseSeeder.
+- No FormRequest classes; validation is inline everywhere (works, but repetitive).
+- README is the stock Laravel readme — no setup instructions for this project.
+5. What you can improve (non-security)
+ 1. Make the DB reproducible: add create_*_table migrations for all models (or at minimum the delivery/return/refund cluster), then php artisan schema:dump to keep an accurate schema file. Keep migrations + migrations table consistent.
+ 2. Fix the stock flow (biggest one): either select stock_dependent in the eager loads (simplest, beginner-friendly fix), or don't rely on the partially-loaded relation — re-fetch the RateMaster by id inside the service. Then make decrement happen exactly once at the right step, and add an idempotency guard so release/cancel/return can't double-credit.
+ 3. Move created_by_id/updated_by_id semantics to separate audit tables, or at least document that customer actions store customer ids there.
+ 4. Centralize OTP logic in one service used by web + API + delivery (currently duplicated three times in Api/AuthController, DeliveryAuthController, CustomerAuthService).
+ 5. Extract FormRequests and a small ApiResponse helper for the repeated JSON envelope.
+ 6. Add indexes for orders.created_date, orders.customer_id + created_date, and personal_access_tokens.tokenable.
+ 7. Add a config/sanctum.php and set expiration; delete all tokens on logout/ban.
+ 8. Replace the stock-as-ledger-of-rows design (each StockInfo row is a delta) with a running-balance + explicit reservation, or at least wrap reads in lockForUpdate() consistently.
+ 9. Add feature tests for the checkout/stock/OTP flows so regressions are caught.
+10. Clean the /test route and the broken legacy redirects.
+6. Security features to add (beginner-friendly Laravel)
+All of these are small, isolated additions that don't touch existing business logic:
+ 1. Rate limiting (throttle) — In bootstrap/app.php, register limiters in AppServiceProvider::boot() and attach throttle: to OTP/login routes.
+// AppServiceProvider::boot()
+RateLimiter::for('otp', function ($request) {
+    return Limit::perMinute(3)->by($request->input('mobile_number') ?: $request->ip());
+});
+Then in routes/api.php: ->middleware('throttle:otp') on the OTP routes.
+ 2. OTP attempt limit + lockout — Add an attempts counter (or use RateLimiter) and deactivate the OTP after 5 wrong tries. Reuse the existing CustomerRegisterOtp rows (no schema change required if you use cache keys).
+ 3. Never return the OTP — delete the $data['otp'] = $otpCode; blocks; log it only to a local file in local if needed.
+ 4. Password hashing only — remove the plaintext || fallback in AdminAuthController; optionally rehash on login when Hash::needsRehash().
+ 5. Session hardening — call $request->session()->regenerate() right after login (admin + customer); set SESSION_ENCRYPT=true and SESSION_SECURE_COOKIE=true in production env.
+ 6. Hide sensitive model fields — add to Payment/Refund:
+protected $hidden = ['gateway_signature', 'gateway_payment_id', 'gateway_order_id', 'gateway_refund_id'];
+ 7. API rate limiting / Sanctum config — php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider", then set 'expiration' => 60 * 24 * 30;.
+ 8. CORS config — publish config/cors.php and restrict allowed_origins to your app domains instead of *.
+ 9. File upload validation — add image rule and store using the guessed extension:
+$extension = $file->extension(); // not getClientOriginalExtension()
+$file->storeAs('promo', Str::uuid().'.'.$extension, 'public');
+10. Razorpay server-side verification — fetch the payment from Razorpay after verify and confirm amount and captured/status before marking paid; add a webhook route with signature verification (add RAZORPAY_WEBHOOK_SECRET to config/razorpay.php).
+11. Auth guards/providers — add explicit customer/delivery guards in config/auth.php, or at least a CustomerProvider, and make AdminLogin extend Authenticatable if you later want guard-based admin auth.
+12. Lock down Telescope — set TELESCOPE_ENABLED=false for production in .env and enable hideSensitiveRequestDetails().
+13. Secure response headers — add a small middleware for X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and a Content-Security-Policy.
+7. Suggested priority order
+Priority	Item
+P0	Stock reservation/decrement bug (1.1)
+P0	Missing migrations / failing migrate (1.2)
+P0	Plaintext admin password fallback (1.3)
+P0	OTP leaked in responses (1.4)
+P0	Cart cross-role/expired-token access (2.1)
+P1	API rate limiting + OTP attempt limits (2.2, 2.3)
+P1	cost_price & payment-signature leakage (2.4, 2.5)
+P1	Unimported DeliveryStatusHistory (2.5)
+P1	Session regeneration (2.7)
+P2	Telescope default, CORS/Sanctum config, upload validation, Razorpay amount check, audit fields
+If you'd like, I can implement any of these one at a time using beginner-friendly Laravel code (small service/controller edits, no UI changes, no schema/data changes), starting with the P0 stock bug and the failing migration. I won't touch anything until you confirm.
