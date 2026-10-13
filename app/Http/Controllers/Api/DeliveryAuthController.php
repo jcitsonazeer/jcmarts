@@ -93,10 +93,6 @@ class DeliveryAuthController extends Controller
             'expires_in_seconds' => 180,
         ];
 
-        if (!app()->environment('production')) {
-            $data['otp'] = $otpCode;
-        }
-
         return response()->json([
             'status' => true,
             'message' => 'OTP sent successfully',

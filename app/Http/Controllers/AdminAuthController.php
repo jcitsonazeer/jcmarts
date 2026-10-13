@@ -32,8 +32,7 @@ class AdminAuthController extends Controller
             return back()->withInput()->with('error', 'Invalid username or password.');
         }
 
-        $passwordOk = Hash::check($credentials['password'], $admin->admin_password)
-            || $credentials['password'] === $admin->admin_password;
+        $passwordOk = Hash::check($credentials['password'], $admin->admin_password);
 
         if (!$passwordOk) {
             return back()->withInput()->with('error', 'Invalid username or password.');
