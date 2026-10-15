@@ -165,6 +165,12 @@ class CustomerAuthController extends Controller
                 ->withErrors(['otp_code' => 'Invalid OTP. Please try again.']);
         }
 
+        if (($result['status'] ?? '') === 'too_many_attempts') {
+            return redirect()
+                ->route('frontend.register')
+                ->withErrors(['otp' => 'Too many invalid OTP attempts. Please request a new OTP.']);
+        }
+
         if (($result['status'] ?? '') !== 'verified') {
             return redirect()
                 ->route('frontend.register')
@@ -232,6 +238,12 @@ class CustomerAuthController extends Controller
             return redirect()
                 ->route('frontend.login.otp')
                 ->withErrors(['otp_code' => 'Invalid OTP. Please try again.']);
+        }
+
+        if (($result['status'] ?? '') === 'too_many_attempts') {
+            return redirect()
+                ->route('frontend.login')
+                ->withErrors(['otp' => 'Too many invalid OTP attempts. Please request a new OTP.']);
         }
 
         if (($result['status'] ?? '') !== 'verified') {

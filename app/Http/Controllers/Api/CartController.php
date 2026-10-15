@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Services\ApiCartService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -28,13 +29,20 @@ class CartController extends Controller
     {
         $user = $request->user();
 
-        // If auth:sanctum middleware resolved the user, use it directly
+        // Only a logged-in Customer may use a customer cart session.
+        // This stops any other account type (for example a delivery person)
+        // from ever being mapped to a customer cart.
+        if (!$user instanceof Customer) {
+            $user = null;
+        }
+
+        // If auth:sanctum middleware did not resolve the user, look for a Bearer token.
         if (!$user) {
             // Cart routes are outside auth:sanctum — manually check for a Bearer token
             $token = $request->bearerToken();
             if ($token) {
                 $personalAccessToken = PersonalAccessToken::findToken($token);
-                if ($personalAccessToken) {
+                if ($personalAccessToken && $this->isValidCustomerToken($personalAccessToken)) {
                     $user = $personalAccessToken->tokenable;
                 }
             }
@@ -61,6 +69,38 @@ class CartController extends Controller
             'session_id' => $this->apiCartService->buildSessionId(null, $deviceId),
             'is_guest' => true,
         ];
+    }
+
+    /**
+     * Decide whether a manual Bearer token may act as a customer.
+     *
+     * The token must:
+     *   - belong to a Customer (not a delivery person or any other account)
+     *   - not be past its own expires_at date
+     *   - not be older than the configured Sanctum lifetime
+     */
+    private function isValidCustomerToken(PersonalAccessToken $personalAccessToken): bool
+    {
+        // The token must belong to a customer. This prevents cross-role access.
+        if (!$personalAccessToken->tokenable instanceof Customer) {
+            return false;
+        }
+
+        // Reject tokens that have passed their explicit expiry date.
+        if ($personalAccessToken->expires_at && $personalAccessToken->expires_at->isPast()) {
+            return false;
+        }
+
+        // Reject tokens older than the configured lifetime (in minutes), when set.
+        $expirationMinutes = config('sanctum.expiration');
+
+        if ($expirationMinutes && $personalAccessToken->created_at) {
+            if ($personalAccessToken->created_at->lt(now()->subMinutes($expirationMinutes))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

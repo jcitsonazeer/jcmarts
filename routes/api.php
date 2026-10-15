@@ -17,10 +17,10 @@ use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\PromoTileController;
 
 Route::prefix('v1')->group(function () {
-    Route::post('/otp/send', [AuthController::class, 'sendOtp']);
-    Route::post('/otp/verify', [AuthController::class, 'verifyOtp']);
-    Route::post('/register/otp/send', [AuthController::class, 'sendRegisterOtp']);
-    Route::post('/register/otp/verify', [AuthController::class, 'verifyRegisterOtp']);
+    Route::post('/otp/send', [AuthController::class, 'sendOtp'])->middleware('throttle:otp-send');
+    Route::post('/otp/verify', [AuthController::class, 'verifyOtp'])->middleware('throttle:otp-verify');
+    Route::post('/register/otp/send', [AuthController::class, 'sendRegisterOtp'])->middleware('throttle:otp-send');
+    Route::post('/register/otp/verify', [AuthController::class, 'verifyRegisterOtp'])->middleware('throttle:otp-verify');
 
     Route::get('/home', [CatalogController::class, 'home']);
     Route::get('/categories', [CategoryController::class, 'index']);
@@ -86,8 +86,8 @@ Route::prefix('v1')->group(function () {
     // ─── Delivery Person (Flutter) ─────────────────────────
     // Public delivery OTP routes
     Route::prefix('delivery')->group(function () {
-        Route::post('/otp/send', [DeliveryAuthController::class, 'sendOtp']);
-        Route::post('/otp/verify', [DeliveryAuthController::class, 'verifyOtp']);
+        Route::post('/otp/send', [DeliveryAuthController::class, 'sendOtp'])->middleware('throttle:otp-send');
+        Route::post('/otp/verify', [DeliveryAuthController::class, 'verifyOtp'])->middleware('throttle:otp-verify');
 
         // Auth + delivery-person-only routes
         Route::middleware(['auth:sanctum', 'ensure.delivery'])->group(function () {

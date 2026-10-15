@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryPerson;
 use App\Models\DeliveryPersonOtp;
+use App\Services\OtpAttemptService;
 use App\Services\OtpSmsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,7 +14,8 @@ use Illuminate\Support\Facades\DB;
 class DeliveryAuthController extends Controller
 {
     public function __construct(
-        protected OtpSmsService $otpSmsService
+        protected OtpSmsService $otpSmsService,
+        protected OtpAttemptService $otpAttemptService
     ) {
     }
 
@@ -126,11 +128,7 @@ class DeliveryAuthController extends Controller
             ->first();
 
         if (!$otp || !$otp->deliveryPerson) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid OTP',
-                'data' => null,
-            ], 401);
+            return $this->handleFailedOtpAttempt($mobileNumber);
         }
 
         if (Carbon::now()->greaterThan($otp->otp_expires_at)) {
@@ -145,6 +143,8 @@ class DeliveryAuthController extends Controller
                 'data' => null,
             ], 401);
         }
+
+        $this->otpAttemptService->clear('delivery', $mobileNumber);
 
         $deliveryPerson = $otp->deliveryPerson;
         $now = Carbon::now();
@@ -176,6 +176,39 @@ class DeliveryAuthController extends Controller
                 ],
             ],
         ]);
+    }
+
+    /**
+     * Count a wrong OTP attempt and invalidate the active OTP for the mobile
+     * number once the allowed number of attempts has been reached.
+     */
+    protected function handleFailedOtpAttempt(string $mobileNumber)
+    {
+        if ($this->otpAttemptService->recordFailure('delivery', $mobileNumber)) {
+            DeliveryPersonOtp::query()
+                ->whereHas('deliveryPerson', function ($query) use ($mobileNumber) {
+                    $query->where('mobile', $mobileNumber);
+                })
+                ->where('is_active', 1)
+                ->update([
+                    'is_active' => 0,
+                    'updated_date' => Carbon::now(),
+                ]);
+
+            $this->otpAttemptService->clear('delivery', $mobileNumber);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Too many invalid OTP attempts. Please request a new OTP.',
+                'data' => null,
+            ], 429);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Invalid OTP',
+            'data' => null,
+        ], 401);
     }
 
     /**

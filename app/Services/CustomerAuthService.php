@@ -11,10 +11,12 @@ use Illuminate\Support\Facades\DB;
 class CustomerAuthService
 {
     protected OtpSmsService $otpSmsService;
+    protected OtpAttemptService $otpAttemptService;
 
-    public function __construct(OtpSmsService $otpSmsService)
+    public function __construct(OtpSmsService $otpSmsService, OtpAttemptService $otpAttemptService)
     {
         $this->otpSmsService = $otpSmsService;
+        $this->otpAttemptService = $otpAttemptService;
     }
 
     public function normalizeMobile(string $mobileNumber): string
@@ -146,8 +148,20 @@ class CustomerAuthService
         }
 
         if (!hash_equals((string) $otpRecord->otp_code, (string) $otpCode)) {
+            if ($this->otpAttemptService->recordFailure('web-login', (string) $otpRecord->id)) {
+                $otpRecord->is_active = 0;
+                $otpRecord->updated_date = Carbon::now();
+                $otpRecord->save();
+                session()->forget($sessionKey);
+                $this->otpAttemptService->clear('web-login', (string) $otpRecord->id);
+
+                return ['status' => 'too_many_attempts'];
+            }
+
             return ['status' => 'invalid'];
         }
+
+        $this->otpAttemptService->clear('web-login', (string) $otpRecord->id);
 
         $customer = $otpRecord->customer;
         if (!$customer) {

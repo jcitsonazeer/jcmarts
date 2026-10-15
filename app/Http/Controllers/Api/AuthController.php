@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\CustomerRegisterOtp;
 use App\Services\ApiCartService;
 use App\Services\CustomerAuthService;
+use App\Services\OtpAttemptService;
 use App\Services\OtpSmsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -18,7 +19,8 @@ class AuthController extends Controller
     public function __construct(
         protected CustomerAuthService $customerAuthService,
         protected OtpSmsService $otpSmsService,
-        protected ApiCartService $apiCartService
+        protected ApiCartService $apiCartService,
+        protected OtpAttemptService $otpAttemptService
     ) {
     }
 
@@ -139,11 +141,7 @@ class AuthController extends Controller
             ->first();
 
         if (!$otp || !$otp->customer) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid OTP',
-                'data' => null,
-            ], 401);
+            return $this->handleFailedOtpAttempt('login', $mobileNumber);
         }
 
         if (Carbon::now()->greaterThan($otp->otp_expires_at)) {
@@ -158,6 +156,8 @@ class AuthController extends Controller
                 'data' => null,
             ], 401);
         }
+
+        $this->otpAttemptService->clear('login', $mobileNumber);
 
         $customer = $otp->customer;
         $now = Carbon::now();
@@ -315,11 +315,7 @@ class AuthController extends Controller
             ->first();
 
         if (!$otp || !$otp->customer) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid OTP',
-                'data' => null,
-            ], 401);
+            return $this->handleFailedOtpAttempt('register', $mobileNumber);
         }
 
         if (Carbon::now()->greaterThan($otp->otp_expires_at)) {
@@ -334,6 +330,8 @@ class AuthController extends Controller
                 'data' => null,
             ], 401);
         }
+
+        $this->otpAttemptService->clear('register', $mobileNumber);
 
         $customer = $otp->customer;
         $now = Carbon::now();
@@ -389,6 +387,39 @@ class AuthController extends Controller
             'message' => 'Logged out successfully',
             'data' => null,
         ]);
+    }
+
+    /**
+     * Count a wrong OTP attempt and invalidate the active OTP for the mobile
+     * number once the allowed number of attempts has been reached.
+     */
+    protected function handleFailedOtpAttempt(string $context, string $mobileNumber)
+    {
+        if ($this->otpAttemptService->recordFailure($context, $mobileNumber)) {
+            CustomerRegisterOtp::query()
+                ->whereHas('customer', function ($query) use ($mobileNumber) {
+                    $query->where('mobile_number', $mobileNumber);
+                })
+                ->where('is_active', 1)
+                ->update([
+                    'is_active' => 0,
+                    'updated_date' => Carbon::now(),
+                ]);
+
+            $this->otpAttemptService->clear($context, $mobileNumber);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Too many invalid OTP attempts. Please request a new OTP.',
+                'data' => null,
+            ], 429);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Invalid OTP',
+            'data' => null,
+        ], 401);
     }
 
     /**

@@ -52,15 +52,15 @@ Route::post('/payment/create-order', [FrontendCheckoutController::class, 'create
 Route::post('/payment/verify', [FrontendCheckoutController::class, 'verifyRazorpayPayment'])->name('frontend.payment.verify');
 Route::post('/payment/release', [FrontendCheckoutController::class, 'releasePendingPayment'])->name('frontend.payment.release');
 Route::get('/register', [CustomerAuthController::class, 'register'])->name('frontend.register');
-Route::post('/register', [CustomerAuthController::class, 'storeRegister'])->name('frontend.register.store');
+Route::post('/register', [CustomerAuthController::class, 'storeRegister'])->middleware('throttle:otp-send')->name('frontend.register.store');
 Route::get('/login', [CustomerAuthController::class, 'login'])->name('frontend.login');
-Route::post('/login', [CustomerAuthController::class, 'storeLogin'])->name('frontend.login.store');
+Route::post('/login', [CustomerAuthController::class, 'storeLogin'])->middleware('throttle:otp-send')->name('frontend.login.store');
 Route::get('/login/otp', [CustomerAuthController::class, 'showLoginOtp'])->name('frontend.login.otp');
-Route::post('/login/otp', [CustomerAuthController::class, 'verifyLoginOtp'])->name('frontend.login.otp.verify');
+Route::post('/login/otp', [CustomerAuthController::class, 'verifyLoginOtp'])->middleware('throttle:otp-verify')->name('frontend.login.otp.verify');
 Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('frontend.logout');
 Route::get('/my-account', [CustomerAuthController::class, 'account'])->name('frontend.account');
 Route::get('/register/otp', [CustomerAuthController::class, 'showRegisterOtp'])->name('frontend.register.otp');
-Route::post('/register/otp', [CustomerAuthController::class, 'verifyRegisterOtp'])->name('frontend.register.otp.verify');
+Route::post('/register/otp', [CustomerAuthController::class, 'verifyRegisterOtp'])->middleware('throttle:otp-verify')->name('frontend.register.otp.verify');
 Route::get('/add-address', [FrontendCheckoutController::class, 'showAddAddress'])->name('frontend.add_address');
 Route::post('/add-address', [FrontendCheckoutController::class, 'storeAddress'])->name('frontend.add_address.store');
 
@@ -82,7 +82,7 @@ Route::redirect('/login.html', '/login');
 Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::get('login', [AdminAuthController::class, 'showLogin'])->name('login');
-    Route::post('login', [AdminAuthController::class, 'login'])->name('login.submit');
+    Route::post('login', [AdminAuthController::class, 'login'])->middleware('throttle:login')->name('login.submit');
     Route::post('logout', [AdminAuthController::class, 'logout'])->name('logout');
 
     Route::middleware('admin.auth')->group(function () {
