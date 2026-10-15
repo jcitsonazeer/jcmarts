@@ -226,6 +226,16 @@ class DeliveryAuthController extends Controller
             if ($token) {
                 $token->delete();
             }
+
+            // When a delivery person logs out of the app they are no longer
+            // taking new deliveries, so mark them as offline. A delivery
+            // person who is "busy" is left unchanged so an active delivery
+            // in progress is not disturbed.
+            if ($user->availability_status !== 'busy') {
+                $user->availability_status = 'offline';
+                $user->updated_date = Carbon::now();
+                $user->save();
+            }
         }
 
         return response()->json([
