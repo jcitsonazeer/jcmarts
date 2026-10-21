@@ -29,7 +29,7 @@ class ProductController extends Controller
     public function show($id)
     {
         try {
-            $product = $this->productService->findForShow($id);
+            $product = $this->productService->findForShowForApi($id);
         } catch (ModelNotFoundException) {
             return response()->json([
                 'status' => false,
@@ -66,7 +66,7 @@ class ProductController extends Controller
     public function rates($id)
     {
         try {
-            $product = $this->productService->findForShow($id);
+            $product = $this->productService->findForShowForApi($id);
         } catch (ModelNotFoundException) {
             return response()->json([
                 'status' => false,

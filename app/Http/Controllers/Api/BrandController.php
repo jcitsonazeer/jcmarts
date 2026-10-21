@@ -10,6 +10,7 @@ class BrandController extends Controller
     public function index()
     {
         $brands = Brand::query()
+            ->select(['id', 'brand_name', 'is_active', 'created_date', 'updated_date'])
             ->where('is_active', 1)
             ->orderBy('brand_name')
             ->get();

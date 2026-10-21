@@ -62,13 +62,33 @@ class FrontendOrderService
             ->where('customer_id', $customerId)
             ->with([
                 'customer',
-                'items.product',
-                'items.rate',
+                'items' => function ($query) {
+                    $query->select([
+                        'id',
+                        'order_id',
+                        'product_id',
+                        'rate_master_id',
+                        'quantity',
+                        'unit_price',
+                        'line_total',
+                        'is_active',
+                        'created_date',
+                        'updated_date',
+                    ]);
+                },
+                'items.product' => function ($query) {
+                    $query->select(ProductService::API_PRODUCT_COLUMNS);
+                },
+                'items.rate' => function ($query) {
+                    $query->select(ProductService::API_RATE_COLUMNS);
+                },
                 'address',
                 'statuses',
                 'payments',
                 'refunds',
-                'returnRequests.items.product',
+                'returnRequests.items.product' => function ($query) {
+                    $query->select(ProductService::API_PRODUCT_COLUMNS);
+                },
                 'returnRequests.refunds',
                 'delivery.deliveryPerson',
                 'delivery.statusHistories',

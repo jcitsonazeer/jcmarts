@@ -17,6 +17,46 @@ class ProductService
     private const IMAGE_WIDTH = 500;
     private const IMAGE_HEIGHT = 500;
 
+    /**
+     * Columns of a product that are safe to return through the customer API.
+     * Audit actor columns (created_by_id / updated_by_id) are never exposed.
+     */
+    public const API_PRODUCT_COLUMNS = [
+        'id',
+        'sub_category_id',
+        'brand_id',
+        'product_name',
+        'product_image',
+        'single_image_1',
+        'single_image_2',
+        'single_image_3',
+        'single_image_4',
+        'description',
+        'warranty_info',
+        'is_active',
+        'created_date',
+        'updated_date',
+    ];
+
+    /**
+     * Columns of a rate that are safe to return through the customer API.
+     * Mirrors getActiveRatesForProduct(): cost_price and the audit columns
+     * (created_by_id / updated_by_id / dates) stay internal.
+     */
+    public const API_RATE_COLUMNS = [
+        'id',
+        'product_id',
+        'uom_id',
+        'selling_price',
+        'offer_percentage',
+        'offer_price',
+        'final_price',
+        'soldout_status',
+        'stock_dependent',
+        'is_active',
+        'selected_display',
+    ];
+
     public function getAll(?string $searchTerm = null)
     {
         $query = Product::query()
@@ -57,15 +97,17 @@ class ProductService
     public function getActiveProductsForApi($subCategoryId = null, $search = null, $perPage = 10, $promoTileId = null)
     {
         $query = Product::query()
+            ->select(self::API_PRODUCT_COLUMNS)
             ->where('is_active', 1)
             ->whereHas('rates', function ($query) {
                 $query->where('is_active', 1);
             })
             ->with([
-                'subCategory',
+                'subCategory:id,category_id,sub_category_name,sub_category_image',
                 'rates' => function ($query) {
-                    $query->where('is_active', 1)
-                        ->with('uom')
+                    $query->select(self::API_RATE_COLUMNS)
+                        ->where('is_active', 1)
+                        ->with('uom:id,primary_uom,secondary_uom')
                         ->orderByDesc('selected_display')
                         ->orderBy('id');
                 },
@@ -138,6 +180,23 @@ class ProductService
             'createdBy',
             'updatedBy',
         ])->findOrFail($id);
+    }
+
+    /**
+     * Product detail for the customer API. Same data as findForShow() but
+     * without the audit columns and without the admin (createdBy / updatedBy)
+     * records, which must never reach the mobile app.
+     */
+    public function findForShowForApi($id)
+    {
+        return Product::query()
+            ->select(self::API_PRODUCT_COLUMNS)
+            ->with([
+                'subCategory:id,category_id,sub_category_name,sub_category_image',
+                'subCategory.category:id,category_name',
+                'brand:id,brand_name,is_active',
+            ])
+            ->findOrFail($id);
     }
 
     public function getActiveRatesForProduct(int $productId)

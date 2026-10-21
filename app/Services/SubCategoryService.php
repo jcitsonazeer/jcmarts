@@ -50,7 +50,16 @@ class SubCategoryService
 	// For Mobile API
     public function getActiveForApi()
     {
-        return SubCategory::with('category') // optional if app needs category
+        return SubCategory::query()
+            ->select([
+                'id',
+                'category_id',
+                'sub_category_name',
+                'sub_category_image',
+                'created_date',
+                'updated_date',
+            ])
+            ->with('category:id,category_name') // optional if app needs category
             ->orderBy('id', 'desc')
             ->get();
     }
