@@ -319,7 +319,19 @@ class OrderService
 
             $order = $query->lockForUpdate()->first();
 
-            if (!$order || $this->hasSuccessfulPayment($order)) {
+            if (!$order) {
+                return;
+            }
+
+            if (!$order->is_active) {
+                return;
+            }
+
+            if (!is_null($order->reservation_released_at)) {
+                return;
+            }
+
+            if ($this->hasSuccessfulPayment($order)) {
                 return;
             }
 
@@ -367,7 +379,19 @@ class OrderService
                 ->lockForUpdate()
                 ->first();
 
-            if (!$order || $this->hasSuccessfulPayment($order)) {
+            if (!$order) {
+                return;
+            }
+
+            if (!$order->is_active) {
+                return;
+            }
+
+            if (!is_null($order->reservation_released_at)) {
+                return;
+            }
+
+            if ($this->hasSuccessfulPayment($order)) {
                 return;
             }
 

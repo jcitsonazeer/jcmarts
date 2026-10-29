@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CustomerAddress;
+use App\Models\Order;
+use App\Models\Payment;
 use App\Services\ApiCartService;
 use App\Services\DeliveryChargeService;
 use App\Services\OrderService;
 use App\Services\Payment\RazorpayService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use RuntimeException;
 use Throwable;
@@ -305,6 +309,137 @@ class CheckoutController extends Controller
             'status' => true,
             'message' => 'Reserved stock released',
             'data' => null,
+        ]);
+    }
+
+    /**
+     * POST /api/v1/payments/razorpay/webhook
+     * Handle Razorpay webhooks for payment.captured.
+     */
+    public function razorpayWebhook(Request $request): JsonResponse
+    {
+        $payload = $request->getContent();
+        $signature = (string) $request->header('X-Razorpay-Signature', '');
+
+        $secret = (string) config('razorpay.secret');
+        if ($secret === '' || $signature === '') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Webhook signature missing',
+            ], 400);
+        }
+
+        $expectedSignature = hash_hmac('sha256', $payload, $secret);
+        if (!hash_equals($expectedSignature, $signature)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid webhook signature',
+            ], 400);
+        }
+
+        $data = json_decode($payload, true);
+        if (!is_array($data)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid webhook payload',
+            ], 400);
+        }
+
+        $event = (string) ($data['event'] ?? '');
+        if ($event !== 'payment.captured') {
+            return response()->json([
+                'status' => true,
+                'message' => 'Webhook ignored',
+            ]);
+        }
+
+        $paymentEntity = $data['payload']['payment']['entity'] ?? null;
+        if (!is_array($paymentEntity)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid payment entity',
+            ], 400);
+        }
+
+        $razorpayOrderId = (string) ($paymentEntity['order_id'] ?? '');
+        $razorpayPaymentId = (string) ($paymentEntity['id'] ?? '');
+        $amount = isset($paymentEntity['amount']) ? (int) $paymentEntity['amount'] : null;
+        $currency = (string) ($paymentEntity['currency'] ?? config('razorpay.currency', 'INR'));
+
+        if ($razorpayOrderId === '' || $razorpayPaymentId === '') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Missing payment details',
+            ], 400);
+        }
+
+        try {
+            DB::transaction(function () use ($razorpayOrderId, $razorpayPaymentId, $amount, $currency) {
+                $payment = Payment::query()
+                    ->where('gateway', 'razorpay')
+                    ->where('gateway_order_id', $razorpayOrderId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$payment) {
+                    return;
+                }
+
+                $order = Order::query()
+                    ->with('items')
+                    ->where('id', $payment->order_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$order) {
+                    return;
+                }
+
+                if ($payment->status === 'paid') {
+                    return;
+                }
+
+                if ($payment->status !== 'pending') {
+                    return;
+                }
+
+                if (!is_null($order->reservation_released_at) || !$order->is_active) {
+                    return;
+                }
+
+                if ($amount !== null) {
+                    $expectedAmount = (int) round(((float) $order->total_amount) * 100);
+                    if ($expectedAmount > 0 && $amount !== $expectedAmount) {
+                        return;
+                    }
+                }
+
+                $order->currency = $currency;
+                $order->reservation_released_at = null;
+                $order->reservation_release_reason = null;
+                $order->updated_by_id = $order->customer_id;
+                $order->updated_date = Carbon::now();
+                $order->save();
+
+                $payment->gateway_payment_id = $razorpayPaymentId;
+                $payment->amount = (float) $order->total_amount;
+                $payment->currency = $currency;
+                $payment->status = 'paid';
+                $payment->paid_at = Carbon::now();
+                $payment->updated_by_id = $order->customer_id;
+                $payment->updated_date = Carbon::now();
+                $payment->save();
+            });
+        } catch (Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Webhook processing failed',
+            ], 500);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Webhook processed',
         ]);
     }
 }

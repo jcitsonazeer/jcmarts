@@ -22,6 +22,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/register/otp/send', [AuthController::class, 'sendRegisterOtp'])->middleware('throttle:otp-send');
     Route::post('/register/otp/verify', [AuthController::class, 'verifyRegisterOtp'])->middleware('throttle:otp-verify');
 
+    Route::post('/payments/razorpay/webhook', [CheckoutController::class, 'razorpayWebhook']);
+
     Route::get('/home', [CatalogController::class, 'home']);
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/brands', [BrandController::class, 'index']);
