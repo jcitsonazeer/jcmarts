@@ -128,8 +128,57 @@ class IndexBannerService
         $sanitizedName = trim((string) $sanitizedName, '_');
         $sanitizedName = $sanitizedName !== '' ? $sanitizedName : 'banner';
 
-        $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-        $image->storeAs('index_banner', $fileName, 'public');
+        // Derive the extension from the detected MIME type, never from the client.
+        $extension = strtolower((string) $image->extension());
+        $extension = in_array($extension, ['jpg', 'jpeg', 'png'], true) ? $extension : 'jpg';
+
+        $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
+
+        // Re-encode with GD to strip any embedded metadata/EXIF.
+        $sourcePath = $image->getRealPath();
+        if (!$sourcePath) {
+            throw new \RuntimeException('Unable to read the uploaded image.');
+        }
+
+        $imageInformation = \getimagesize($sourcePath);
+        if ($imageInformation === false) {
+            throw new \RuntimeException('Unable to read image size.');
+        }
+
+        [$sourceWidth, $sourceHeight, $imageType] = $imageInformation;
+
+        $sourceImage = null;
+        if ($imageType === IMAGETYPE_JPEG && \function_exists('imagecreatefromjpeg')) {
+            $sourceImage = \imagecreatefromjpeg($sourcePath);
+        } elseif ($imageType === IMAGETYPE_PNG && \function_exists('imagecreatefrompng')) {
+            $sourceImage = \imagecreatefrompng($sourcePath);
+        }
+
+        if (!$sourceImage) {
+            throw new \RuntimeException('Only JPG, JPEG, and PNG images are allowed.');
+        }
+
+        // Keep the extension in sync with the actual decoded image type.
+        if ($imageType === IMAGETYPE_PNG) {
+            $extension = 'png';
+        } else {
+            $extension = 'jpg';
+        }
+
+        // Rebuild filename with the verified extension.
+        $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
+
+        \ob_start();
+        if ($imageType === IMAGETYPE_PNG) {
+            \imagepng($sourceImage);
+        } else {
+            \imagejpeg($sourceImage, null, 90);
+        }
+        $imageContents = (string) \ob_get_clean();
+
+        \imagedestroy($sourceImage);
+
+        Storage::disk('public')->put('index_banner/' . $fileName, $imageContents);
 
         return $fileName;
     }

@@ -186,7 +186,7 @@ class ProductImageService
         $sanitizedName = trim((string) $sanitizedName, '_');
         $sanitizedName = $sanitizedName !== '' ? $sanitizedName : $field;
 
-        $extension = strtolower((string) $image->getClientOriginalExtension());
+        $extension = strtolower((string) $image->extension());
         $extension = in_array($extension, ['jpg', 'jpeg', 'png'], true) ? $extension : 'jpg';
 
         $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;

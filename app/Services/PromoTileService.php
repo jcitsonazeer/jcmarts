@@ -251,7 +251,62 @@ class PromoTileService
         $sanitizedName = trim((string) $sanitizedName, '_');
         $sanitizedName = $sanitizedName !== '' ? $sanitizedName : 'promo_tile';
 
-        $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+        // Derive the extension from the detected MIME type, never from the client.
+        $extension = strtolower((string) $image->extension());
+        if (!in_array($extension, ['jpg', 'jpeg', 'png', 'gif'], true)) {
+            $extension = 'jpg';
+        }
+
+        // For static images, re-encode with GD to strip embedded metadata/EXIF.
+        if (in_array($extension, ['jpg', 'jpeg', 'png'], true)) {
+            $sourcePath = $image->getRealPath();
+            if (!$sourcePath) {
+                throw new \RuntimeException('Unable to read the uploaded image.');
+            }
+
+            $imageInformation = \getimagesize($sourcePath);
+            if ($imageInformation === false) {
+                throw new \RuntimeException('Unable to read image size.');
+            }
+
+            [$sourceWidth, $sourceHeight, $imageType] = $imageInformation;
+
+            $sourceImage = null;
+            if ($imageType === IMAGETYPE_JPEG && \function_exists('imagecreatefromjpeg')) {
+                $sourceImage = \imagecreatefromjpeg($sourcePath);
+            } elseif ($imageType === IMAGETYPE_PNG && \function_exists('imagecreatefrompng')) {
+                $sourceImage = \imagecreatefrompng($sourcePath);
+            }
+
+            if (!$sourceImage) {
+                throw new \RuntimeException('Only JPG, JPEG, and PNG images are allowed.');
+            }
+
+            if ($imageType === IMAGETYPE_PNG) {
+                $extension = 'png';
+            } else {
+                $extension = 'jpg';
+            }
+
+            $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
+
+            \ob_start();
+            if ($imageType === IMAGETYPE_PNG) {
+                \imagepng($sourceImage);
+            } else {
+                \imagejpeg($sourceImage, null, 90);
+            }
+            $imageContents = (string) \ob_get_clean();
+
+            \imagedestroy($sourceImage);
+
+            Storage::disk('public')->put('promo_tile/' . $fileName, $imageContents);
+
+            return $fileName;
+        }
+
+        // GIF (and any other allowed type) is stored with its guessed extension.
+        $fileName = $sanitizedName . '_' . time() . '_' . uniqid() . '.' . $extension;
         $image->storeAs('promo_tile', $fileName, 'public');
 
         return $fileName;

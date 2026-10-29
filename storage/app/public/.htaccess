@@ -1,0 +1,7 @@
+# Prevent PHP execution in uploaded files
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
+php_flag engine off
+Options -ExecCGI
+AddHandler cgi-script .php .pl .py .jsp .asp .sh .cgi

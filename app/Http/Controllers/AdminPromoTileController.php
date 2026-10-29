@@ -34,13 +34,14 @@ class AdminPromoTileController extends Controller
             'promo_title' => 'required|string|max:150',
             'promo_image' => [
                 'required',
+                'image',
                 'file',
                 'mimes:jpg,jpeg,png,gif',
                 function ($attribute, $value, $fail) {
                     if (!$value instanceof \Illuminate\Http\UploadedFile) {
                         return;
                     }
-                    if (strtolower($value->getClientOriginalExtension()) === 'gif') {
+                    if (strtolower($value->extension()) === 'gif') {
                         if ($value->getSize() > 16 * 1024 * 1024) {
                             $fail('The promo image must not be larger than 16 MB.');
                         }
@@ -80,13 +81,14 @@ class AdminPromoTileController extends Controller
             'promo_title' => 'required|string|max:150',
             'promo_image' => [
                 'nullable',
+                'image',
                 'file',
                 'mimes:jpg,jpeg,png,gif',
                 function ($attribute, $value, $fail) {
                     if (!$value instanceof \Illuminate\Http\UploadedFile) {
                         return;
                     }
-                    if (strtolower($value->getClientOriginalExtension()) === 'gif') {
+                    if (strtolower($value->extension()) === 'gif') {
                         if ($value->getSize() > 16 * 1024 * 1024) {
                             $fail('The promo image must not be larger than 16 MB.');
                         }
