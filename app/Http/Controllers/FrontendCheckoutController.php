@@ -9,17 +9,22 @@ use App\Services\FrontendCatalogService;
 use App\Services\OrderService;
 use App\Services\Payment\RazorpayService;
 use Carbon\Carbon;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use RuntimeException;
 use Throwable;
 
 class FrontendCheckoutController extends Controller
 {
+    private const CHECKOUT_LOCK_SECONDS = 15;
+    private const CHECKOUT_LOCK_WAIT_SECONDS = 5;
+
     private const SERVICEABLE_PINCODES = [
         '629151',
         '629152',
@@ -225,77 +230,87 @@ class FrontendCheckoutController extends Controller
         }
 
         $customerId = (int) session('customer_id');
-        $addressId = (int) session('checkout_address_id');
+        $lock = Cache::lock('checkout:' . $customerId, self::CHECKOUT_LOCK_SECONDS);
 
-        if ($addressId < 1) {
-            return response()->json(['message' => 'Please choose a delivery address to continue.'], 422);
+        try {
+            $lock->block(self::CHECKOUT_LOCK_WAIT_SECONDS);
+        } catch (LockTimeoutException $e) {
+            return response()->json(['message' => 'Another checkout is already in progress. Please try again.'], 409);
         }
 
-        $this->orderService->cleanupExpiredPendingOrders();
+        try {
+            $addressId = (int) session('checkout_address_id');
 
-        if (session()->has('pending_order_id')) {
-            $this->orderService->releasePendingOrder((int) session('pending_order_id'), null, $customerId);
+            if ($addressId < 1) {
+                return response()->json(['message' => 'Please choose a delivery address to continue.'], 422);
+            }
+
+            // Cleanup expired reservations and any previous open order.
+            $this->orderService->cleanupExpiredPendingOrders();
+            $this->orderService->releaseOpenPendingOrdersForCustomer($customerId);
             session()->forget(['pending_order_id', 'razorpay_order_id', 'razorpay_amount']);
+
+            $orderSummary = $this->buildOrderSummary();
+            $total = (float) $orderSummary['total'];
+            $amountInPaise = (int) round($total * 100);
+
+            if (!$this->deliveryChargeService->isDeliveryAllowed((float) $orderSummary['sub_total'])) {
+                $setting = $this->deliveryChargeService->getActiveSettings();
+                $minimum = $setting ? (float) $setting->minimum_order_value : 0;
+
+                return response()->json(['message' => 'Minimum order value for direct delivery is Rs. ' . number_format($minimum, 0) . '. Please add more items to continue.'], 422);
+            }
+
+            if ($amountInPaise < 100) {
+                return response()->json(['message' => 'Minimum payable amount is Rs 1.'], 422);
+            }
+
+            $cartItems = $this->cartService->getActiveItems();
+
+            try {
+                $pendingOrder = $this->orderService->createPendingOrderFromCart(
+                    $customerId,
+                    $addressId,
+                    $orderSummary,
+                    $cartItems
+                );
+            } catch (RuntimeException $e) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            try {
+                $order = $this->razorpayService->createOrder(
+                    $amountInPaise,
+                    'jcmart_' . $pendingOrder->id . '_' . now()->format('YmdHis'),
+                    (string) config('razorpay.currency', 'INR')
+                );
+
+                $this->orderService->attachRazorpayOrder(
+                    (int) $pendingOrder->id,
+                    (string) $order['id'],
+                    $customerId
+                );
+            } catch (Throwable $e) {
+                $this->orderService->releasePendingOrder((int) $pendingOrder->id, null, $customerId);
+
+                return response()->json(['message' => 'Payment could not be started. Please try again.'], 422);
+            }
+
+            session([
+                'pending_order_id' => $pendingOrder->id,
+                'razorpay_order_id' => $order['id'],
+                'razorpay_amount' => $amountInPaise,
+            ]);
+
+            return response()->json([
+                'order_id' => $order['id'],
+                'amount' => $amountInPaise,
+                'currency' => $order['currency'],
+                'key' => config('razorpay.key'),
+            ]);
+        } finally {
+            $lock->release();
         }
-
-        $orderSummary = $this->buildOrderSummary();
-        $total = (float) $orderSummary['total'];
-        $amountInPaise = (int) round($total * 100);
-
-        if (!$this->deliveryChargeService->isDeliveryAllowed((float) $orderSummary['sub_total'])) {
-            $setting = $this->deliveryChargeService->getActiveSettings();
-            $minimum = $setting ? (float) $setting->minimum_order_value : 0;
-
-            return response()->json(['message' => 'Minimum order value for direct delivery is Rs. ' . number_format($minimum, 0) . '. Please add more items to continue.'], 422);
-        }
-
-        if ($amountInPaise < 100) {
-            return response()->json(['message' => 'Minimum payable amount is Rs 1.'], 422);
-        }
-
-        $cartItems = $this->cartService->getActiveItems();
-
-        try {
-            $pendingOrder = $this->orderService->createPendingOrderFromCart(
-                $customerId,
-                $addressId,
-                $orderSummary,
-                $cartItems
-            );
-        } catch (RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
-        }
-
-        try {
-            $order = $this->razorpayService->createOrder(
-                $amountInPaise,
-                'jcmart_' . $pendingOrder->id . '_' . now()->format('YmdHis'),
-                (string) config('razorpay.currency', 'INR')
-            );
-
-            $this->orderService->attachRazorpayOrder(
-                (int) $pendingOrder->id,
-                (string) $order['id'],
-                $customerId
-            );
-        } catch (Throwable $e) {
-            $this->orderService->releasePendingOrder((int) $pendingOrder->id, null, $customerId);
-
-            return response()->json(['message' => 'Payment could not be started. Please try again.'], 422);
-        }
-
-        session([
-            'pending_order_id' => $pendingOrder->id,
-            'razorpay_order_id' => $order['id'],
-            'razorpay_amount' => $amountInPaise,
-        ]);
-
-        return response()->json([
-            'order_id' => $order['id'],
-            'amount' => $amountInPaise,
-            'currency' => $order['currency'],
-            'key' => config('razorpay.key'),
-        ]);
     }
     public function verifyRazorpayPayment(Request $request): JsonResponse
     {
@@ -314,15 +329,59 @@ class FrontendCheckoutController extends Controller
             return response()->json(['message' => 'Order mismatch.'], 422);
         }
 
+        $customerId = (int) session('customer_id');
+
         try {
             $this->razorpayService->verifySignature(
                 $validated['razorpay_order_id'],
                 $validated['razorpay_payment_id'],
                 $validated['razorpay_signature']
             );
+        } catch (Throwable $e) {
+            $this->orderService->releasePendingOrder(
+                (int) session('pending_order_id', 0) ?: null,
+                (string) session('razorpay_order_id', '') ?: null,
+                $customerId
+            );
 
+            session()->forget(['pending_order_id', 'razorpay_order_id', 'razorpay_amount']);
+
+            return response()->json([
+                'message' => 'Payment verification failed.',
+            ], 422);
+        }
+
+        $pendingOrder = $this->orderService->getActiveOrderByRazorpayOrderId(
+            (string) $validated['razorpay_order_id'],
+            $customerId
+        );
+
+        if (!$pendingOrder) {
+            return response()->json(['message' => 'Reserved order not found or already released.'], 422);
+        }
+
+        try {
+            $gatewayPayment = $this->razorpayService->fetchPayment(
+                (string) $validated['razorpay_payment_id']
+            );
+        } catch (Throwable $e) {
+            // Do not release stock here: Razorpay may have captured the payment.
+            return response()->json(['message' => 'Payment could not be confirmed. Please try again.'], 422);
+        }
+
+        $expectedAmount = (int) round(((float) $pendingOrder->total_amount) * 100);
+        $amountMatches = (int) ($gatewayPayment['amount'] ?? 0) === $expectedAmount;
+        $orderMatches = (string) ($gatewayPayment['order_id'] ?? '') === (string) $validated['razorpay_order_id'];
+        $currencyMatches = strtoupper((string) ($gatewayPayment['currency'] ?? '')) === strtoupper((string) ($pendingOrder->currency ?? 'INR'));
+
+        if (!$amountMatches || !$orderMatches || !$currencyMatches) {
+            // A real payment may have been captured, so keep the reservation
+            // for the webhook/reconciliation instead of releasing stock.
+            return response()->json(['message' => 'Payment amount or currency does not match the order.'], 422);
+        }
+
+        try {
             $cartItems = $this->cartService->getActiveItems();
-            $customerId = (int) session('customer_id');
 
             $this->orderService->markPendingOrderAsPaid(
                 $validated['razorpay_order_id'],
@@ -340,7 +399,7 @@ class FrontendCheckoutController extends Controller
             $this->orderService->releasePendingOrder(
                 (int) session('pending_order_id', 0) ?: null,
                 (string) session('razorpay_order_id', '') ?: null,
-                (int) session('customer_id')
+                $customerId
             );
 
             session()->forget(['pending_order_id', 'razorpay_order_id', 'razorpay_amount']);

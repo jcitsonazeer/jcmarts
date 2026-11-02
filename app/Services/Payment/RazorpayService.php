@@ -34,6 +34,24 @@ class RazorpayService
         ]);
     }
 
+    /**
+     * Load a payment from Razorpay so the captured amount can be checked.
+     */
+    public function fetchPayment(string $paymentId): array
+    {
+        $api = new Api(config('razorpay.key'), config('razorpay.secret'));
+
+        $payment = $api->payment->fetch($paymentId);
+
+        return [
+            'id' => (string) $payment['id'],
+            'order_id' => (string) $payment['order_id'],
+            'amount' => (int) $payment['amount'],
+            'currency' => (string) $payment['currency'],
+            'status' => (string) $payment['status'],
+        ];
+    }
+
     public function refundPayment(string $paymentId, int $amountInPaise, string $receipt): array
     {
         $api = new Api(config('razorpay.key'), config('razorpay.secret'));

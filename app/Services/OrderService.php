@@ -54,6 +54,47 @@ class OrderService
         }
     }
 
+    /**
+     * Release every open pending order for a customer.
+     *
+     * This keeps checkout idempotent: a new payment attempt always starts
+     * from a clean state and cannot reserve stock more than once.
+     */
+    public function releaseOpenPendingOrdersForCustomer(int $customerId): void
+    {
+        $orders = Order::query()
+            ->where('customer_id', $customerId)
+            ->where('is_active', 1)
+            ->whereNull('reservation_released_at')
+            ->where(function ($query) {
+                $query->whereDoesntHave('payments')
+                    ->orWhereHas('payments', function ($paymentQuery) {
+                        $paymentQuery->where('status', 'pending');
+                    });
+            })
+            ->orderBy('id')
+            ->get();
+
+        foreach ($orders as $order) {
+            $this->releasePendingOrder((int) $order->id, null, $customerId);
+        }
+    }
+
+    /**
+     * Find the active order that belongs to a Razorpay order id.
+     */
+    public function getActiveOrderByRazorpayOrderId(string $razorpayOrderId, int $customerId): ?Order
+    {
+        return Order::query()
+            ->where('customer_id', $customerId)
+            ->where('is_active', 1)
+            ->whereHas('payments', function ($query) use ($razorpayOrderId) {
+                $query->where('gateway', 'razorpay')
+                    ->where('gateway_order_id', $razorpayOrderId);
+            })
+            ->first();
+    }
+
     public function getExpiredPendingOrders(): Collection
     {
         $orders = $this->getExpiredPendingOrdersQuery()

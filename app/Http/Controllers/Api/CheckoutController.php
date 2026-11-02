@@ -11,15 +11,22 @@ use App\Services\DeliveryChargeService;
 use App\Services\OrderService;
 use App\Services\Payment\RazorpayService;
 use Carbon\Carbon;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use RuntimeException;
 use Throwable;
 
 class CheckoutController extends Controller
 {
+    private const CHECKOUT_LOCK_SECONDS = 15;
+    private const CHECKOUT_LOCK_WAIT_SECONDS = 5;
+    private const IDEMPOTENCY_TTL_MINUTES = 5;
+
     protected ApiCartService $apiCartService;
     protected RazorpayService $razorpayService;
     protected OrderService $orderService;
@@ -106,122 +113,221 @@ class CheckoutController extends Controller
     {
         $validated = $request->validate([
             'selected_address_id' => ['required', 'integer'],
+            'idempotency_key' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $customerId = $request->user()->id;
+        $customerId = (int) $request->user()->id;
+        $cacheKey = $this->buildIdempotencyCacheKey(
+            $customerId,
+            $this->resolveIdempotencyKey($request, $validated)
+        );
 
-        $address = CustomerAddress::query()
-            ->where('id', (int) $validated['selected_address_id'])
-            ->where('customer_id', $customerId)
-            ->where('is_active', 1)
-            ->first();
-
-        if (!$address) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Please select a valid delivery address',
-                'data' => null,
-            ], 422);
+        // Replay the previous response when the client retries the same request.
+        $cachedResponse = $this->getCachedCheckoutResponse($cacheKey);
+        if ($cachedResponse !== null) {
+            return response()->json($cachedResponse);
         }
 
-        $sessionId = $this->apiCartService->buildSessionId($customerId, null);
-        $cartItems = $this->apiCartService->getActiveItems($sessionId);
-
-        if ($cartItems->isEmpty()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Your cart is empty',
-                'data' => null,
-            ], 422);
-        }
-
-        $subTotal = (float) $cartItems->sum(function ($item) {
-            return ((float) $item->unit_price) * ((int) $item->quantity);
-        });
-
-        if (!$this->deliveryChargeService->isDeliveryAllowed($subTotal)) {
-            $setting = $this->deliveryChargeService->getActiveSettings();
-            $minimum = $setting ? (float) $setting->minimum_order_value : 0;
-
-            return response()->json([
-                'status' => false,
-                'message' => 'Minimum order value for direct delivery is Rs. ' . number_format($minimum, 0) . '. Please add more items to continue.',
-                'data' => null,
-            ], 422);
-        }
-
-        $deliveryCharge = $this->deliveryChargeService->calculateDeliveryCharge($subTotal);
-
-        $orderSummary = [
-            'sub_total' => $subTotal,
-            'delivery_charge' => $deliveryCharge,
-            'packing_charge' => 0.0,
-            'other_charge' => 0.0,
-            'total' => $subTotal + $deliveryCharge,
-        ];
-
-        $total = (float) $orderSummary['total'];
-        $amountInPaise = (int) round($total * 100);
-
-        if ($amountInPaise < 100) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Minimum payable amount is Rs 1',
-                'data' => null,
-            ], 422);
-        }
-
-        // Cleanup any expired pending orders
-        $this->orderService->cleanupExpiredPendingOrders();
+        $lock = Cache::lock('checkout:' . $customerId, self::CHECKOUT_LOCK_SECONDS);
 
         try {
-            $pendingOrder = $this->orderService->createPendingOrderFromCart(
-                $customerId,
-                (int) $address->id,
-                $orderSummary,
-                $cartItems
-            );
-        } catch (RuntimeException $e) {
+            $lock->block(self::CHECKOUT_LOCK_WAIT_SECONDS);
+        } catch (LockTimeoutException $e) {
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Another checkout is already in progress. Please try again.',
                 'data' => null,
-            ], 422);
+            ], 409);
         }
 
         try {
-            $order = $this->razorpayService->createOrder(
-                $amountInPaise,
-                'jcmart_' . $pendingOrder->id . '_' . now()->format('YmdHis'),
-                (string) config('razorpay.currency', 'INR')
-            );
+            // Check again after waiting, another request may have just finished.
+            $cachedResponse = $this->getCachedCheckoutResponse($cacheKey);
+            if ($cachedResponse !== null) {
+                return response()->json($cachedResponse);
+            }
 
-            $this->orderService->attachRazorpayOrder(
-                (int) $pendingOrder->id,
-                (string) $order['id'],
-                $customerId
-            );
-        } catch (Throwable $e) {
-            $this->orderService->releasePendingOrder((int) $pendingOrder->id, null, $customerId);
+            $address = CustomerAddress::query()
+                ->where('id', (int) $validated['selected_address_id'])
+                ->where('customer_id', $customerId)
+                ->where('is_active', 1)
+                ->first();
 
-            return response()->json([
-                'status' => false,
-                'message' => 'Payment could not be started. Please try again',
-                'data' => null,
-            ], 422);
+            if (!$address) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Please select a valid delivery address',
+                    'data' => null,
+                ], 422);
+            }
+
+            $sessionId = $this->apiCartService->buildSessionId($customerId, null);
+            $cartItems = $this->apiCartService->getActiveItems($sessionId);
+
+            if ($cartItems->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Your cart is empty',
+                    'data' => null,
+                ], 422);
+            }
+
+            $subTotal = (float) $cartItems->sum(function ($item) {
+                return ((float) $item->unit_price) * ((int) $item->quantity);
+            });
+
+            if (!$this->deliveryChargeService->isDeliveryAllowed($subTotal)) {
+                $setting = $this->deliveryChargeService->getActiveSettings();
+                $minimum = $setting ? (float) $setting->minimum_order_value : 0;
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Minimum order value for direct delivery is Rs. ' . number_format($minimum, 0) . '. Please add more items to continue.',
+                    'data' => null,
+                ], 422);
+            }
+
+            $deliveryCharge = $this->deliveryChargeService->calculateDeliveryCharge($subTotal);
+
+            $orderSummary = [
+                'sub_total' => $subTotal,
+                'delivery_charge' => $deliveryCharge,
+                'packing_charge' => 0.0,
+                'other_charge' => 0.0,
+                'total' => $subTotal + $deliveryCharge,
+            ];
+
+            $total = (float) $orderSummary['total'];
+            $amountInPaise = (int) round($total * 100);
+
+            if ($amountInPaise < 100) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Minimum payable amount is Rs 1',
+                    'data' => null,
+                ], 422);
+            }
+
+            // Cleanup expired reservations and any previous open order.
+            $this->orderService->cleanupExpiredPendingOrders();
+            $this->orderService->releaseOpenPendingOrdersForCustomer($customerId);
+
+            try {
+                $pendingOrder = $this->orderService->createPendingOrderFromCart(
+                    $customerId,
+                    (int) $address->id,
+                    $orderSummary,
+                    $cartItems
+                );
+            } catch (RuntimeException $e) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $e->getMessage(),
+                    'data' => null,
+                ], 422);
+            }
+
+            try {
+                $order = $this->razorpayService->createOrder(
+                    $amountInPaise,
+                    'jcmart_' . $pendingOrder->id . '_' . now()->format('YmdHis'),
+                    (string) config('razorpay.currency', 'INR')
+                );
+
+                $this->orderService->attachRazorpayOrder(
+                    (int) $pendingOrder->id,
+                    (string) $order['id'],
+                    $customerId
+                );
+            } catch (Throwable $e) {
+                $this->orderService->releasePendingOrder((int) $pendingOrder->id, null, $customerId);
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Payment could not be started. Please try again',
+                    'data' => null,
+                ], 422);
+            }
+
+            $responseBody = [
+                'status' => true,
+                'message' => 'Payment order created successfully',
+                'data' => [
+                    'pending_order_id' => $pendingOrder->id,
+                    'razorpay_order_id' => $order['id'],
+                    'amount' => $amountInPaise,
+                    'currency' => $order['currency'],
+                    'key' => config('razorpay.key'),
+                ],
+            ];
+
+            if ($cacheKey !== null) {
+                Cache::put($cacheKey, $responseBody, now()->addMinutes(self::IDEMPOTENCY_TTL_MINUTES));
+            }
+
+            return response()->json($responseBody);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Read the idempotency key from the body or the Idempotency-Key header.
+     */
+    private function resolveIdempotencyKey(Request $request, array $validated): ?string
+    {
+        $key = $validated['idempotency_key'] ?? $request->header('Idempotency-Key');
+
+        if (!is_string($key)) {
+            return null;
         }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Payment order created successfully',
-            'data' => [
-                'pending_order_id' => $pendingOrder->id,
-                'razorpay_order_id' => $order['id'],
-                'amount' => $amountInPaise,
-                'currency' => $order['currency'],
-                'key' => config('razorpay.key'),
-            ],
-        ]);
+        $key = trim($key);
+
+        if ($key === '') {
+            return null;
+        }
+
+        return substr($key, 0, 100);
+    }
+
+    private function buildIdempotencyCacheKey(int $customerId, ?string $idempotencyKey): ?string
+    {
+        if ($idempotencyKey === null) {
+            return null;
+        }
+
+        return 'checkout:idempotency:' . $customerId . ':' . hash('sha256', $idempotencyKey);
+    }
+
+    /**
+     * Return a cached response only while its pending order is still valid.
+     */
+    private function getCachedCheckoutResponse(?string $cacheKey): ?array
+    {
+        if ($cacheKey === null) {
+            return null;
+        }
+
+        $cachedResponse = Cache::get($cacheKey);
+
+        if (!is_array($cachedResponse)) {
+            return null;
+        }
+
+        $pendingOrderId = (int) ($cachedResponse['data']['pending_order_id'] ?? 0);
+
+        if ($pendingOrderId < 1) {
+            return null;
+        }
+
+        $pendingOrder = Order::query()->find($pendingOrderId);
+
+        if (!$pendingOrder || !$pendingOrder->is_active || !is_null($pendingOrder->reservation_released_at)) {
+            return null;
+        }
+
+        return $cachedResponse;
     }
 
     /**
@@ -243,7 +349,7 @@ class CheckoutController extends Controller
             'razorpay_signature' => ['required', 'string'],
         ]);
 
-        $customerId = $request->user()->id;
+        $customerId = (int) $request->user()->id;
         $sessionId = $this->apiCartService->buildSessionId($customerId, null);
 
         try {
@@ -252,7 +358,62 @@ class CheckoutController extends Controller
                 $validated['razorpay_payment_id'],
                 $validated['razorpay_signature']
             );
+        } catch (Throwable $e) {
+            $this->orderService->releasePendingOrder(
+                (int) $validated['pending_order_id'],
+                $validated['razorpay_order_id'],
+                $customerId
+            );
 
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment verification failed',
+                'data' => null,
+            ], 422);
+        }
+
+        $pendingOrder = $this->orderService->getActiveOrderByRazorpayOrderId(
+            (string) $validated['razorpay_order_id'],
+            $customerId
+        );
+
+        if (!$pendingOrder) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Reserved order not found or already released',
+                'data' => null,
+            ], 422);
+        }
+
+        try {
+            $gatewayPayment = $this->razorpayService->fetchPayment(
+                (string) $validated['razorpay_payment_id']
+            );
+        } catch (Throwable $e) {
+            // Do not release stock here: Razorpay may have captured the payment.
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment could not be confirmed. Please try again.',
+                'data' => null,
+            ], 422);
+        }
+
+        $expectedAmount = (int) round(((float) $pendingOrder->total_amount) * 100);
+        $amountMatches = (int) ($gatewayPayment['amount'] ?? 0) === $expectedAmount;
+        $orderMatches = (string) ($gatewayPayment['order_id'] ?? '') === (string) $validated['razorpay_order_id'];
+        $currencyMatches = strtoupper((string) ($gatewayPayment['currency'] ?? '')) === strtoupper((string) ($pendingOrder->currency ?? 'INR'));
+
+        if (!$amountMatches || !$orderMatches || !$currencyMatches) {
+            // A real payment may have been captured, so keep the reservation
+            // for the webhook/reconciliation instead of releasing stock.
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment amount or currency does not match the order',
+                'data' => null,
+            ], 422);
+        }
+
+        try {
             $cartItems = $this->apiCartService->getActiveItems($sessionId);
 
             $this->orderService->markPendingOrderAsPaid(
@@ -404,6 +565,11 @@ class CheckoutController extends Controller
                 }
 
                 if (!is_null($order->reservation_released_at) || !$order->is_active) {
+                    Log::warning('Webhook payment.captured ignored for a released/inactive order; reconciliation will refund if captured.', [
+                        'order_id' => $order->id,
+                        'razorpay_order_id' => $razorpayOrderId,
+                        'razorpay_payment_id' => $razorpayPaymentId,
+                    ]);
                     return;
                 }
 
