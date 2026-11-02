@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AdminLogin;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -94,9 +95,12 @@ class AdminUserController extends Controller
 
         if (!empty($validated['admin_password'])) {
             $updateData['admin_password'] = Hash::make($validated['admin_password']);
+            $updateData['active_session_id'] = null;
         }
 
         $user->update($updateData);
+
+        Cache::forget('admin_login:' . $user->id);
 
         return redirect()->route('admin.users.edit', $user->id)
             ->with('success', 'User updated successfully.');
@@ -109,7 +113,10 @@ class AdminUserController extends Controller
         $user = AdminLogin::findOrFail($id);
 
         $user->cur_status = $user->cur_status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+        $user->active_session_id = null;
         $user->save();
+
+        Cache::forget('admin_login:' . $user->id);
 
         return redirect()->back()->with('success', 'User status updated successfully.');
     }
