@@ -7,6 +7,8 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\RateMaster;
 use App\Models\StockInfo;
+use App\Services\StockInfoService;
+
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -31,12 +33,16 @@ class OrderService
                 continue;
             }
 
-            $currentStock = StockInfo::query()
-                ->where('rate_master_id', (int) $item->rate_master_id)
-                ->orderByDesc('id')
-                ->value('current_stock');
+            $currentStock = (int) ($item->rate->available_stock ?? 0);
 
-            $currentStock = (int) ($currentStock ?? 0);
+            if ($currentStock === 0 && $item->rate->getAttribute('available_stock') === null) {
+                $currentStock = StockInfo::query()
+                    ->where('rate_master_id', (int) $item->rate_master_id)
+                    ->orderByDesc('id')
+                    ->value('current_stock');
+
+                $currentStock = (int) ($currentStock ?? 0);
+            }
 
             if ($currentStock < (int) $item->quantity) {
                 $productName = $item->product ? $item->product->product_name : 'Selected item';
@@ -160,25 +166,6 @@ class OrderService
         Collection $cartItems
     ): Order {
         return DB::transaction(function () use ($customerId, $addressId, $orderSummary, $cartItems) {
-            $stockSnapshots = [];
-
-            foreach ($cartItems as $item) {
-                $rate = $item->rate ?: RateMaster::find((int) $item->rate_master_id);
-
-                if (!$rate || $rate->stock_dependent !== 'YES') {
-                    continue;
-                }
-
-                $currentStock = $this->getLockedCurrentStock((int) $item->rate_master_id);
-
-                if ($currentStock < (int) $item->quantity) {
-                    $productName = $item->product ? $item->product->product_name : 'Selected item';
-                    throw new RuntimeException($productName . ' is out of stock.');
-                }
-
-                $stockSnapshots[(int) $item->rate_master_id] = $currentStock;
-            }
-
             $order = Order::create([
                 'customer_id' => $customerId,
                 'address_id' => $addressId,
@@ -217,22 +204,12 @@ class OrderService
                     continue;
                 }
 
-                $currentStock = (int) ($stockSnapshots[(int) $item->rate_master_id] ?? 0);
-                $newStock = $currentStock - $quantity;
-                $stockSnapshots[(int) $item->rate_master_id] = $newStock;
-
-                StockInfo::create([
-                    'rate_master_id' => (int) $item->rate_master_id,
-                    'stock_in_count' => 0,
-                    'sale_quantity' => $quantity,
-                    'current_stock' => $newStock,
-                    'sale_order_id' => $order->id,
-                    'is_active' => 1,
-                    'created_by_id' => $customerId,
-                    'created_date' => Carbon::now(),
-                ]);
-
-                $this->syncSoldOutStatus((int) $item->rate_master_id, $newStock, $customerId);
+                app(StockInfoService::class)->reserveStock(
+                    (int) $item->rate_master_id,
+                    $quantity,
+                    $order->id,
+                    $customerId
+                );
             }
 
             return $order->load('items');
@@ -383,21 +360,12 @@ class OrderService
                     continue;
                 }
 
-                $currentStock = $this->getLockedCurrentStock((int) $item->rate_master_id);
-                $newStock = $currentStock + (int) $item->quantity;
-
-                StockInfo::create([
-                    'rate_master_id' => (int) $item->rate_master_id,
-                    'stock_in_count' => (int) $item->quantity,
-                    'sale_quantity' => 0,
-                    'current_stock' => $newStock,
-                    'sale_order_id' => $order->id,
-                    'is_active' => 1,
-                    'created_by_id' => $customerId ?? $order->customer_id,
-                    'created_date' => Carbon::now(),
-                ]);
-
-                $this->syncSoldOutStatus((int) $item->rate_master_id, $newStock, $customerId ?? $order->customer_id);
+                app(StockInfoService::class)->releaseStock(
+                    (int) $item->rate_master_id,
+                    (int) $item->quantity,
+                    $order->id,
+                    $customerId ?? $order->customer_id
+                );
             }
 
             $order->is_active = 0;
@@ -443,21 +411,12 @@ class OrderService
                     continue;
                 }
 
-                $currentStock = $this->getLockedCurrentStock((int) $item->rate_master_id);
-                $newStock = $currentStock + (int) $item->quantity;
-
-                StockInfo::create([
-                    'rate_master_id' => (int) $item->rate_master_id,
-                    'stock_in_count' => (int) $item->quantity,
-                    'sale_quantity' => 0,
-                    'current_stock' => $newStock,
-                    'sale_order_id' => $order->id,
-                    'is_active' => 1,
-                    'created_by_id' => $adminId,
-                    'created_date' => Carbon::now(),
-                ]);
-
-                $this->syncSoldOutStatus((int) $item->rate_master_id, $newStock, $adminId);
+                app(StockInfoService::class)->releaseStock(
+                    (int) $item->rate_master_id,
+                    (int) $item->quantity,
+                    $order->id,
+                    $adminId
+                );
             }
 
             $order->is_active = 0;
@@ -513,28 +472,12 @@ class OrderService
                 $rate = $item->rate ?: RateMaster::find((int) $item->rate_master_id);
 
                 if ($rate && $rate->stock_dependent === 'YES') {
-                    $currentStock = StockInfo::query()
-                        ->where('rate_master_id', (int) $item->rate_master_id)
-                        ->orderByDesc('id')
-                        ->value('current_stock');
-
-                    $currentStock = (int) ($currentStock ?? 0);
-                    $newStock = $currentStock - $quantity;
-
-                    if ($newStock < 0) {
-                        throw new RuntimeException('Insufficient stock for order item.');
-                    }
-
-                    StockInfo::create([
-                        'rate_master_id' => (int) $item->rate_master_id,
-                        'stock_in_count' => 0,
-                        'sale_quantity' => $quantity,
-                        'current_stock' => $newStock,
-                        'sale_order_id' => $order->id,
-                        'is_active' => 1,
-                        'created_by_id' => $customerId,
-                        'created_date' => Carbon::now(),
-                    ]);
+                    app(StockInfoService::class)->reserveStock(
+                        (int) $item->rate_master_id,
+                        $quantity,
+                        $order->id,
+                        $customerId
+                    );
                 }
             }
 

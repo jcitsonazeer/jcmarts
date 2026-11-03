@@ -437,6 +437,7 @@ CREATE TABLE `rate_master` (
   `uom_id` int(11) NOT NULL,
   `cost_price` decimal(10,2) NOT NULL,
   `selling_price` decimal(10,2) NOT NULL,
+  `available_stock` int(11) NOT NULL DEFAULT 0,
   `offer_percentage` decimal(5,2) DEFAULT NULL,
   `offer_price` decimal(10,2) DEFAULT NULL,
   `final_price` decimal(10,2) NOT NULL,

@@ -20,6 +20,7 @@ class RateMaster extends Model
         'offer_percentage',
         'offer_price',
         'final_price',
+        'available_stock',
         'soldout_status',
         'stock_dependent',
         'is_active',
@@ -33,6 +34,7 @@ class RateMaster extends Model
     protected $casts = [
         'cost_price'       => 'decimal:2',
         'selling_price'    => 'decimal:2',
+        'available_stock'  => 'integer',
         'offer_percentage' => 'decimal:2',
         'offer_price'      => 'decimal:2',
         'final_price'      => 'decimal:2',

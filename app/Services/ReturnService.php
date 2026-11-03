@@ -514,6 +514,7 @@ class ReturnService
             RateMaster::query()
                 ->where('id', $item->rate_master_id)
                 ->update([
+                    'available_stock' => $newStock,
                     'soldout_status' => $newStock > 0 ? 'NO' : 'YES',
                     'updated_by_id' => $adminId,
                     'updated_date' => Carbon::now(),

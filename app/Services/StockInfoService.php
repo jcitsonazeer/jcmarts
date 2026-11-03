@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\RateMaster;
 use App\Models\StockInfo;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class StockInfoService
 {
@@ -65,6 +67,12 @@ class StockInfoService
 
     public function getLatestCurrentStock(int $rateMasterId): int
     {
+        $rate = RateMaster::find($rateMasterId);
+
+        if ($rate && $rate->getAttribute('available_stock') !== null) {
+            return (int) $rate->available_stock;
+        }
+
         $current = StockInfo::query()
             ->where('rate_master_id', $rateMasterId)
             ->orderByDesc('id')
@@ -89,15 +97,191 @@ class StockInfoService
             'created_date' => Carbon::now(),
         ]);
 
+        $updateData = [
+            'soldout_status' => $newStock > 0 ? 'NO' : 'YES',
+            'updated_by_id' => $adminId,
+            'updated_date' => Carbon::now(),
+        ];
+
+        if (Schema::hasColumn('rate_master', 'available_stock')) {
+            $updateData['available_stock'] = $newStock;
+        }
+
+        RateMaster::query()
+            ->where('id', $rateMasterId)
+            ->update($updateData);
+
+        return $stockInfo;
+    }
+
+    public function reserveStock($rateMasterId, $quantity, ?int $orderId = null, ?int $userId = null): StockInfo
+    {
+        $rateMasterId = (int) $rateMasterId;
+
+        if ($orderId !== null) {
+            $existingReservation = StockInfo::query()
+                ->where('rate_master_id', $rateMasterId)
+                ->where('sale_order_id', $orderId)
+                ->where('sale_quantity', $quantity)
+                ->first();
+
+            if ($existingReservation) {
+                return $existingReservation;
+            }
+        }
+
+        if (!is_numeric($quantity) || $quantity <= 0) {
+            throw new \RuntimeException('Quantity must be greater than zero.');
+        }
+
+        if (!Schema::hasColumn('rate_master', 'available_stock')) {
+            $latestStock = StockInfo::query()
+                ->where('rate_master_id', $rateMasterId)
+                ->orderByDesc('id')
+                ->lockForUpdate()
+                ->first();
+
+            $currentStock = $latestStock ? (int) $latestStock->current_stock : 0;
+
+            if ($currentStock < $quantity) {
+                throw new \RuntimeException('Insufficient stock available.');
+            }
+
+            $newStock = $currentStock - $quantity;
+
+            RateMaster::query()
+                ->where('id', $rateMasterId)
+                ->update([
+                    'soldout_status' => $newStock > 0 ? 'NO' : 'YES',
+                    'updated_by_id' => $userId,
+                    'updated_date' => Carbon::now(),
+                ]);
+
+            return StockInfo::create([
+                'rate_master_id' => $rateMasterId,
+                'stock_in_count' => 0,
+                'sale_quantity' => $quantity,
+                'current_stock' => $newStock,
+                'sale_order_id' => $orderId,
+                'is_active' => 1,
+                'created_by_id' => $userId,
+                'created_date' => Carbon::now(),
+            ]);
+        }
+
+        $updated = DB::table('rate_master')
+            ->where('id', $rateMasterId)
+            ->where('available_stock', '>=', $quantity)
+            ->decrement('available_stock', $quantity);
+
+        if ($updated !== 1) {
+            throw new \RuntimeException('Insufficient stock available.');
+        }
+
+        $newStock = DB::table('rate_master')
+            ->where('id', $rateMasterId)
+            ->value('available_stock');
+
+        $newStock = is_null($newStock) ? 0 : $newStock;
+
         RateMaster::query()
             ->where('id', $rateMasterId)
             ->update([
                 'soldout_status' => $newStock > 0 ? 'NO' : 'YES',
-                'updated_by_id' => $adminId,
+                'updated_by_id' => $userId,
                 'updated_date' => Carbon::now(),
             ]);
 
-        return $stockInfo;
+        return StockInfo::create([
+            'rate_master_id' => $rateMasterId,
+            'stock_in_count' => 0,
+            'sale_quantity' => $quantity,
+            'current_stock' => $newStock,
+            'sale_order_id' => $orderId,
+            'is_active' => 1,
+            'created_by_id' => $userId,
+            'created_date' => Carbon::now(),
+        ]);
+    }
+
+    public function releaseStock($rateMasterId, $quantity, ?int $orderId = null, ?int $userId = null): StockInfo
+    {
+        $rateMasterId = (int) $rateMasterId;
+
+        if ($orderId !== null) {
+            $existingRelease = StockInfo::query()
+                ->where('rate_master_id', $rateMasterId)
+                ->where('sale_order_id', $orderId)
+                ->where('stock_in_count', $quantity)
+                ->first();
+
+            if ($existingRelease) {
+                return $existingRelease;
+            }
+        }
+
+        if (!is_numeric($quantity) || $quantity <= 0) {
+            throw new \RuntimeException('Quantity must be greater than zero.');
+        }
+
+        if (!Schema::hasColumn('rate_master', 'available_stock')) {
+            $latestStock = StockInfo::query()
+                ->where('rate_master_id', $rateMasterId)
+                ->orderByDesc('id')
+                ->lockForUpdate()
+                ->first();
+
+            $currentStock = $latestStock ? (int) $latestStock->current_stock : 0;
+            $newStock = $currentStock + $quantity;
+
+            RateMaster::query()
+                ->where('id', $rateMasterId)
+                ->update([
+                    'soldout_status' => $newStock > 0 ? 'NO' : 'YES',
+                    'updated_by_id' => $userId,
+                    'updated_date' => Carbon::now(),
+                ]);
+
+            return StockInfo::create([
+                'rate_master_id' => $rateMasterId,
+                'stock_in_count' => $quantity,
+                'sale_quantity' => 0,
+                'current_stock' => $newStock,
+                'sale_order_id' => $orderId,
+                'is_active' => 1,
+                'created_by_id' => $userId,
+                'created_date' => Carbon::now(),
+            ]);
+        }
+
+        DB::table('rate_master')
+            ->where('id', $rateMasterId)
+            ->increment('available_stock', $quantity);
+
+        $newStock = DB::table('rate_master')
+            ->where('id', $rateMasterId)
+            ->value('available_stock');
+
+        $newStock = is_null($newStock) ? $quantity : $newStock;
+
+        RateMaster::query()
+            ->where('id', $rateMasterId)
+            ->update([
+                'soldout_status' => $newStock > 0 ? 'NO' : 'YES',
+                'updated_by_id' => $userId,
+                'updated_date' => Carbon::now(),
+            ]);
+
+        return StockInfo::create([
+            'rate_master_id' => $rateMasterId,
+            'stock_in_count' => $quantity,
+            'sale_quantity' => 0,
+            'current_stock' => $newStock,
+            'sale_order_id' => $orderId,
+            'is_active' => 1,
+            'created_by_id' => $userId,
+            'created_date' => Carbon::now(),
+        ]);
     }
 
     public function getHistoryByRate(int $rateMasterId)

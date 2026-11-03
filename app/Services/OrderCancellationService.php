@@ -260,6 +260,7 @@ class OrderCancellationService
         RateMaster::query()
             ->where('id', $rateMasterId)
             ->update([
+                'available_stock' => $currentStock,
                 'soldout_status' => $currentStock > 0 ? 'NO' : 'YES',
                 'updated_by_id' => $userId,
                 'updated_date' => Carbon::now(),
