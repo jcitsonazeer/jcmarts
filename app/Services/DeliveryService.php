@@ -310,6 +310,9 @@ class DeliveryService
         return \App\Models\DeliveryPerson::query()
             ->where('status', 'active')
             ->where('availability_status', 'available')
+            ->whereDoesntHave('deliveries', function ($query) {
+                $query->whereIn('status', ['assigned', 'accepted', 'picked_up', 'out_for_delivery']);
+            })
             ->orderBy('name')
             ->get();
     }
@@ -368,7 +371,7 @@ class DeliveryService
         }
     }
 
-    private function buildDeliveryAddress(Order $order): ?string
+    public function buildDeliveryAddress(Order $order): ?string
     {
         if (!$order->address) {
             return null;

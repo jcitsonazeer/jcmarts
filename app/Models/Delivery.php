@@ -15,6 +15,7 @@ class Delivery extends Model
 
     protected $fillable = [
         'order_id',
+        'return_id',
         'delivery_person_id',
         'status',
         'assigned_at',
@@ -51,6 +52,11 @@ class Delivery extends Model
     public function deliveryPerson()
     {
         return $this->belongsTo(DeliveryPerson::class, 'delivery_person_id');
+    }
+
+    public function return()
+    {
+        return $this->belongsTo(ReturnRequest::class, 'return_id');
     }
 
     public function statusHistories(): HasMany

@@ -2,13 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\Delivery;
+use App\Models\DeliveryPerson;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\RateMaster;
 use App\Models\Refund;
 use App\Models\ReturnItem;
 use App\Models\ReturnRequest;
+use App\Models\ReturnStatusHistory;
 use App\Models\StockInfo;
+use App\Services\DeliveryService;
 use App\Services\Payment\RazorpayService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -32,11 +36,33 @@ class ReturnService
 
     protected OrderStatusService $orderStatusService;
     protected RazorpayService $razorpayService;
+    protected DeliveryService $deliveryService;
+    protected DeliveryStatusService $deliveryStatusService;
 
-    public function __construct(OrderStatusService $orderStatusService, RazorpayService $razorpayService)
-    {
+    public function __construct(
+        OrderStatusService $orderStatusService,
+        RazorpayService $razorpayService,
+        DeliveryService $deliveryService,
+        DeliveryStatusService $deliveryStatusService
+    ) {
         $this->orderStatusService = $orderStatusService;
         $this->razorpayService = $razorpayService;
+        $this->deliveryService = $deliveryService;
+        $this->deliveryStatusService = $deliveryStatusService;
+    }
+
+    public function recordStatusChange(int $returnId, ?string $oldStatus, string $newStatus, ?int $changedById, ?string $changedByType = null): ReturnStatusHistory
+    {
+        return ReturnStatusHistory::create([
+            'return_id' => $returnId,
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+            'changed_by_id' => $changedById,
+            'changed_by_type' => $changedByType,
+            'changed_at' => Carbon::now(),
+            'created_by_id' => $changedById,
+            'created_date' => Carbon::now(),
+        ]);
     }
 
     public function getReasons(): array
@@ -47,7 +73,7 @@ class ReturnService
     public function getReturnsForAdmin(): LengthAwarePaginator
     {
         return ReturnRequest::query()
-            ->with(['order', 'customer', 'items.product', 'refunds'])
+            ->with(['order', 'customer', 'items.product', 'refunds', 'delivery', 'delivery.deliveryPerson'])
             ->orderByDesc('requested_at')
             ->orderByDesc('id')
             ->paginate(20)
@@ -64,6 +90,9 @@ class ReturnService
                 'items.product',
                 'items.rate',
                 'refunds',
+                'delivery',
+                'delivery.deliveryPerson',
+                'statusHistories',
             ])
             ->where('id', $returnId)
             ->first();
@@ -184,6 +213,14 @@ class ReturnService
                 $customerId
             );
 
+            $this->recordStatusChange(
+                $return->id,
+                null,
+                OrderStatusService::STATUS_RETURN_REQUESTED,
+                $customerId,
+                'customer'
+            );
+
             return $return;
         });
     }
@@ -206,18 +243,180 @@ class ReturnService
         ]);
     }
 
-    public function schedulePickupByAdmin(int $returnId, int $adminId): void
+    public function schedulePickupByAdmin(int $returnId, int $adminId, ?int $deliveryPersonId = null): void
     {
-        $this->transitionByAdmin($returnId, $adminId, 'return_approved', 'pickup_scheduled', [
+        if ($deliveryPersonId) {
+            $this->assignDeliveryPersonForReturn($returnId, $deliveryPersonId, $adminId);
+
+            return;
+        }
+
+        $this->transitionByAdmin($returnId, $adminId, OrderStatusService::STATUS_RETURN_APPROVED, OrderStatusService::STATUS_PICKUP_SCHEDULED, [
             'pickup_scheduled_at' => Carbon::now(),
         ]);
     }
 
-    public function markReceivedByAdmin(int $returnId, int $adminId): void
+    /**
+     * Assign an available delivery person to collect a returned product.
+     *
+     * The return must be in the approved state. Assigning a pickup person also
+     * moves the return to the pickup_scheduled state.
+     */
+    public function assignDeliveryPersonForReturn(int $returnId, int $deliveryPersonId, int $adminId): Delivery
+    {
+        return DB::transaction(function () use ($returnId, $deliveryPersonId, $adminId) {
+            $return = ReturnRequest::query()
+                ->with(['order.address', 'items'])
+                ->where('id', $returnId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$return) {
+                throw new RuntimeException('Return request not found.');
+            }
+
+            if ($return->status !== OrderStatusService::STATUS_RETURN_APPROVED) {
+                throw new RuntimeException('Only approved returns can be assigned for pickup.');
+            }
+
+            $deliveryPerson = DeliveryPerson::query()
+                ->where('id', $deliveryPersonId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$deliveryPerson) {
+                throw new RuntimeException('Delivery person not found.');
+            }
+
+            $this->validateDeliveryPersonForReturnAssignment($deliveryPerson);
+
+            $delivery = Delivery::query()
+                ->where('return_id', $return->id)
+                ->lockForUpdate()
+                ->first();
+
+            $deliveryAddress = $this->deliveryService->buildDeliveryAddress($return->order);
+
+            if (!$delivery) {
+                $delivery = Delivery::create([
+                    'order_id' => $return->order_id,
+                    'return_id' => $return->id,
+                    'status' => 'not_assigned',
+                    'delivery_address' => $deliveryAddress,
+                    'created_by_id' => $adminId,
+                    'created_date' => Carbon::now(),
+                ]);
+            }
+
+            $blockingStatuses = ['assigned', 'accepted', 'picked_up', 'out_for_delivery', 'delivered'];
+
+            if (in_array($delivery->status, $blockingStatuses, true)) {
+                throw new RuntimeException('This return pickup is already assigned or completed.');
+            }
+
+            $oldStatus = $delivery->status === 'not_assigned' ? null : $delivery->status;
+
+            $delivery->update([
+                'delivery_person_id' => $deliveryPersonId,
+                'status' => 'assigned',
+                'delivery_address' => $deliveryAddress,
+                'assigned_at' => Carbon::now(),
+                'accepted_at' => null,
+                'picked_up_at' => null,
+                'out_for_delivery_at' => null,
+                'delivered_at' => null,
+                'updated_by_id' => $adminId,
+                'updated_date' => Carbon::now(),
+            ]);
+
+            $this->deliveryStatusService->recordStatusChange(
+                $delivery->id,
+                $oldStatus,
+                'assigned',
+                $adminId,
+                'admin'
+            );
+
+            $deliveryPerson->update([
+                'availability_status' => 'busy',
+                'updated_by_id' => $adminId,
+                'updated_date' => Carbon::now(),
+            ]);
+
+            $this->transitionByAdmin($returnId, $adminId, OrderStatusService::STATUS_RETURN_APPROVED, OrderStatusService::STATUS_PICKUP_SCHEDULED, [
+                'pickup_scheduled_at' => Carbon::now(),
+            ]);
+
+            $delivery->unsetRelation('order');
+            $delivery->unsetRelation('deliveryPerson');
+
+            return $delivery->load(['order.customer', 'deliveryPerson']);
+        });
+    }
+
+    public function markProductReceivedForDelivery(int $returnId, int $actorId, string $actorType = 'delivery_person'): void
+    {
+        $return = ReturnRequest::query()
+            ->where('id', $returnId)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$return) {
+            throw new RuntimeException('Return request not found.');
+        }
+
+        if ($return->status !== OrderStatusService::STATUS_PICKUP_SCHEDULED) {
+            return;
+        }
+
+        $this->markReceivedByAdmin($returnId, $actorId, $actorType);
+    }
+
+    public function reopenReturnAfterPickup(int $returnId, int $actorId, string $actorType = 'delivery_person'): void
+    {
+        $return = ReturnRequest::query()
+            ->where('id', $returnId)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$return) {
+            throw new RuntimeException('Return request not found.');
+        }
+
+        if ($return->status !== OrderStatusService::STATUS_PICKUP_SCHEDULED) {
+            return;
+        }
+
+        $this->transitionByAdmin($returnId, $actorId, OrderStatusService::STATUS_PICKUP_SCHEDULED, OrderStatusService::STATUS_RETURN_APPROVED, [
+            'pickup_scheduled_at' => null,
+        ], $actorType);
+    }
+
+    private function validateDeliveryPersonForReturnAssignment(DeliveryPerson $deliveryPerson): void
+    {
+        if ($deliveryPerson->status !== 'active') {
+            throw new RuntimeException('Cannot assign an inactive delivery person for pickup.');
+        }
+
+        if ($deliveryPerson->availability_status !== 'available') {
+            throw new RuntimeException('This delivery person is not available for pickup right now.');
+        }
+
+        $hasActiveDelivery = Delivery::query()
+            ->where('delivery_person_id', $deliveryPerson->id)
+            ->whereIn('status', ['assigned', 'accepted', 'picked_up', 'out_for_delivery'])
+            ->exists();
+
+        if ($hasActiveDelivery) {
+            throw new RuntimeException('This delivery person already has an active delivery.');
+        }
+    }
+
+    public function markReceivedByAdmin(int $returnId, int $adminId, string $actorType = 'admin'): void
     {
         $this->transitionByAdmin($returnId, $adminId, 'pickup_scheduled', 'product_received', [
             'received_at' => Carbon::now(),
-        ]);
+        ], $actorType);
     }
 
     public function failInspectionByAdmin(int $returnId, int $adminId, ?string $adminNote = null): void
@@ -259,6 +458,8 @@ class ReturnService
             $return->updated_by_id = $adminId;
             $return->updated_date = Carbon::now();
             $return->save();
+
+            $this->recordStatusChange($return->id, 'product_received', 'refund_initiated', $adminId, 'admin');
 
             $refund = Refund::create([
                 'return_id' => $return->id,
@@ -315,6 +516,8 @@ class ReturnService
                         'updated_by_id' => $adminId,
                         'updated_date' => Carbon::now(),
                     ]);
+
+                $this->recordStatusChange($refundData['return_id'], 'refund_initiated', 'product_received', $adminId, 'admin');
             });
 
             throw new RuntimeException('Refund could not be started. Please try again later.');
@@ -357,6 +560,8 @@ class ReturnService
             $return->updated_date = Carbon::now();
             $return->save();
 
+            $this->recordStatusChange($return->id, 'refund_initiated', $return->status, $adminId, 'admin');
+
             $this->orderStatusService->addSystemStatus($return->order, 'inspection_passed', $adminId);
             $this->orderStatusService->addSystemStatus($return->order, 'refund_initiated', $adminId);
 
@@ -367,9 +572,9 @@ class ReturnService
         });
     }
 
-    private function transitionByAdmin(int $returnId, int $adminId, string $fromStatus, string $toStatus, array $updates): void
+    private function transitionByAdmin(int $returnId, int $adminId, string $fromStatus, string $toStatus, array $updates, string $actorType = 'admin'): void
     {
-        DB::transaction(function () use ($returnId, $adminId, $fromStatus, $toStatus, $updates) {
+        DB::transaction(function () use ($returnId, $adminId, $fromStatus, $toStatus, $updates, $actorType) {
             $return = ReturnRequest::query()
                 ->with('order')
                 ->where('id', $returnId)
@@ -392,6 +597,8 @@ class ReturnService
             $return->save();
 
             $this->orderStatusService->addSystemStatus($return->order, $toStatus, $adminId);
+
+            $this->recordStatusChange($return->id, $fromStatus, $toStatus, $adminId, $actorType);
         });
     }
 

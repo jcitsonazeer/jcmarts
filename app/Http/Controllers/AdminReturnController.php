@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\DeliveryService;
 use App\Services\ReturnService;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -9,10 +10,12 @@ use RuntimeException;
 class AdminReturnController extends Controller
 {
     protected ReturnService $returnService;
+    protected DeliveryService $deliveryService;
 
-    public function __construct(ReturnService $returnService)
+    public function __construct(ReturnService $returnService, DeliveryService $deliveryService)
     {
         $this->returnService = $returnService;
+        $this->deliveryService = $deliveryService;
     }
 
     public function index()
@@ -45,7 +48,9 @@ class AdminReturnController extends Controller
                 ->with('error', 'Return request not found.');
         }
 
-        return view('admin.returns.process', compact('return'));
+        $availableDeliveryPersons = $this->deliveryService->getAvailableDeliveryPersons();
+
+        return view('admin.returns.process', compact('return', 'availableDeliveryPersons'));
     }
 
     public function update(Request $request, int $returnId)
@@ -55,6 +60,7 @@ class AdminReturnController extends Controller
             'action' => ['required', 'string'],
             'admin_note' => ['nullable', 'string', 'max:1000'],
             'sellable_stock' => ['nullable', 'boolean'],
+            'delivery_person_id' => ['nullable', 'integer', 'exists:delivery_persons,id'],
         ]);
 
         try {
@@ -65,7 +71,7 @@ class AdminReturnController extends Controller
             } elseif ($validated['action'] === 'reject') {
                 $this->returnService->rejectByAdmin($returnId, $adminId, $adminNote);
             } elseif ($validated['action'] === 'schedule_pickup') {
-                $this->returnService->schedulePickupByAdmin($returnId, $adminId);
+                $this->returnService->schedulePickupByAdmin($returnId, $adminId, $validated['delivery_person_id'] ?? null);
             } elseif ($validated['action'] === 'mark_received') {
                 $this->returnService->markReceivedByAdmin($returnId, $adminId);
             } elseif ($validated['action'] === 'inspection_failed') {

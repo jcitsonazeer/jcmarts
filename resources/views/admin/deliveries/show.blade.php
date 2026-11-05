@@ -1,6 +1,7 @@
 @extends('admin.dashboard.headerfooter')
 
 @section('content')
+@php $isReturnPickup = (bool) $delivery->return_id; @endphp
 <div class="main-panel">
     <div class="content-wrapper">
         <div class="container-fluid">
@@ -8,8 +9,11 @@
                 <div class="col-xl-12 box-margin height-card">
                     <div class="card card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="card-title">Delivery Details - #{{ $delivery->id }}</h4>
+                            <h4 class="card-title">{{ $delivery->return_id ? 'Return Pickup Details' : 'Delivery Details' }} - #{{ $delivery->id }}</h4>
                             <div>
+                                @if($delivery->return_id)
+                                    <a href="{{ route('admin.returns.show', $delivery->return_id) }}" class="btn btn-warning">View Return #{{ $delivery->return_id }}</a>
+                                @endif
                                 <a href="{{ route('admin.orders.show', $delivery->order_id) }}" class="btn btn-info">View Order</a>
                                 <a href="{{ route('admin.deliveries.active') }}" class="btn btn-secondary">Back</a>
                             </div>
@@ -61,7 +65,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <h5>Delivery Information</h5>
+                                <h5>{{ $isReturnPickup ? 'Pickup Information' : 'Delivery Information' }}</h5>
                                 <table class="table table-bordered">
                                     <tr>
                                         <th>Delivery Status</th>
@@ -69,15 +73,15 @@
                                             @if($delivery->status === 'not_assigned')
                                                 <span class="badge badge-secondary">Not Assigned</span>
                                             @elseif($delivery->status === 'assigned')
-                                                <span class="badge badge-primary">Delivery Assigned</span>
+                                                <span class="badge badge-primary">{{ $isReturnPickup ? 'Pickup Assigned' : 'Delivery Assigned' }}</span>
                                             @elseif($delivery->status === 'accepted')
-                                                <span class="badge badge-info">Delivery Accepted by Delivery Person</span>
+                                                <span class="badge badge-info">{{ $isReturnPickup ? 'Pickup Accepted by Delivery Person' : 'Delivery Accepted by Delivery Person' }}</span>
                                             @elseif($delivery->status === 'picked_up')
                                                 <span class="badge badge-warning">Picked Up</span>
                                             @elseif($delivery->status === 'out_for_delivery')
                                                 <span class="badge badge-dark">Out for Delivery</span>
                                             @elseif($delivery->status === 'delivered')
-                                                <span class="badge badge-success">Delivered</span>
+                                                <span class="badge badge-success">{{ $isReturnPickup ? 'Delivered to Hub' : 'Delivered' }}</span>
                                             @elseif($delivery->status === 'cancelled')
                                                 <span class="badge badge-danger">Cancelled</span>
                                             @elseif($delivery->status === 'failed')
@@ -105,14 +109,16 @@
                                         <th>Picked Up At</th>
                                         <td>{{ $delivery->picked_up_at ? date('d-m-Y H:i', strtotime($delivery->picked_up_at)) : '-' }}</td>
                                     </tr>
-                                    <tr>
-                                        <th>Out for Delivery At</th>
-                                        <td>{{ $delivery->out_for_delivery_at ? date('d-m-Y H:i', strtotime($delivery->out_for_delivery_at)) : '-' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Delivered At</th>
-                                        <td>{{ $delivery->delivered_at ? date('d-m-Y H:i', strtotime($delivery->delivered_at)) : '-' }}</td>
-                                    </tr>
+                                        @if(!$isReturnPickup)
+                                            <tr>
+                                                <th>Out for Delivery At</th>
+                                                <td>{{ $delivery->out_for_delivery_at ? date('d-m-Y H:i', strtotime($delivery->out_for_delivery_at)) : '-' }}</td>
+                                            </tr>
+                                        @endif
+                                        <tr>
+                                            <th>{{ $isReturnPickup ? 'Delivered to Hub At' : 'Delivered At' }}</th>
+                                            <td>{{ $delivery->delivered_at ? date('d-m-Y H:i', strtotime($delivery->delivered_at)) : '-' }}</td>
+                                        </tr>
                                 </table>
                             </div>
                         </div>
@@ -161,6 +167,34 @@
                             </div>
                         </div>
 
+                        @if($delivery->locations && $delivery->locations->count())
+                            <div class="row mt-4">
+                                <div class="col-md-12">
+                                    <h5>Delivery Location Tracking (GPS)</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-bordered">
+                                            <thead class="thead-dark">
+                                                <tr>
+                                                    <th>Recorded At</th>
+                                                    <th>Latitude</th>
+                                                    <th>Longitude</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($delivery->locations as $location)
+                                                    <tr>
+                                                        <td>{{ $location->recorded_at ? date('d-m-Y H:i', strtotime($location->recorded_at)) : '-' }}</td>
+                                                        <td>{{ $location->latitude }}</td>
+                                                        <td>{{ $location->longitude }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         @if($delivery->statusHistories && $delivery->statusHistories->count())
                             <div class="row mt-4">
                                 <div class="col-md-12">
@@ -179,8 +213,8 @@
                                                 @foreach($delivery->statusHistories->sortByDesc('changed_at') as $history)
                                                     <tr>
                                                         <td>{{ $history->changed_at ? date('d-m-Y H:i', strtotime($history->changed_at)) : '-' }}</td>
-                                                        <td>{{ $history->old_status ? app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($history->old_status) : '-' }}</td>
-                                                        <td>{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($history->new_status) }}</td>
+                                                         <td>{{ $history->old_status ? app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($history->old_status, $isReturnPickup) : '-' }}</td>
+                                                         <td>{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($history->new_status, $isReturnPickup) }}</td>
                                                         <td>{{ $history->changed_by_name ?? '-' }}</td>
                                                     </tr>
                                                 @endforeach

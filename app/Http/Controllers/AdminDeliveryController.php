@@ -167,8 +167,9 @@ class AdminDeliveryController extends Controller
                 ->with('error', 'Delivery not found.');
         }
 
+        $isReturnPickup = (bool) $delivery->return_id;
         $timeline = $this->buildDeliveryTimeline($delivery);
-        $allowedStatuses = $this->deliveryStatusService->getAllowedNextStatuses($delivery->status);
+        $allowedStatuses = $this->deliveryStatusService->getAllowedNextStatuses($delivery->status, $isReturnPickup);
 
         // Order status shown in "Order Information". It follows the current
         // delivery status, so it does not stay on 'Assigned for delivery'.
@@ -263,21 +264,37 @@ class AdminDeliveryController extends Controller
 
     private function buildDeliveryTimeline($delivery): array
     {
-        $statuses = [
-            'assigned' => 'Delivery Assigned',
-            'accepted' => 'Delivery Accepted by Delivery Person',
-            'picked_up' => 'Picked Up',
-            'out_for_delivery' => 'Out for Delivery',
-            'delivered' => 'Delivered',
-        ];
+        if ($delivery->return_id) {
+            $statuses = [
+                'assigned' => 'Pickup Assigned',
+                'accepted' => 'Pickup Accepted by Delivery Person',
+                'picked_up' => 'Picked Up',
+                'delivered' => 'Delivered to Hub',
+            ];
 
-        $timestampMap = [
-            'assigned' => 'assigned_at',
-            'accepted' => 'accepted_at',
-            'picked_up' => 'picked_up_at',
-            'out_for_delivery' => 'out_for_delivery_at',
-            'delivered' => 'delivered_at',
-        ];
+            $timestampMap = [
+                'assigned' => 'assigned_at',
+                'accepted' => 'accepted_at',
+                'picked_up' => 'picked_up_at',
+                'delivered' => 'delivered_at',
+            ];
+        } else {
+            $statuses = [
+                'assigned' => 'Delivery Assigned',
+                'accepted' => 'Delivery Accepted by Delivery Person',
+                'picked_up' => 'Picked Up',
+                'out_for_delivery' => 'Out for Delivery',
+                'delivered' => 'Delivered',
+            ];
+
+            $timestampMap = [
+                'assigned' => 'assigned_at',
+                'accepted' => 'accepted_at',
+                'picked_up' => 'picked_up_at',
+                'out_for_delivery' => 'out_for_delivery_at',
+                'delivered' => 'delivered_at',
+            ];
+        }
 
         $statusKeys = array_keys($statuses);
         $currentIndex = null;

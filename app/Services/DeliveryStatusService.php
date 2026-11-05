@@ -6,6 +6,7 @@ use App\Models\Delivery;
 use App\Models\DeliveryPerson;
 use App\Models\DeliveryStatusHistory;
 use App\Models\Order;
+use App\Services\ReturnService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -57,6 +58,21 @@ class DeliveryStatusService
         self::STATUS_FAILED => [],
     ];
 
+    // Return pickups only collect the product from the customer and bring it
+    // back to the admin/warehouse hub. They never go out for delivery again,
+    // so picked_up leads directly to delivered ("Delivered to Hub").
+    public const PICKUP_TRANSITIONS = [
+        self::STATUS_NOT_ASSIGNED => [self::STATUS_ASSIGNED],
+        self::STATUS_ASSIGNED => [self::STATUS_ACCEPTED, self::STATUS_REJECTED, self::STATUS_CANCELLED],
+        self::STATUS_ACCEPTED => [self::STATUS_PICKED_UP, self::STATUS_CANCELLED, self::STATUS_FAILED],
+        self::STATUS_PICKED_UP => [self::STATUS_DELIVERED],
+        self::STATUS_OUT_FOR_DELIVERY => [self::STATUS_DELIVERED],
+        self::STATUS_DELIVERED => [],
+        self::STATUS_REJECTED => [],
+        self::STATUS_CANCELLED => [],
+        self::STATUS_FAILED => [],
+    ];
+
     public const TIMESTAMP_FIELD_MAP = [
         self::STATUS_ASSIGNED => 'assigned_at',
         self::STATUS_ACCEPTED => 'accepted_at',
@@ -83,31 +99,37 @@ class DeliveryStatusService
         return $options;
     }
 
-    public function formatStatusLabel(string $status): string
+    public function formatStatusLabel(string $status, bool $isReturnPickup = false): string
     {
         if ($status === self::STATUS_ASSIGNED) {
-            return 'Delivery Assigned';
+            return $isReturnPickup ? 'Pickup Assigned' : 'Delivery Assigned';
         }
 
         if ($status === self::STATUS_ACCEPTED) {
-            return 'Delivery Accepted by Delivery Person';
+            return $isReturnPickup ? 'Pickup Accepted by Delivery Person' : 'Delivery Accepted by Delivery Person';
+        }
+
+        if ($status === self::STATUS_DELIVERED && $isReturnPickup) {
+            return 'Delivered to Hub';
         }
 
         return ucwords(str_replace('_', ' ', $status));
     }
 
-    public function getAllowedNextStatuses(?string $currentStatus): array
+    public function getAllowedNextStatuses(?string $currentStatus, bool $isReturnPickup = false): array
     {
         if ($currentStatus === null) {
             return [];
         }
 
-        return self::STATUS_TRANSITIONS[$currentStatus] ?? [];
+        $transitions = $isReturnPickup ? self::PICKUP_TRANSITIONS : self::STATUS_TRANSITIONS;
+
+        return $transitions[$currentStatus] ?? [];
     }
 
-    public function validateStatusTransition(?string $currentStatus, string $newStatus): void
+    public function validateStatusTransition(?string $currentStatus, string $newStatus, bool $isReturnPickup = false): void
     {
-        $allowed = $this->getAllowedNextStatuses($currentStatus);
+        $allowed = $this->getAllowedNextStatuses($currentStatus, $isReturnPickup);
 
         if (!in_array($newStatus, $allowed, true)) {
             throw new InvalidArgumentException(
@@ -129,8 +151,9 @@ class DeliveryStatusService
             }
 
             $oldStatus = $delivery->status;
+            $isReturnPickup = (bool) $delivery->return_id;
 
-            $this->validateStatusTransition($oldStatus, $newStatus);
+            $this->validateStatusTransition($oldStatus, $newStatus, $isReturnPickup);
 
             $updateData = [
                 'status' => $newStatus,
@@ -148,11 +171,11 @@ class DeliveryStatusService
             $this->recordStatusChange($delivery->id, $oldStatus, $newStatus, $changedById, $changedByType);
 
             if ($newStatus === self::STATUS_DELIVERED) {
-                $this->handleDeliveryCompleted($delivery, $changedById);
+                $this->handleDeliveryCompleted($delivery, $changedById, $changedByType);
             }
 
             if (in_array($newStatus, self::TERMINAL_STATUSES, true) && $newStatus !== self::STATUS_DELIVERED) {
-                $this->handleDeliveryTerminal($delivery, $changedById);
+                $this->handleDeliveryTerminal($delivery, $changedById, $changedByType);
             }
 
             $delivery->unsetRelation('statusHistories');
@@ -175,10 +198,23 @@ class DeliveryStatusService
         ]);
     }
 
-    private function handleDeliveryCompleted(Delivery $delivery, int $changedById): void
+    private function handleDeliveryCompleted(Delivery $delivery, int $changedById, ?string $changedByType = null): void
     {
         if ($delivery->delivery_person_id) {
             $this->checkAndFreeDeliveryPerson($delivery->delivery_person_id);
+        }
+
+        if ($delivery->return_id) {
+            $actorId = (int) ($delivery->delivery_person_id ?: $changedById);
+            $actorType = $changedByType ?: 'delivery_person';
+
+            app(ReturnService::class)->markProductReceivedForDelivery(
+                (int) $delivery->return_id,
+                $actorId,
+                $actorType
+            );
+
+            return;
         }
 
         // When the delivery person marks the delivery as delivered, reflect it
@@ -214,10 +250,21 @@ class DeliveryStatusService
         }
     }
 
-    private function handleDeliveryTerminal(Delivery $delivery, int $changedById): void
+    private function handleDeliveryTerminal(Delivery $delivery, int $changedById, ?string $changedByType = null): void
     {
         if ($delivery->delivery_person_id) {
             $this->checkAndFreeDeliveryPerson($delivery->delivery_person_id);
+        }
+
+        if ($delivery->return_id) {
+            $actorId = (int) ($delivery->delivery_person_id ?: $changedById);
+            $actorType = $changedByType ?: 'delivery_person';
+
+            app(ReturnService::class)->reopenReturnAfterPickup(
+                (int) $delivery->return_id,
+                $actorId,
+                $actorType
+            );
         }
     }
 

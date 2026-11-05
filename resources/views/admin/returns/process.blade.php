@@ -33,9 +33,25 @@
                         @elseif($return->status === 'return_approved')
                             <form method="POST" action="{{ route('admin.returns.update', $return->id) }}">
                                 @csrf
-                                <button type="submit" name="action" value="schedule_pickup" class="btn btn-primary">Schedule Pickup</button>
+                                <div class="form-group mb-3">
+                                    <label>Assign Delivery Person for Pickup <span class="text-danger">*</span></label>
+                                    <select name="delivery_person_id" class="form-control" required>
+                                        <option value="">-- Select Delivery Person --</option>
+                                        @forelse($availableDeliveryPersons as $person)
+                                            <option value="{{ $person->id }}">{{ $person->name }} ({{ $person->mobile }}) - {{ $person->vehicle_type ?? 'N/A' }} {{ $person->vehicle_number ?? '' }}</option>
+                                        @empty
+                                            <option value="" disabled>No available delivery persons</option>
+                                        @endforelse
+                                    </select>
+                                </div>
+                                <button type="submit" name="action" value="schedule_pickup" class="btn btn-primary" {{ $availableDeliveryPersons->isEmpty() ? 'disabled' : '' }}>
+                                    <i class="fa fa-truck"></i> Schedule Pickup & Assign Delivery Person
+                                </button>
                             </form>
                         @elseif($return->status === 'pickup_scheduled')
+                            <div class="alert alert-info">
+                                Pickup scheduled for this return. Mark product received once the delivery person delivers it back.
+                            </div>
                             <form method="POST" action="{{ route('admin.returns.update', $return->id) }}">
                                 @csrf
                                 <button type="submit" name="action" value="mark_received" class="btn btn-primary">Mark Product Received</button>

@@ -62,8 +62,18 @@ class ReturnRequest extends Model
         return $this->hasMany(Refund::class, 'return_id');
     }
 
+    public function delivery()
+    {
+        return $this->hasOne(Delivery::class, 'return_id');
+    }
+
     public function items()
     {
         return $this->hasMany(ReturnItem::class, 'return_id');
+    }
+
+    public function statusHistories()
+    {
+        return $this->hasMany(ReturnStatusHistory::class, 'return_id')->orderBy('id');
     }
 }

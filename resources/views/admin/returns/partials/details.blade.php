@@ -26,6 +26,28 @@
                 <th>Refund Amount</th>
                 <td>{{ $return->order?->currency ?? 'INR' }} {{ number_format((float) $return->refund_amount, 2) }}</td>
             </tr>
+            @if($return->delivery)
+                <tr>
+                    <th>Return Pickup Delivery</th>
+                    <td>#{{ $return->delivery->id }}</td>
+                </tr>
+                <tr>
+                    <th>Delivery Status</th>
+                    <td>{{ app(\App\Services\DeliveryStatusService::class)->formatStatusLabel($return->delivery->status, true) }}</td>
+                </tr>
+                <tr>
+                    <th>Delivery Person</th>
+                    <td>{{ $return->delivery->deliveryPerson?->name ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <th>Track Delivery (GPS)</th>
+                    <td>
+                        <a href="{{ route('admin.deliveries.show', $return->delivery->id) }}" class="btn btn-sm btn-info">
+                            <i class="fa fa-map-marker"></i> Track Movement
+                        </a>
+                    </td>
+                </tr>
+            @endif
         </table>
     </div>
 
@@ -59,6 +81,34 @@
         </table>
     </div>
 </div>
+
+@if($return->relationLoaded('statusHistories') && $return->statusHistories->count())
+    <h5>Return Status History</h5>
+    <div class="table-responsive mb-4">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Old Status</th>
+                    <th>New Status</th>
+                    <th>Changed By</th>
+                    <th>Changed At</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($return->statusHistories as $history)
+                    <tr>
+                        <td>{{ $history->id }}</td>
+                        <td>{{ $history->old_status ? ucwords(str_replace('_', ' ', $history->old_status)) : '-' }}</td>
+                        <td>{{ ucwords(str_replace('_', ' ', $history->new_status)) }}</td>
+                        <td>{{ $history->changed_by_name ?? '-' }}</td>
+                        <td>{{ $history->changed_at ? $history->changed_at->format('d-m-Y H:i') : '-' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+@endif
 
 <h5>Returned Items</h5>
 <div class="table-responsive mb-4">

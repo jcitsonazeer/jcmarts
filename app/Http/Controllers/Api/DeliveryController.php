@@ -47,7 +47,7 @@ class DeliveryController extends Controller
             ->count();
 
         $currentActive = Delivery::query()
-            ->with(['order.customer', 'order.address'])
+            ->with(['order.customer', 'order.address', 'order.items.product', 'return'])
             ->where('delivery_person_id', $deliveryPerson->id)
             ->whereIn('status', $activeStatuses)
             ->orderByDesc('assigned_at')
@@ -85,7 +85,7 @@ class DeliveryController extends Controller
         $activeStatuses = ['assigned', 'accepted', 'picked_up', 'out_for_delivery'];
 
         $deliveries = Delivery::query()
-            ->with(['order.customer', 'order.address', 'order.items.product'])
+            ->with(['order.customer', 'order.address', 'order.items.product', 'return'])
             ->where('delivery_person_id', $deliveryPerson->id)
             ->whereIn('status', $activeStatuses)
             ->orderByDesc('assigned_at')
@@ -118,6 +118,9 @@ class DeliveryController extends Controller
                 'order.items.product',
                 'statusHistories',
                 'locations',
+                'return',
+                'return.items.product',
+                'return.items.rate',
             ])
             ->where('id', $deliveryId)
             ->where('delivery_person_id', $deliveryPerson->id)
@@ -142,7 +145,11 @@ class DeliveryController extends Controller
      * POST /api/v1/delivery/deliveries/{deliveryId}/status
      *
      * Update the delivery status by the delivery person.
-     * Body: { "status": "accepted" | "picked_up" | "out_for_delivery" | "delivered" | "rejected" | "failed" | "cancelled" }
+     * Body: { "status": "accepted" | "picked_up" | "delivered" | "rejected" | "failed" | "cancelled" }
+     *
+     * Normal deliveries also support "out_for_delivery". Return pickups
+     * (deliveries with return_id set) never use "out_for_delivery":
+     * picked_up leads directly to delivered ("Delivered to Hub").
      */
     public function updateStatus(Request $request, int $deliveryId)
     {
@@ -185,7 +192,7 @@ class DeliveryController extends Controller
             'message' => 'Delivery status updated successfully',
             'data' => [
                 'delivery' => $this->formatDeliverySummary($updatedDelivery),
-                'allowed_next_statuses' => $this->deliveryStatusService->getAllowedNextStatuses($updatedDelivery->status),
+                'allowed_next_statuses' => $this->deliveryStatusService->getAllowedNextStatuses($updatedDelivery->status, (bool) $updatedDelivery->return_id),
             ],
         ]);
     }
@@ -200,7 +207,7 @@ class DeliveryController extends Controller
         $deliveryPerson = $request->user();
 
         $deliveries = Delivery::query()
-            ->with(['order.customer', 'order.address', 'order.items'])
+            ->with(['order.customer', 'order.address', 'order.items', 'return'])
             ->where('delivery_person_id', $deliveryPerson->id)
             ->where('status', 'delivered')
             ->orderByDesc('delivered_at')
@@ -301,7 +308,11 @@ class DeliveryController extends Controller
         return [
             'id' => $delivery->id,
             'order_id' => $delivery->order_id,
+            'return_id' => $delivery->return_id,
+            'return_status' => $delivery->return_id ? $delivery->return?->status : null,
+            'is_return_pickup' => (bool) $delivery->return_id,
             'status' => $delivery->status,
+            'status_label' => $this->deliveryStatusService->formatStatusLabel($delivery->status, (bool) $delivery->return_id),
             'delivery_address' => $delivery->delivery_address,
             'assigned_at' => $delivery->assigned_at,
             'customer' => $delivery->order && $delivery->order->customer ? [
@@ -330,7 +341,11 @@ class DeliveryController extends Controller
         return [
             'id' => $delivery->id,
             'order_id' => $delivery->order_id,
+            'return_id' => $delivery->return_id,
+            'return_status' => $delivery->return_id ? $delivery->return?->status : null,
+            'is_return_pickup' => (bool) $delivery->return_id,
             'status' => $delivery->status,
+            'status_label' => $this->deliveryStatusService->formatStatusLabel($delivery->status, (bool) $delivery->return_id),
             'delivery_address' => $delivery->delivery_address,
             'assigned_at' => $delivery->assigned_at,
             'accepted_at' => $delivery->accepted_at,
@@ -367,6 +382,30 @@ class DeliveryController extends Controller
             }
         }
 
+        $returnItems = [];
+        $returnRequest = null;
+        if ($delivery->return_id && $delivery->return) {
+            $return = $delivery->return;
+            $returnRequest = [
+                'id' => $return->id,
+                'reason' => $return->reason,
+                'customer_note' => $return->customer_note,
+                'status' => $return->status,
+                'refund_amount' => $return->refund_amount,
+            ];
+
+            foreach ($return->items as $item) {
+                $returnItems[] = [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product ? $item->product->product_name : 'Product',
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'line_total' => $item->line_total,
+                ];
+            }
+        }
+
         $timeline = [];
         if ($delivery->statusHistories) {
             foreach ($delivery->statusHistories as $history) {
@@ -381,14 +420,18 @@ class DeliveryController extends Controller
         return [
             'id' => $delivery->id,
             'order_id' => $delivery->order_id,
+            'return_id' => $delivery->return_id,
+            'return_status' => $delivery->return_id ? $delivery->return?->status : null,
+            'is_return_pickup' => (bool) $delivery->return_id,
             'status' => $delivery->status,
+            'status_label' => $this->deliveryStatusService->formatStatusLabel($delivery->status, (bool) $delivery->return_id),
             'delivery_address' => $delivery->delivery_address,
             'assigned_at' => $delivery->assigned_at,
             'accepted_at' => $delivery->accepted_at,
             'picked_up_at' => $delivery->picked_up_at,
             'out_for_delivery_at' => $delivery->out_for_delivery_at,
             'delivered_at' => $delivery->delivered_at,
-            'allowed_next_statuses' => $this->deliveryStatusService->getAllowedNextStatuses($delivery->status),
+            'allowed_next_statuses' => $this->deliveryStatusService->getAllowedNextStatuses($delivery->status, (bool) $delivery->return_id),
             'customer' => $order && $order->customer ? [
                 'id' => $order->customer->id,
                 'name' => $order->customer->name,
@@ -409,6 +452,8 @@ class DeliveryController extends Controller
                 'pincode' => $order->address->pincode,
             ] : null,
             'items' => $items,
+            'return_request' => $returnRequest,
+            'return_items' => $returnItems,
             'timeline' => $timeline,
         ];
     }
