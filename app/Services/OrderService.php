@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -190,6 +191,7 @@ class OrderService
                     'order_id' => $order->id,
                     'product_id' => (int) $item->product_id,
                     'rate_master_id' => (int) $item->rate_master_id,
+                    'cart_item_id' => isset($item->id) ? (int) $item->id : null,
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'line_total' => $lineTotal,
@@ -299,9 +301,7 @@ class OrderService
             $payment->updated_date = Carbon::now();
             $payment->save();
 
-            if ($cartItems) {
-                $this->deactivatePurchasedCartItems($cartItems, $order->items, $customerId);
-            }
+            $this->deactivatePurchasedCartItems($cartItems ?? new Collection(), $order->items, $customerId);
 
             return $order->load('items');
         });
@@ -461,6 +461,7 @@ class OrderService
                     'order_id' => $order->id,
                     'product_id' => (int) $item->product_id,
                     'rate_master_id' => (int) $item->rate_master_id,
+                    'cart_item_id' => isset($item->id) ? (int) $item->id : null,
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'line_total' => $lineTotal,
@@ -536,6 +537,30 @@ class OrderService
 
     private function deactivatePurchasedCartItems(Collection $cartItems, Collection $orderItems, int $customerId): void
     {
+        $cartIds = $orderItems
+            ->pluck('cart_item_id')
+            ->filter(function ($id) {
+                return !is_null($id);
+            })
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->unique()
+            ->values();
+
+        if ($cartIds->isNotEmpty()) {
+            Cart::query()
+                ->whereIn('id', $cartIds->all())
+                ->update([
+                    'is_active' => 0,
+                    'updated_by_id' => $customerId,
+                    'updated_date' => Carbon::now(),
+                ]);
+
+            return;
+        }
+
+        // Backward compatibility for legacy order items without cart_item_id.
         $orderItemsByRate = $orderItems->keyBy(function (OrderItem $item) {
             return (int) $item->rate_master_id;
         });

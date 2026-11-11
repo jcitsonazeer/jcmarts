@@ -16,6 +16,7 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'rate_master_id',
+        'cart_item_id',
         'quantity',
         'unit_price',
         'line_total',
@@ -28,6 +29,7 @@ class OrderItem extends Model
 
     protected $casts = [
         'quantity' => 'integer',
+        'cart_item_id' => 'integer',
         'unit_price' => 'decimal:2',
         'line_total' => 'decimal:2',
         'is_active' => 'boolean',
