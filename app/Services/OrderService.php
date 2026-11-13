@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\RateMaster;
 use App\Models\StockInfo;
+use App\Exceptions\PriceChangedException;
 use App\Services\StockInfoService;
 
 use Carbon\Carbon;
@@ -167,14 +168,71 @@ class OrderService
         Collection $cartItems
     ): Order {
         return DB::transaction(function () use ($customerId, $addressId, $orderSummary, $cartItems) {
+            // Re-price every line from the current rate_master row inside this
+            // transaction, locking the rate rows so prices cannot change mid-flight.
+            $currentPrices = [];
+            $lockedRates = [];
+            $priceChanges = [];
+
+            foreach (array_values($cartItems->all()) as $index => $item) {
+                $rate = RateMaster::query()
+                    ->where('id', (int) $item->rate_master_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$rate) {
+                    throw new RuntimeException('Selected item is no longer available.');
+                }
+
+                $currentPrice = (float) ($rate->final_price > 0 ? $rate->final_price : $rate->selling_price);
+                $oldPrice = (float) $item->unit_price;
+
+                $currentPrices[$index] = $currentPrice;
+                $lockedRates[$index] = $rate;
+
+                if (abs($currentPrice - $oldPrice) > 0.0001) {
+                    $priceChanges[] = [
+                        'cart_item_id' => isset($item->id) ? (int) $item->id : null,
+                        'product_id' => (int) $item->product_id,
+                        'product_name' => $item->product ? (string) $item->product->product_name : 'Product',
+                        'rate_master_id' => (int) $item->rate_master_id,
+                        'old_price' => $oldPrice,
+                        'current_price' => $currentPrice,
+                    ];
+                }
+            }
+
+            if (!empty($priceChanges)) {
+                $details = implode("\n\n", array_map(function (array $change) {
+                    return '- Product Name: ' . $change['product_name'] . "\n  Old Price: ₹" . number_format($change['old_price'], 2) . "\n  Current Price: ₹" . number_format($change['current_price'], 2);
+                }, $priceChanges));
+
+                throw new PriceChangedException(
+                    "Price changes detected in your cart:\n\n" . $details . "\n\nThe above products have been removed from your cart due to a price update. Please check your cart.",
+                    $priceChanges
+                );
+            }
+
+            // Recompute totals from database prices to avoid trusting the snapshot.
+            $subTotal = 0.0;
+            foreach (array_values($cartItems->all()) as $index => $item) {
+                $quantity = (int) $item->quantity;
+                $subTotal += $quantity * (float) $currentPrices[$index];
+            }
+
+            $deliveryCharge = (float) ($orderSummary['delivery_charge'] ?? 0);
+            $packingCharge = (float) ($orderSummary['packing_charge'] ?? 0);
+            $otherCharge = (float) ($orderSummary['other_charge'] ?? 0);
+            $total = $subTotal + $deliveryCharge + $packingCharge + $otherCharge;
+
             $order = Order::create([
                 'customer_id' => $customerId,
                 'address_id' => $addressId,
-                'sub_total' => (float) $orderSummary['sub_total'],
-                'delivery_charge' => (float) $orderSummary['delivery_charge'],
-                'packing_charge' => (float) $orderSummary['packing_charge'],
-                'other_charge' => (float) $orderSummary['other_charge'],
-                'total_amount' => (float) $orderSummary['total'],
+                'sub_total' => $subTotal,
+                'delivery_charge' => $deliveryCharge,
+                'packing_charge' => $packingCharge,
+                'other_charge' => $otherCharge,
+                'total_amount' => $total,
                 'currency' => 'INR',
                 'reservation_expires_at' => Carbon::now()->addMinutes(self::PAYMENT_RESERVATION_MINUTES),
                 'is_active' => 1,
@@ -182,9 +240,9 @@ class OrderService
                 'created_date' => Carbon::now(),
             ]);
 
-            foreach ($cartItems as $item) {
+            foreach (array_values($cartItems->all()) as $index => $item) {
                 $quantity = (int) $item->quantity;
-                $unitPrice = (float) $item->unit_price;
+                $unitPrice = (float) $currentPrices[$index];
                 $lineTotal = $quantity * $unitPrice;
 
                 OrderItem::create([
@@ -200,7 +258,7 @@ class OrderService
                     'created_date' => Carbon::now(),
                 ]);
 
-                $rate = $item->rate ?: RateMaster::find((int) $item->rate_master_id);
+                $rate = $lockedRates[$index];
 
                 if (!$rate || $rate->stock_dependent !== 'YES') {
                     continue;

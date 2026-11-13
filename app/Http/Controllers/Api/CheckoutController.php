@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\PriceChangedException;
 use App\Http\Controllers\Controller;
+use App\Models\Cart;
 use App\Models\CustomerAddress;
 use App\Models\Order;
 use App\Models\Payment;
@@ -219,6 +221,32 @@ class CheckoutController extends Controller
                     $orderSummary,
                     $cartItems
                 );
+            } catch (PriceChangedException $e) {
+                $affectedCartItemIds = collect($e->getChanges())
+                    ->pluck('cart_item_id')
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                if (!empty($affectedCartItemIds)) {
+                    Cart::query()
+                        ->whereIn('id', $affectedCartItemIds)
+                        ->where('is_active', 1)
+                        ->update([
+                            'is_active' => 0,
+                            'updated_by_id' => $customerId,
+                            'updated_date' => Carbon::now(),
+                        ]);
+                }
+
+                return response()->json([
+                    'status' => false,
+                    'message' => $e->getMessage(),
+                    'old_price' => $e->getOldPrice(),
+                    'current_price' => $e->getCurrentPrice(),
+                    'price_changes' => $e->getChanges(),
+                    'data' => null,
+                ], 422);
             } catch (RuntimeException $e) {
                 return response()->json([
                     'status' => false,

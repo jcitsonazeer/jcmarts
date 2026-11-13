@@ -71,6 +71,7 @@
     function setStatus(message, isError) {
       statusEl.style.display = 'block';
       statusEl.className = isError ? 'text-danger text-center' : 'text-success text-center';
+      statusEl.style.whiteSpace = 'pre-line';
       statusEl.textContent = message;
     }
 

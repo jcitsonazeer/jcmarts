@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cart;
 use App\Models\CustomerAddress;
 use App\Services\CartService;
 use App\Services\DeliveryChargeService;
 use App\Services\FrontendCatalogService;
+use App\Exceptions\PriceChangedException;
 use App\Services\OrderService;
 use App\Services\Payment\RazorpayService;
 use Carbon\Carbon;
@@ -274,6 +276,30 @@ class FrontendCheckoutController extends Controller
                     $orderSummary,
                     $cartItems
                 );
+            } catch (PriceChangedException $e) {
+                $affectedCartItemIds = collect($e->getChanges())
+                    ->pluck('cart_item_id')
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                if (!empty($affectedCartItemIds)) {
+                    Cart::query()
+                        ->whereIn('id', $affectedCartItemIds)
+                        ->where('is_active', 1)
+                        ->update([
+                            'is_active' => 0,
+                            'updated_by_id' => $customerId,
+                            'updated_date' => Carbon::now(),
+                        ]);
+                }
+
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'old_price' => $e->getOldPrice(),
+                    'current_price' => $e->getCurrentPrice(),
+                    'price_changes' => $e->getChanges(),
+                ], 422);
             } catch (RuntimeException $e) {
                 return response()->json(['message' => $e->getMessage()], 422);
             }

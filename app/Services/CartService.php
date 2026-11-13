@@ -86,7 +86,7 @@ class CartService
             ->where('is_active', 1)
             ->with([
                 'product:id,product_name,product_image',
-                'rate:id,uom_id,stock_dependent',
+                'rate:id,uom_id,final_price,selling_price,stock_dependent',
                 'rate.uom:id,primary_uom,secondary_uom',
             ])
             ->orderByDesc('id')
